@@ -1,0 +1,146 @@
+/* Competitor Voucher Tracker */
+.cvt-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.cvt-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 2rem 1rem;
+  border-bottom: 1px solid var(--sip-border);
+  background: var(--sip-surface);
+}
+
+.cvt-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.cvt-header .subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--sip-text-secondary);
+  font-size: 0.9rem;
+}
+
+.cvt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.cvt-meta-bar {
+  padding: 0.65rem 2rem;
+  font-size: 0.8125rem;
+  color: var(--sip-text-secondary);
+  background: var(--sip-bg);
+  border-bottom: 1px solid var(--sip-border);
+}
+
+.cvt-meta-bar.is-error {
+  color: var(--sip-accent);
+}
+
+.cvt-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem 2rem 2rem;
+}
+
+.cvt-table-wrap {
+  background: var(--sip-surface);
+  border: 1px solid var(--sip-border);
+  border-radius: var(--sip-radius);
+  box-shadow: var(--sip-shadow-sm);
+  overflow: auto;
+}
+
+.cvt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.cvt-table th,
+.cvt-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--sip-border);
+  vertical-align: top;
+}
+
+.cvt-table th {
+  font-weight: 600;
+  color: var(--sip-text-secondary);
+  background: var(--sip-bg);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.cvt-table tr:last-child td {
+  border-bottom: none;
+}
+
+.cvt-table tr.is-checking {
+  opacity: 0.65;
+}
+
+.cvt-table a {
+  color: var(--sip-accent);
+  word-break: break-all;
+}
+
+.cvt-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--sip-radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.cvt-status-found {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.cvt-status-not_found {
+  background: var(--sip-sidebar);
+  color: var(--sip-text-secondary);
+}
+
+.cvt-status-unable_to_check,
+.cvt-status-unchecked {
+  background: rgba(234, 179, 8, 0.15);
+  color: #a16207;
+}
+
+.cvt-voucher-text {
+  max-width: 280px;
+  color: var(--sip-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.cvt-empty {
+  padding: 3rem;
+  text-align: center;
+  color: var(--sip-text-muted);
+}
+
+.cvt-loading-overlay {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--sip-text-secondary);
+}

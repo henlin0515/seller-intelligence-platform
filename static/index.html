@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/static/platform.css" />
     <link rel="stylesheet" href="/static/styles.css" />
     <link rel="stylesheet" href="/static/dashboard.css" />
+    <link rel="stylesheet" href="/static/competitor-tracker.css" />
   </head>
   <body>
     <div class="layout">
@@ -43,6 +44,12 @@
               <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg>
             </span>
             <span data-i18n="nav.learning">Learning Center</span>
+          </button>
+          <button type="button" class="nav-item nav-main" data-view="competitorTracker">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 7h16v10H4zM8 11h8M7 15h6"/></svg>
+            </span>
+            <span data-i18n="nav.competitorTracker">Competitor Voucher Tracker</span>
           </button>
           <button type="button" class="nav-item nav-main" data-view="settings">
             <span class="nav-icon" aria-hidden="true">
@@ -310,6 +317,51 @@
           </div>
         </div>
 
+        <!-- Competitor Voucher Tracker -->
+        <div id="viewCompetitorTracker" class="app-view hidden cvt-app">
+          <header class="cvt-header">
+            <div>
+              <h1 data-i18n="tracker.title">Competitor Voucher Tracker</h1>
+              <p class="subtitle" data-i18n="tracker.subtitle">
+                TikTok shop voucher visibility from COMPETITOR_TRACKER sheet
+              </p>
+            </div>
+            <div class="cvt-actions">
+              <button type="button" id="cvtCheckSelected" class="btn btn-secondary btn-sm" data-i18n="tracker.checkSelected">
+                Check Selected Shop
+              </button>
+              <button type="button" id="cvtCheckAll" class="btn btn-primary btn-sm" data-i18n="tracker.checkAll">
+                Check All Shops
+              </button>
+              <button type="button" id="cvtReloadSheet" class="btn btn-ghost btn-sm" data-i18n="tracker.reloadSheet">
+                Reload Sheet
+              </button>
+            </div>
+          </header>
+          <div id="cvtMetaBar" class="cvt-meta-bar" data-i18n="tracker.loading">Loading competitors from sheet…</div>
+          <div class="cvt-scroll">
+            <div class="cvt-table-wrap">
+              <table class="cvt-table" aria-label="Competitor voucher tracker">
+                <thead>
+                  <tr>
+                    <th scope="col">
+                      <input type="checkbox" id="cvtSelectAll" aria-label="Select all" />
+                    </th>
+                    <th scope="col" data-i18n="tracker.colShopId">Shop ID</th>
+                    <th scope="col" data-i18n="tracker.colShopName">Shop Name</th>
+                    <th scope="col" data-i18n="tracker.colShopee">Shopee Link</th>
+                    <th scope="col" data-i18n="tracker.colTiktok">TikTok Link</th>
+                    <th scope="col" data-i18n="tracker.colStatus">Voucher Status</th>
+                    <th scope="col" data-i18n="tracker.colVoucherText">Voucher Text</th>
+                    <th scope="col" data-i18n="tracker.colLastChecked">Last Checked</th>
+                  </tr>
+                </thead>
+                <tbody id="cvtTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <!-- Settings -->
         <div id="viewSettings" class="app-view hidden">
           <div class="settings-scroll">
@@ -351,6 +403,7 @@
     <script src="/static/platform.js"></script>
     <script src="/static/app.js"></script>
     <script src="/static/dashboard.js"></script>
+    <script src="/static/competitor-tracker.js"></script>
     <script type="module" src="/static/dashboard-charts.js"></script>
   </body>
 </html>

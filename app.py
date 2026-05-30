@@ -17,6 +17,11 @@ from pydantic import BaseModel, Field
 
 from assistant_service import process_question
 from seller.raw_debug import get_raw_debug_payload
+from seller.competitor_tracker.service import (
+    check_tiktok_vouchers_for_all,
+    clear_competitor_sheet_cache,
+    get_competitor_list_payload,
+)
 from seller.service import (
     get_dashboard_payload,
     get_seller_data_status,
@@ -62,6 +67,10 @@ app.add_middleware(
 
 if STATIC_DIR.is_dir():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+class CompetitorCheckRequest(BaseModel):
+    shop_ids: list[str] | None = None
 
 
 class ChatRequest(BaseModel):
@@ -132,6 +141,30 @@ async def seller_raw_debug(shop_id: str):
     if not payload:
         raise HTTPException(status_code=404, detail="Shop not found")
     return payload
+
+
+@app.get("/api/competitor-voucher/competitors")
+async def competitor_voucher_list(refresh: bool = False):
+    """List competitors from COMPETITOR_TRACKER with cached voucher status."""
+    if refresh:
+        await asyncio.to_thread(clear_competitor_sheet_cache)
+    return await asyncio.to_thread(get_competitor_list_payload, refresh_sheet=refresh)
+
+
+@app.post("/api/competitor-voucher/check")
+async def competitor_voucher_check(body: CompetitorCheckRequest):
+    """Check selected shops (shop_ids) or all competitors (max 50 per run)."""
+    try:
+        return await asyncio.to_thread(
+            check_tiktok_vouchers_for_all,
+            shop_ids=body.shop_ids,
+        )
+    except Exception as exc:
+        logger.exception("Competitor voucher check failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Could not complete voucher check. Try again later.",
+        ) from exc
 
 
 @app.get("/api/seller/{shop_id}")

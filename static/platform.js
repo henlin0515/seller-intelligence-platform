@@ -72,6 +72,7 @@
     intelligence: document.getElementById("viewDashboard"),
     assistant: document.getElementById("viewAssistant"),
     learning: document.getElementById("viewLearning"),
+    competitorTracker: document.getElementById("viewCompetitorTracker"),
     settings: document.getElementById("viewSettings"),
   };
 
@@ -292,6 +293,9 @@
       loadSellerContext();
     }
     if (viewKey === "learning" && !learningCategories?.innerHTML) renderLearningCenter();
+    if (viewKey === "competitorTracker" && window.ShpCompetitorTracker?.onShow) {
+      window.ShpCompetitorTracker.onShow();
+    }
 
     if (options.focusSearch) {
       setTimeout(() => document.getElementById("shopSearchInput")?.focus(), 120);
