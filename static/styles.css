@@ -1,8 +1,8 @@
 :root {
-  --orange: var(--sip-accent, #ee4d2d);
-  --orange-hover: var(--sip-accent-hover, #d73211);
-  --orange-soft: var(--sip-accent-soft, #fff5f2);
-  --orange-border: #ffd4c9;
+  --orange: var(--sip-accent, #0a0a0a);
+  --orange-hover: var(--sip-accent-hover, #262626);
+  --orange-soft: var(--sip-accent-soft, rgba(10, 10, 10, 0.04));
+  --orange-border: var(--sip-border, #e6e6e1);
   --bg: var(--sip-surface, #ffffff);
   --bg-muted: var(--sip-bg, #f7f7f8);
   --text: var(--sip-text, #0f0f12);

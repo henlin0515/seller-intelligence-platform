@@ -90,15 +90,15 @@
 
   function statusBadge(status) {
     const s = (status || "na").toLowerCase();
-    const cls = s === "ok" ? "cai-status-ok" : "cai-status-na";
+    const cls = s === "ok" ? "sip-badge sip-badge-ok" : "sip-badge sip-badge-na";
     const label = s === "ok" ? "OK" : "NA";
-    return `<span class="cai-status ${cls}">${label}</span>`;
+    return `<span class="${cls}">${label}</span>`;
   }
 
   function sideStatusBadge(label) {
     const s = (label || "NA").toUpperCase();
-    const cls = s === "OK" ? "cai-status-ok" : "cai-status-na";
-    return `<span class="cai-status ${cls}">${escapeHtml(s)}</span>`;
+    const cls = s === "OK" ? "sip-badge sip-badge-ok" : "sip-badge sip-badge-na";
+    return `<span class="${cls}">${escapeHtml(s)}</span>`;
   }
 
   async function loadTracker() {

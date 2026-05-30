@@ -1,262 +1,282 @@
-/* Competitor Assortment Intelligence */
+/* Competitor Assortment Intelligence — premium editorial UI */
+
 .cai-app {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  background: var(--sip-bg);
 }
 
 .cai-header {
-  padding: 1.25rem 2rem 0;
-  border-bottom: 1px solid var(--sip-border);
+  padding: var(--sip-page-pad-y) var(--sip-page-pad-x) 1.5rem;
+  border-bottom: 1px solid var(--sip-border-light);
   background: var(--sip-surface);
 }
 
 .cai-header h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  line-height: 1.1;
 }
 
 .cai-header .subtitle {
-  margin: 0.35rem 0 1rem;
+  margin: 0.75rem 0 0;
+  max-width: 40rem;
   color: var(--sip-text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.9375rem;
+  line-height: 1.65;
 }
 
-.cai-tabs {
+.cai-toolbar {
   display: flex;
+  align-items: center;
+  gap: 1.25rem;
   flex-wrap: wrap;
-  gap: 0.25rem;
-}
-
-.cai-tab {
-  padding: 0.55rem 1rem;
-  border: none;
-  background: transparent;
-  font-family: inherit;
-  font-size: 0.875rem;
-  color: var(--sip-text-secondary);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-}
-
-.cai-tab.active {
-  color: var(--sip-accent);
-  border-bottom-color: var(--sip-accent);
-  font-weight: 600;
+  margin-top: 1.5rem;
 }
 
 .cai-body {
   flex: 1;
   overflow: auto;
-  padding: 1.25rem 2rem 2rem;
+  padding: var(--sip-page-pad-y) var(--sip-page-pad-x) 3rem;
 }
 
 .cai-panel.hidden {
   display: none;
 }
 
-.cai-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.75rem;
-}
-
 .cai-section-title {
-  margin: 1.5rem 0 0.75rem;
-  font-size: 1.05rem;
-}
-
-.cai-status {
-  display: inline-block;
-  padding: 0.15rem 0.5rem;
-  border-radius: var(--sip-radius-pill);
-  font-size: 0.75rem;
+  margin: 2.5rem 0 1rem;
+  font-size: 0.6875rem;
   font-weight: 600;
-}
-
-.cai-status-ok {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.cai-status-na {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.cai-reason {
-  max-width: 280px;
-  font-size: 0.85rem;
-  color: var(--sip-text-secondary);
-}
-
-.cai-manual-import {
-  margin-top: 2rem;
-  font-size: 0.9rem;
-}
-
-.cai-manual-import summary {
-  cursor: pointer;
-  color: var(--sip-accent);
-}
-
-.cai-import-panel {
-  margin-top: 0.75rem;
-}
-
-.cai-shop-header {
-  margin: 1.5rem 0 0.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--sip-border);
-}
-
-.cai-shop-header h3 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.cai-shop-header p {
-  margin: 0.35rem 0 0;
-  font-size: 0.85rem;
-  color: var(--sip-text-secondary);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sip-text-muted);
 }
 
 .cai-metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1px;
+  background: var(--sip-border-light);
+  border: 1px solid var(--sip-border-light);
+  margin-bottom: 2.5rem;
 }
 
 .cai-metric-card {
   background: var(--sip-surface);
-  border: 1px solid var(--sip-border);
-  border-radius: var(--sip-radius-sm);
-  padding: 1rem;
+  padding: 1.75rem 1.5rem;
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border: none;
+  border-radius: 0;
 }
 
 .cai-metric-card .label {
-  font-size: 0.75rem;
-  color: var(--sip-text-secondary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sip-text-muted);
+  line-height: 1.45;
 }
 
 .cai-metric-card .value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-top: 0.25rem;
+  margin-top: 0.75rem;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
 }
 
 .cai-table-wrap {
   overflow: auto;
-  border: 1px solid var(--sip-border);
-  border-radius: var(--sip-radius);
   background: var(--sip-surface);
-}
-
-.cai-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.cai-table th,
-.cai-table td {
-  padding: 0.65rem 0.85rem;
-  border-bottom: 1px solid var(--sip-border);
-  vertical-align: top;
-  text-align: left;
-}
-
-.cai-table th {
-  background: var(--sip-bg);
-  font-weight: 600;
-  color: var(--sip-text-secondary);
-  position: sticky;
-  top: 0;
+  border: 1px solid var(--sip-border-light);
 }
 
 .cai-thumb {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: var(--sip-radius-sm);
   background: var(--sip-bg);
+}
+
+.cai-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.55rem;
+  border-radius: var(--sip-radius-sm);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cai-status-ok {
+  background: var(--sip-success-bg);
+  color: var(--sip-success);
+}
+
+.cai-status-na {
+  background: var(--sip-warn-bg);
+  color: var(--sip-warn);
+}
+
+.cai-reason {
+  max-width: 320px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--sip-text-secondary);
+}
+
+.cai-shop-header {
+  margin: 0 0 1rem;
+  padding: 0 0 1rem;
+  border-bottom: 1px solid var(--sip-border-light);
+}
+
+.cai-shop-header h3 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cai-shop-header h3 small {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--sip-text-muted);
+}
+
+.cai-shop-header p {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--sip-text-secondary);
 }
 
 .cai-compare-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
+  gap: 2rem;
+  margin: 1.25rem 0;
 }
 
 .cai-compare-col h4 {
-  margin: 0 0 0.5rem;
-  font-size: 0.8rem;
-  color: var(--sip-text-secondary);
+  margin: 0 0 1rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sip-text-muted);
 }
 
 .cai-review-card {
-  border: 1px solid var(--sip-border);
+  border: 1px solid var(--sip-border-light);
   border-radius: var(--sip-radius-sm);
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
   background: var(--sip-surface);
 }
 
+.cai-review-card p {
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
 .cai-gap-green {
-  color: #15803d;
+  color: var(--sip-success);
   font-weight: 600;
 }
 
 .cai-gap-yellow {
-  color: #a16207;
+  color: var(--sip-warn);
   font-weight: 600;
 }
 
 .cai-gap-red {
-  color: #b91c1c;
+  color: var(--sip-danger);
   font-weight: 600;
+}
+
+.cai-manual-import {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--sip-border-light);
+  font-size: 0.875rem;
+}
+
+.cai-manual-import summary {
+  cursor: pointer;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sip-text);
 }
 
 .cai-import-box {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  gap: 2.5rem;
+  margin-top: 1.5rem;
 }
 
 .cai-import-box textarea {
   width: 100%;
-  min-height: 200px;
-  font-family: ui-monospace, monospace;
-  font-size: 0.8rem;
-  padding: 0.75rem;
-  border: 1px solid var(--sip-border);
+  min-height: 220px;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--sip-border-light);
   border-radius: var(--sip-radius-sm);
+  background: var(--sip-bg);
+  resize: vertical;
+}
+
+.cai-import-box textarea:focus {
+  outline: none;
+  border-color: var(--sip-text);
 }
 
 .cai-import-box h3 {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .cai-hint {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--sip-text-muted);
-  margin: 0.5rem 0 1rem;
+  margin: 0.75rem 0 0;
+  line-height: 1.5;
 }
 
 .cai-empty {
-  padding: 2rem;
+  padding: 4rem 2rem;
   text-align: center;
   color: var(--sip-text-muted);
+  font-size: 0.875rem;
 }
 
 @media (max-width: 900px) {
   .cai-import-box,
   .cai-compare-grid {
     grid-template-columns: 1fr;
+  }
+
+  .cai-metrics {
+    grid-template-columns: 1fr 1fr;
   }
 }

@@ -1,24 +1,24 @@
 /* Seller Performance Dashboard — premium BI */
 
 :root {
-  --dash-bg: #f6f7f9;
-  --dash-surface: #ffffff;
-  --dash-border: #e8eaef;
-  --dash-text: #1a1d26;
-  --dash-muted: #6b7280;
-  --dash-orange: #ee4d2d;
-  --dash-orange-soft: #fff5f2;
-  --dash-orange-mid: #ff8a6a;
-  --dash-shadow: 0 4px 24px rgba(26, 29, 38, 0.06);
-  --dash-shadow-hover: 0 8px 32px rgba(26, 29, 38, 0.1);
-  --dash-radius: 16px;
-  --dash-radius-sm: 10px;
-  --dash-green: #0d9f6e;
-  --dash-green-bg: #e8f8f1;
-  --dash-red: #e03e3e;
-  --dash-red-bg: #fdecec;
-  --dash-yellow: #d97706;
-  --dash-yellow-bg: #fff8eb;
+  --dash-bg: var(--sip-bg, #f5f5f2);
+  --dash-surface: var(--sip-surface, #ffffff);
+  --dash-border: var(--sip-border-light, #efefeb);
+  --dash-text: var(--sip-text, #0a0a0a);
+  --dash-muted: var(--sip-text-secondary, #5c5c5c);
+  --dash-orange: var(--sip-accent, #0a0a0a);
+  --dash-orange-soft: var(--sip-accent-soft, rgba(10, 10, 10, 0.04));
+  --dash-orange-mid: var(--sip-text-secondary, #5c5c5c);
+  --dash-shadow: var(--sip-shadow-sm, 0 1px 2px rgba(10, 10, 10, 0.03));
+  --dash-shadow-hover: var(--sip-shadow, 0 8px 32px rgba(10, 10, 10, 0.06));
+  --dash-radius: var(--sip-radius-sm, 2px);
+  --dash-radius-sm: var(--sip-radius-sm, 2px);
+  --dash-green: var(--sip-success, #1a6b45);
+  --dash-green-bg: var(--sip-success-bg, #eef6f1);
+  --dash-red: var(--sip-danger, #8b2e2e);
+  --dash-red-bg: var(--sip-danger-bg, #faf0f0);
+  --dash-yellow: var(--sip-warn, #8a6d3b);
+  --dash-yellow-bg: var(--sip-warn-bg, #f8f4ec);
 }
 
 .dash-app {
@@ -96,8 +96,8 @@
 }
 
 .btn-dash-refresh:hover:not(:disabled) {
-  background: #d73211;
-  box-shadow: 0 4px 14px rgba(238, 77, 45, 0.35);
+  background: var(--sip-accent-hover, #262626);
+  box-shadow: none;
   transform: translateY(-1px);
 }
 
