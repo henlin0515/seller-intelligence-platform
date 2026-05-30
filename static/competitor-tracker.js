@@ -1,5 +1,5 @@
 /**
- * TikTok Competitor Voucher Tracker
+ * TikTok Competitor Voucher Tracker — profile → shop search → vouchers
  */
 (function () {
   const tableBody = document.getElementById("cvtTableBody");
@@ -9,13 +9,64 @@
   const btnReload = document.getElementById("cvtReloadSheet");
   const selectAll = document.getElementById("cvtSelectAll");
   const debugModal = document.getElementById("cvtDebugModal");
-  const debugTitle = document.getElementById("cvtDebugTitle");
   const debugShop = document.getElementById("cvtDebugShop");
   const debugBody = document.getElementById("cvtDebugBody");
 
   let competitors = [];
 
+  const REASON_ORDER = [
+    "summary",
+    "profile_url",
+    "extracted_profile_name",
+    "profile_handle",
+    "profile_followers",
+    "profile_bio",
+    "profile_external_links",
+    "search_query_used",
+    "search_results_count",
+    "search_blocked",
+    "selected_match",
+    "match_confidence",
+    "match_score",
+    "matched_shop_name",
+    "tiktok_shop_url",
+    "voucher_detection_result",
+    "voucher_status",
+    "final_url",
+    "http_status",
+    "page_title",
+    "html_loaded",
+    "html_length",
+    "visible_text_length",
+    "tiktok_blocked",
+    "login_required",
+    "voucher_keywords_found",
+    "matched_keywords",
+    "dom_voucher_found",
+    "dom_matches",
+    "used_playwright",
+    "used_http",
+    "redirect_chain",
+    "fetch_error",
+  ];
+
   const REASON_LABELS = {
+    profile_url: "Profile URL",
+    extracted_profile_name: "Extracted Profile Name",
+    profile_handle: "Handle",
+    profile_followers: "Followers",
+    profile_bio: "Bio",
+    profile_external_links: "External links",
+    search_query_used: "Search Query Used",
+    search_results_count: "Search Results Count",
+    search_blocked: "Search blocked",
+    selected_match: "Selected Match",
+    match_confidence: "Match Confidence",
+    match_score: "Match score",
+    matched_shop_name: "Matched TikTok Shop Name",
+    tiktok_shop_url: "TikTok Shop URL",
+    voucher_detection_result: "Voucher Detection Result",
+    voucher_status: "Voucher status",
     final_url: "Final resolved URL",
     http_status: "HTTP status",
     page_title: "Page title",
@@ -71,9 +122,14 @@
     if (typeof value === "boolean") return value ? i18n("tracker.yes", "Yes") : i18n("tracker.no", "No");
     if (Array.isArray(value)) {
       if (!value.length) return "—";
-      return value.map((v) => String(v)).join(" → ");
+      return value.map((v) => String(v)).join(" · ");
     }
     return String(value);
+  }
+
+  function linkOrDash(url, label) {
+    if (!url) return "—";
+    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label || i18n("tracker.link", "Link"))}</a>`;
   }
 
   function setMeta(text, isError = false) {
@@ -99,28 +155,10 @@
       debugShop.textContent = `${c.shop_name} (${c.shop_id})`;
     }
     const reason = c.check_reason || {};
-    const order = [
-      "summary",
-      "final_url",
-      "http_status",
-      "page_title",
-      "html_loaded",
-      "html_length",
-      "visible_text_length",
-      "tiktok_blocked",
-      "login_required",
-      "voucher_keywords_found",
-      "matched_keywords",
-      "dom_voucher_found",
-      "dom_matches",
-      "used_playwright",
-      "used_http",
-      "redirect_chain",
-      "fetch_error",
-    ];
     if (debugBody) {
-      debugBody.innerHTML = order
-        .filter((k) => reason[k] !== undefined && reason[k] !== null && reason[k] !== "")
+      debugBody.innerHTML = REASON_ORDER.filter(
+        (k) => reason[k] !== undefined && reason[k] !== null && reason[k] !== ""
+      )
         .map(
           (k) => `
         <dt>${escapeHtml(reasonLabel(k))}</dt>
@@ -137,8 +175,9 @@
 
   function renderTable() {
     if (!tableBody) return;
+    const cols = 12;
     if (!competitors.length) {
-      tableBody.innerHTML = `<tr><td colspan="10" class="cvt-empty">${escapeHtml(
+      tableBody.innerHTML = `<tr><td colspan="${cols}" class="cvt-empty">${escapeHtml(
         i18n("tracker.empty", "No competitors loaded from COMPETITOR_TRACKER.")
       )}</td></tr>`;
       return;
@@ -148,19 +187,21 @@
       .map((c) => {
         const status = c.voucher_status || "unchecked";
         const statusClass = `cvt-status cvt-status-${status}`;
-        const summary = c.check_summary || (c.check_reason && c.check_reason.summary) || "—";
+        const profileUrl = c.profile_url || c.tiktok_link;
         const hasDetails = Boolean(c.check_reason && c.last_checked_at);
         return `
         <tr data-shop-id="${escapeHtml(c.shop_id)}">
           <td><input type="checkbox" class="cvt-row-check" value="${escapeHtml(c.shop_id)}" aria-label="Select ${escapeHtml(c.shop_name)}" /></td>
           <td>${escapeHtml(c.shop_id)}</td>
           <td>${escapeHtml(c.shop_name)}</td>
-          <td>${c.shopee_link ? `<a href="${escapeHtml(c.shopee_link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(i18n("tracker.link", "Link"))}</a>` : "—"}</td>
-          <td>${c.tiktok_link ? `<a href="${escapeHtml(c.tiktok_link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(i18n("tracker.link", "Link"))}</a>` : "—"}</td>
+          <td>${escapeHtml(c.extracted_profile_name || "—")}</td>
+          <td>${linkOrDash(profileUrl, i18n("tracker.profile", "Profile"))}</td>
+          <td>${escapeHtml(c.matched_shop_name || "—")}</td>
+          <td>${escapeHtml(c.match_confidence || "—")}</td>
+          <td>${linkOrDash(c.tiktok_shop_url, i18n("tracker.shop", "Shop"))}</td>
           <td><span class="${statusClass}">${escapeHtml(statusLabel(status))}</span></td>
           <td class="cvt-voucher-text">${escapeHtml(c.voucher_text || "—")}</td>
           <td>${escapeHtml(formatTime(c.last_checked_at))}</td>
-          <td class="cvt-reason-summary">${escapeHtml(summary)}</td>
           <td>
             ${
               hasDetails
@@ -182,7 +223,12 @@
     competitors = competitors.map((c) => {
       const u = byId[c.shop_id];
       if (!u) return c;
-      return { ...c, ...u };
+      return {
+        ...c,
+        ...u,
+        profile_url: u.profile_url || c.tiktok_link,
+        tiktok_link: c.tiktok_link,
+      };
     });
     renderTable();
   }
@@ -204,16 +250,7 @@
       if (!res.ok) throw new Error(data.detail || "load failed");
       competitors = data.competitors || [];
       const meta = data.meta || {};
-      if (meta.error) {
-        setMeta(meta.error, true);
-      } else {
-        setMeta(
-          i18n("tracker.metaLoaded", "{count} competitors").replace(
-            "{count}",
-            String(competitors.length)
-          )
-        );
-      }
+      setMeta(meta.error ? meta.error : i18n("tracker.metaLoaded", "{count} competitors").replace("{count}", String(competitors.length)), Boolean(meta.error));
       renderTable();
     } catch {
       setMeta(i18n("tracker.loadFailed", "Could not load competitor list."), true);
@@ -231,7 +268,7 @@
     }
     setBusy(true);
     markChecking(shopIds);
-    setMeta(i18n("tracker.checking", "Checking TikTok shops…"));
+    setMeta(i18n("tracker.checking", "Checking TikTok profiles and shops…"));
     try {
       const res = await fetch("/api/competitor-voucher/check", {
         method: "POST",
@@ -245,9 +282,7 @@
         return;
       }
       mergeCheckResults(data.results);
-      setMeta(
-        i18n("tracker.checked", "Checked {n} shop(s).").replace("{n}", String(data.checked ?? 0))
-      );
+      setMeta(i18n("tracker.checked", "Checked {n} shop(s).").replace("{n}", String(data.checked ?? 0)));
     } catch {
       setMeta(i18n("tracker.checkFailed", "Voucher check failed. Try again."), true);
     } finally {
@@ -267,19 +302,11 @@
       el.checked = selectAll.checked;
     });
   });
-
   debugModal?.querySelectorAll("[data-cvt-close-modal]").forEach((el) => {
     el.addEventListener("click", closeDebugModal);
   });
 
-  window.ShpCompetitorTracker = {
-    onShow() {
-      if (!competitors.length) loadList(false);
-    },
-    reload: loadList,
-    openDebug: openDebugModal,
-  };
-
+  window.ShpCompetitorTracker = { onShow: () => { if (!competitors.length) loadList(false); }, reload: loadList, openDebug: openDebugModal };
   window.SipI18n?.onChange?.(() => {
     window.SipI18n?.apply?.(document.getElementById("viewCompetitorTracker"));
     renderTable();

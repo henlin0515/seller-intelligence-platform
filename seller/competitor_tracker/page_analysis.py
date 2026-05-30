@@ -33,7 +33,6 @@ def analyze_access_signals(
     page_title: str = "",
     http_status: int | None = None,
 ) -> dict[str, bool]:
-    """Detect TikTok block / login wall from visible text and status."""
     combined = f"{page_title}\n{page_text}".lower()
     blocked = False
     if http_status in (403, 429, 503):
@@ -45,62 +44,96 @@ def analyze_access_signals(
 
     login_required = False
     if any(m in combined for m in LOGIN_MARKERS):
-        # Avoid false positive on footer "Sign in" only — require short page or explicit wall
         if len(page_text) < 2500 or "log in to continue" in combined or "login to view" in combined:
             login_required = True
 
     return {"tiktok_blocked": blocked, "login_required": login_required}
 
 
-def build_check_summary(
+def public_pipeline_check_reason(
     *,
-    voucher_status: str,
-    fetch: dict[str, Any],
+    profile_url: str,
+    profile: dict[str, Any],
+    search: dict[str, Any],
+    match: dict[str, Any] | None,
+    shop_fetch: dict[str, Any],
     detection: dict[str, Any],
-) -> str:
-    parts: list[str] = []
-    if fetch.get("used_playwright"):
-        parts.append("Playwright fetch")
-    if fetch.get("used_http"):
-        parts.append("HTTP fetch")
-    if not fetch.get("used_playwright") and not fetch.get("used_http"):
-        parts.append("No successful fetch")
+    voucher_status: str,
+    summary: str,
+) -> dict[str, Any]:
+    """Diagnostics for profile -> shop search -> voucher pipeline (UI-safe)."""
+    selected = ""
+    if match:
+        selected = f"{match.get('shop_name', '')} ({match.get('shop_url', '')})"
 
-    if fetch.get("html_loaded"):
-        parts.append(f"HTML loaded ({fetch.get('html_length', 0)} chars)")
-    else:
-        parts.append("HTML not loaded")
+    voucher_detection = "not checked"
+    if voucher_status == "found":
+        voucher_detection = f"Found: {(detection.get('voucher_text') or '')[:120]}"
+    elif voucher_status == "not_found" and match:
+        voucher_detection = "No visible voucher on shop page"
+    elif voucher_status == "shop_not_found":
+        voucher_detection = "Shop not found — voucher check skipped"
+    elif voucher_status == "unable_to_check":
+        voucher_detection = "Unable to check vouchers"
 
-    if fetch.get("tiktok_blocked"):
-        parts.append("TikTok may have blocked access")
-    if fetch.get("login_required"):
-        parts.append("Login may be required")
-
-    if detection.get("voucher_keywords_found"):
-        kw = detection.get("matched_keywords") or []
-        parts.append(f"Keywords: {', '.join(kw[:5])}")
-    elif detection.get("dom_voucher_found"):
-        parts.append("DOM voucher elements detected")
-    else:
-        parts.append("No voucher keywords/DOM match")
-
-    vis_len = int(fetch.get("visible_text_length") or 0)
-    if vis_len < 500 and fetch.get("html_loaded"):
-        parts.append(f"SPA shell ({vis_len} visible chars — Playwright needed for full render)")
-
-    parts.append(f"Result: {voucher_status.replace('_', ' ')}")
-    return " | ".join(parts)
+    return {
+        "profile_url": profile_url,
+        "extracted_profile_name": profile.get("profile_name") or "",
+        "profile_handle": profile.get("handle") or "",
+        "profile_followers": profile.get("followers"),
+        "profile_bio": (profile.get("bio") or "")[:300] or None,
+        "profile_external_links": profile.get("external_links") or [],
+        "search_query_used": search.get("search_query") or "",
+        "search_results_count": int(search.get("search_results_count") or 0),
+        "search_blocked": bool(search.get("blocked")),
+        "selected_match": selected or None,
+        "match_confidence": (match or {}).get("match_confidence") or "",
+        "match_score": (match or {}).get("match_score"),
+        "matched_shop_name": (match or {}).get("shop_name") or "",
+        "tiktok_shop_url": (match or {}).get("shop_url") or "",
+        "voucher_detection_result": voucher_detection,
+        "voucher_status": voucher_status,
+        "final_url": shop_fetch.get("final_url") or profile_url,
+        "http_status": shop_fetch.get("http_status"),
+        "page_title": (shop_fetch.get("page_title") or profile.get("page_title") or "")[:200],
+        "html_loaded": bool(shop_fetch.get("html_loaded")),
+        "html_length": int(shop_fetch.get("html_length") or 0),
+        "visible_text_length": int(shop_fetch.get("visible_text_length") or 0),
+        "tiktok_blocked": bool(shop_fetch.get("tiktok_blocked")),
+        "login_required": bool(shop_fetch.get("login_required")),
+        "voucher_keywords_found": bool(detection.get("voucher_keywords_found")),
+        "matched_keywords": list(detection.get("matched_keywords") or [])[:12],
+        "dom_voucher_found": bool(detection.get("dom_voucher_found")),
+        "dom_matches": list(detection.get("dom_matches") or [])[:8],
+        "used_playwright": bool(shop_fetch.get("used_playwright")),
+        "used_http": bool(shop_fetch.get("used_http")),
+        "redirect_chain": list(shop_fetch.get("redirect_chain") or [])[:8],
+        "fetch_error": (shop_fetch.get("fetch_error") or search.get("error") or "")[:120] or None,
+        "summary": summary,
+    }
 
 
 def public_check_reason(fetch: dict[str, Any], detection: dict[str, Any], voucher_status: str) -> dict[str, Any]:
-    """Sanitized diagnostics for API/UI (no stack traces)."""
+    """Legacy single-URL check reason (kept for compatibility)."""
+    vis_len = int(fetch.get("visible_text_length") or 0)
+    parts = []
+    if fetch.get("used_playwright"):
+        parts.append("Playwright")
+    if fetch.get("used_http"):
+        parts.append("HTTP")
+    if fetch.get("html_loaded"):
+        parts.append(f"HTML {fetch.get('html_length', 0)} chars")
+    if detection.get("voucher_keywords_found"):
+        parts.append("Keywords found")
+    parts.append(voucher_status.replace("_", " "))
+
     return {
-        "final_url": fetch.get("final_url") or fetch.get("start_url") or "",
+        "final_url": fetch.get("final_url") or "",
         "http_status": fetch.get("http_status"),
         "page_title": (fetch.get("page_title") or "")[:200],
         "html_loaded": bool(fetch.get("html_loaded")),
         "html_length": int(fetch.get("html_length") or 0),
-        "visible_text_length": int(fetch.get("visible_text_length") or 0),
+        "visible_text_length": vis_len,
         "tiktok_blocked": bool(fetch.get("tiktok_blocked")),
         "login_required": bool(fetch.get("login_required")),
         "voucher_keywords_found": bool(detection.get("voucher_keywords_found")),
@@ -111,9 +144,5 @@ def public_check_reason(fetch: dict[str, Any], detection: dict[str, Any], vouche
         "used_http": bool(fetch.get("used_http")),
         "redirect_chain": list(fetch.get("redirect_chain") or [])[:8],
         "fetch_error": (fetch.get("fetch_error") or "")[:120] or None,
-        "summary": build_check_summary(
-            voucher_status=voucher_status,
-            fetch=fetch,
-            detection=detection,
-        ),
+        "summary": " | ".join(parts),
     }

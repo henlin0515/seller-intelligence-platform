@@ -124,6 +124,11 @@
   color: #a16207;
 }
 
+.cvt-status-shop_not_found {
+  background: rgba(99, 102, 241, 0.12);
+  color: #4338ca;
+}
+
 .cvt-voucher-text {
   max-width: 280px;
   color: var(--sip-text-secondary);
