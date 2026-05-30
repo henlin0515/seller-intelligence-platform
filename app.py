@@ -32,9 +32,15 @@ logging.basicConfig(
 logger = logging.getLogger("shopee_assistant")
 
 from seller.google_sheets.config import clear_settings_cache, log_startup_configuration
+from search import chromium_executable_available
 
 clear_settings_cache()
 log_startup_configuration()
+logger.info(
+    "Playwright Chromium available: %s (HEADLESS=%s)",
+    chromium_executable_available(),
+    os.getenv("HEADLESS", "(unset)"),
+)
 
 USER_FACING_ERROR = (
     "Something went wrong while researching. "

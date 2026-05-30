@@ -2,8 +2,10 @@
 Seller Education research via Playwright.
 
 Uses async_playwright only — do not import playwright.sync_api or sync_playwright.
+Falls back to HTTP crawler when Chromium is unavailable (e.g. Railway misbuild).
 """
 import asyncio
+import logging
 import os
 import re
 import time
@@ -19,13 +21,30 @@ from query_mode import resolve_search_plan
 
 load_dotenv()
 
+logger = logging.getLogger("search")
+
 EDU_HOME = "https://seller.shopee.ph/edu"
 EDU_HUB_SECTIONS = (
     "https://seller.shopee.ph/edu/articles",
     "https://seller.shopee.ph/edu/courses",
     "https://seller.shopee.ph/edu/webinars",
 )
-HEADLESS = os.getenv("HEADLESS", "0") == "1"
+def _is_railway_or_container() -> bool:
+    return bool(
+        os.getenv("RAILWAY_ENVIRONMENT")
+        or os.getenv("RAILWAY_SERVICE_ID")
+        or os.getenv("RAILWAY_PROJECT_ID")
+    )
+
+
+HEADLESS = os.getenv("HEADLESS", "0") == "1" or _is_railway_or_container()
+
+CHROMIUM_LAUNCH_ARGS = [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+]
 DEBUG = os.getenv("DEBUG", "0") == "1"
 DEFAULT_MAX_SOURCES = int(os.getenv("MAX_SOURCES", "5"))
 SEARCH_TIMEOUT_MS = int(os.getenv("SEARCH_TIMEOUT_MS", "10000"))
@@ -466,7 +485,10 @@ async def _search_edu_articles_async(
     search_deadline = time.monotonic() + (SEARCH_TIMEOUT_MS / 1000)
 
     playwright = await async_playwright().start()
-    browser = await playwright.chromium.launch(headless=HEADLESS)
+    browser = await playwright.chromium.launch(
+        headless=True if HEADLESS else False,
+        args=CHROMIUM_LAUNCH_ARGS,
+    )
     context = await browser.new_context(
         viewport={"width": 1280, "height": 900},
         locale="en-PH",
@@ -547,6 +569,19 @@ async def _search_edu_articles_async(
         await playwright.stop()
 
 
+def chromium_executable_available() -> bool:
+    """True when Playwright can resolve an on-disk Chromium binary."""
+    try:
+        from playwright.sync_api import sync_playwright
+
+        with sync_playwright() as p:
+            exe = p.chromium.executable_path
+            return bool(exe and os.path.isfile(exe))
+    except Exception as exc:
+        logger.warning("Playwright Chromium check failed: %s", exc)
+        return False
+
+
 def _run_search_in_isolated_loop(
     question: str,
     keywords: list[str],
@@ -559,6 +594,31 @@ def _run_search_in_isolated_loop(
     return asyncio.run(_search_edu_articles_async(question, keywords, plan))
 
 
+def _run_search_with_fallback(
+    question: str,
+    keywords: list[str],
+    plan: dict | None,
+) -> tuple[list[dict], bool]:
+    """Playwright first; HTTP fallback on missing browser or runtime errors."""
+    if chromium_executable_available():
+        try:
+            sources, strong = _run_search_in_isolated_loop(question, keywords, plan)
+            if sources:
+                logger.info("Playwright research returned %s sources", len(sources))
+                return sources, strong
+            logger.warning("Playwright returned no sources; trying HTTP fallback")
+        except Exception as exc:
+            logger.warning("Playwright research failed (%s); using HTTP fallback", exc)
+    else:
+        logger.warning(
+            "Playwright Chromium not available; using HTTP fallback (requests + BeautifulSoup)"
+        )
+
+    from edu_http_fallback import search_edu_articles_http
+
+    return search_edu_articles_http(question, keywords, plan)
+
+
 async def search_edu_articles(
     question: str,
     keywords: list[str],
@@ -566,5 +626,12 @@ async def search_edu_articles(
 ) -> tuple[list[dict], bool]:
     """
     Public async entry for FastAPI — awaits research in a dedicated thread + loop.
+    Never raises: falls back to HTTP crawler so /chat always returns.
     """
-    return await asyncio.to_thread(_run_search_in_isolated_loop, question, keywords, plan)
+    try:
+        return await asyncio.to_thread(
+            _run_search_with_fallback, question, keywords, plan
+        )
+    except Exception as exc:
+        logger.exception("All research backends failed: %s", exc)
+        return [], False
