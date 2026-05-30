@@ -31,6 +31,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger("shopee_assistant")
 
+from seller.google_sheets.config import clear_settings_cache, log_startup_configuration
+
+clear_settings_cache()
+log_startup_configuration()
+
 USER_FACING_ERROR = (
     "Something went wrong while researching. "
     "Please try again or check the backend logs."
@@ -77,6 +82,12 @@ async def index():
     if not index_file.is_file():
         raise HTTPException(status_code=404, detail="Frontend not found")
     return FileResponse(index_file)
+
+
+@app.on_event("startup")
+async def on_startup() -> None:
+    clear_settings_cache()
+    log_startup_configuration()
 
 
 @app.get("/health")

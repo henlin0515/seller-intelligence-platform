@@ -26,13 +26,11 @@ except ImportError:  # pragma: no cover - optional until deps installed
 
 
 def credentials_source_label(settings: GoogleSheetsSettings | None = None) -> str:
-    """Non-secret label for logs/UI (where credentials come from)."""
-    s = settings or get_settings()
-    if s.has_credentials_json:
-        return "inline_json_env"
-    if s.has_credentials_path:
-        return "file_path"
-    return "none"
+    """Non-secret label for logs/UI: local_path | env_json | none."""
+    del settings  # use live env via get_credentials_source()
+    from seller.google_sheets.config import get_credentials_source
+
+    return get_credentials_source()
 
 
 def _load_json_dict(settings: GoogleSheetsSettings) -> dict[str, Any]:
@@ -69,8 +67,10 @@ def build_credentials(settings: GoogleSheetsSettings | None = None):
             "google-auth is not installed. Run: pip install google-auth"
         )
 
+    from seller.google_sheets.config import is_credentials_usable
+
     s = settings or get_settings()
-    if not s.credentials_configured():
+    if not is_credentials_usable():
         raise GoogleSheetsNotConfiguredError(
             "Service Account credentials are not configured. "
             "See GOOGLE_SHEETS_SETUP.md."
@@ -95,8 +95,10 @@ def build_credentials(settings: GoogleSheetsSettings | None = None):
 
 def service_account_email(settings: GoogleSheetsSettings | None = None) -> str | None:
     """client_email from the key file — share the mirror sheet with this address."""
+    from seller.google_sheets.config import is_credentials_usable
+
     s = settings or get_settings()
-    if not s.credentials_configured():
+    if not is_credentials_usable():
         return None
     try:
         info = _load_json_dict(s)

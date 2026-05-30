@@ -10,7 +10,13 @@ from datetime import datetime, timezone
 from typing import Any
 
 from seller.google_sheets.client import get_sheets_client
-from seller.google_sheets.config import get_settings, is_configured
+from seller.google_sheets.config import (
+    get_credentials_source,
+    get_settings,
+    is_configured,
+    log_startup_configuration,
+    validate_for_connection,
+)
 from seller.google_sheets.merge import merge_tabs, should_skip_tab
 
 logger = logging.getLogger("seller.sheets_cache")
@@ -97,8 +103,16 @@ def refresh(*, force: bool = False) -> dict[str, Any]:
     Returns status dict after load completes.
     """
     if not _use_live_sheets():
+        settings = get_settings()
+        issues = validate_for_connection()
+        detail = "; ".join(issues) if issues else "unknown configuration problem"
+        log_startup_configuration()
         raise RuntimeError(
-            "Google Sheets is not configured. Set GOOGLE_SHEETS_ENABLED=true and credentials in .env"
+            "Google Sheets is not configured. "
+            f"GOOGLE_SHEETS_ENABLED={settings.enabled!r}, "
+            f"spreadsheet_id_set={settings.has_spreadsheet_id}, "
+            f"credentials_source={get_credentials_source()}. "
+            f"Details: {detail}"
         )
 
     with _lock:
