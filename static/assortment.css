@@ -107,6 +107,23 @@
   margin-top: 0.75rem;
 }
 
+.cai-shop-header {
+  margin: 1.5rem 0 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--sip-border);
+}
+
+.cai-shop-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.cai-shop-header p {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--sip-text-secondary);
+}
+
 .cai-metrics {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

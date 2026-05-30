@@ -7,8 +7,9 @@ from typing import Any
 
 from seller.assortment.catalog_fetch import fetch_tracker_row_catalogs
 from seller.assortment.db import get_session
-from seller.assortment.import_service import import_competitor_products
-from seller.assortment.matching import run_matching_for_all_competitors
+from seller.assortment.constants import PLATFORM_SHOPEE, PLATFORM_TIKTOK
+from seller.assortment.import_service import clear_shop_catalog, import_shop_platform_products
+from seller.assortment.matching import run_matching_for_shop
 from seller.assortment.models import TrackerFetchStatus
 from seller.assortment.service import competitor_data_available
 from seller.competitor_tracker.constants import COMPETITOR_TAB_NAME
@@ -217,30 +218,51 @@ def sync_tracker_catalog(*, run_matching: bool = True) -> dict[str, Any]:
                 }
 
             row_payload = _row_from_fetch(sheet_row, fetch_out)
-            products = fetch_out.get("products") or []
+            shopee_side = fetch_out.get("shopee") or {}
+            tiktok_side = fetch_out.get("tiktok") or {}
+            shopee_products = shopee_side.get("products") or []
+            tiktok_products = tiktok_side.get("products") or []
+            row_payload["catalog_status"] = (
+                "ok" if shopee_side.get("status") == "ok" or tiktok_side.get("status") == "ok" else "na"
+            )
 
-            if products:
-                try:
-                    imp = import_competitor_products(
-                        products,
-                        label="tracker-sync",
+            try:
+                clear_shop_catalog(session, seller_id)
+                session.commit()
+                if shopee_products:
+                    imp = import_shop_platform_products(
+                        shopee_products,
+                        platform=PLATFORM_SHOPEE,
                         competitor_shop_id=seller_id,
                         competitor_shop_name=seller_name,
-                        mark_as_new=True,
+                        label="tracker-sync",
                     )
                     imported_total += imp.get("imported", 0)
+                if tiktok_products:
+                    imp = import_shop_platform_products(
+                        tiktok_products,
+                        platform=PLATFORM_TIKTOK,
+                        competitor_shop_id=seller_id,
+                        competitor_shop_name=seller_name,
+                        label="tracker-sync",
+                    )
+                    imported_total += imp.get("imported", 0)
+                if shopee_products or tiktok_products:
+                    run_matching_for_shop(session, seller_id)
+                    session.commit()
                     ok_count += 1
-                except Exception as exc:
-                    logger.exception("Import failed for seller %s", seller_id)
-                    row_payload["catalog_status"] = "na"
-                    row_payload["import_error"] = str(exc)
+                else:
                     na_count += 1
-            else:
+            except Exception as exc:
+                logger.exception("Import/match failed for seller %s", seller_id)
+                row_payload["catalog_status"] = "na"
+                row_payload["import_error"] = str(exc)
                 na_count += 1
-                if not shopee:
-                    row_payload["shopee_reason"] = row_payload.get("shopee_reason") or "No Shopee link in Column C."
-                if not tiktok:
-                    row_payload["tiktok_reason"] = row_payload.get("tiktok_reason") or "No TikTok link in Column D."
+
+            if not shopee_products and not shopee:
+                row_payload["shopee_reason"] = row_payload.get("shopee_reason") or "No Shopee link in Column C."
+            if not tiktok_products and not tiktok:
+                row_payload["tiktok_reason"] = row_payload.get("tiktok_reason") or "No TikTok link in Column D."
 
             _upsert_fetch_status(
                 session,
@@ -269,13 +291,7 @@ def sync_tracker_catalog(*, run_matching: bool = True) -> dict[str, Any]:
     finally:
         session.close()
 
-    matching_stats = None
-    if run_matching and imported_total > 0:
-        try:
-            matching_stats = run_matching_for_all_competitors()
-        except Exception as exc:
-            logger.exception("Matching after tracker sync failed")
-            matching_stats = {"error": str(exc)}
+    matching_stats = {"per_shop": "done_inline"} if imported_total else None
 
     tab_has_no_rows = meta.get("error") is None and len(rows) == 0
     return {

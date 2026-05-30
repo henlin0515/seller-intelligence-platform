@@ -47,6 +47,25 @@
     return `<p class="cai-empty">${escapeHtml(message || "No competitor data available")}</p>`;
   }
 
+  function shopGroupHeader(g) {
+    return `<header class="cai-shop-header">
+      <h3>${escapeHtml(g.seller_name)} <small>(${escapeHtml(g.seller_id)})</small></h3>
+      <p>Shopee: ${linkCell(g.shopee_link)} · TikTok: ${linkCell(g.tiktok_link)}</p>
+    </header>`;
+  }
+
+  function renderGroupedTables(groups, rowHtml) {
+    if (!groups.length) return "";
+    return groups
+      .map(
+        (g) => `${shopGroupHeader(g)}
+      <table class="cai-table">
+        <tbody>${(g.items || []).map(rowHtml).join("")}</tbody>
+      </table>`
+      )
+      .join("");
+  }
+
   function updateSidebarTabHighlight(tab) {
     document.querySelectorAll(".nav-assortment").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.caiTab === tab);
@@ -168,7 +187,7 @@
       ["Need Review Products", m.need_review_products],
       ["Higher Priced Products", m.higher_priced_products],
       ["Lower Priced Products", m.lower_priced_products],
-      ["New Listings Today", m.new_listings_today],
+      ["Recent New Listings (30d, not on Shopee)", m.new_listings_recent ?? m.new_listings_today],
     ];
     let html = cards
       .map(
@@ -192,30 +211,19 @@
       el.innerHTML = emptyBlock(data.empty_message);
       return;
     }
-    const items = data.items || [];
-    if (!items.length) {
-      el.innerHTML = '<p class="cai-empty">No missing assortment rows.</p>';
+    const groups = data.groups || [];
+    if (!groups.length) {
+      el.innerHTML = '<p class="cai-empty">No TikTok products missing from Shopee.</p>';
       return;
     }
-    el.innerHTML = `
-      <table class="cai-table">
-        <thead><tr>
-          <th>Image</th><th>Product Name</th><th>Link</th><th>SKU</th><th>Confidence</th>
-        </tr></thead>
-        <tbody>
-        ${items
-          .map(
-            (r) => `<tr>
-            <td>${imgCell(r.product_image_url)}</td>
-            <td>${escapeHtml(r.product_name)}</td>
-            <td>${linkCell(r.product_link)}</td>
-            <td>${skuList(r.sku_variations)}</td>
-            <td>${escapeHtml(r.confidence_score)}%</td>
-          </tr>`
-          )
-          .join("")}
-        </tbody>
-      </table>`;
+    el.innerHTML = renderGroupedTables(groups, (r) => `<tr>
+      <td>${imgCell(r.product_image_url)}</td>
+      <td>${escapeHtml(r.product_name)}</td>
+      <td>${linkCell(r.product_link)}</td>
+      <td>${skuList(r.sku_variations)}</td>
+      <td>${escapeHtml(r.confidence_score)}%</td>
+      <td class="cai-reason">${escapeHtml(r.reason || "")}</td>
+    </tr>`);
   }
 
   async function loadReview() {
@@ -225,38 +233,44 @@
       el.innerHTML = emptyBlock(data.empty_message);
       return;
     }
-    const items = data.items || [];
-    if (!items.length) {
+    const groups = data.groups || [];
+    if (!groups.length) {
       el.innerHTML = '<p class="cai-empty">Nothing needs review.</p>';
       return;
     }
-    el.innerHTML = items
-      .map((r) => {
-        const our = r.our || {};
-        const comp = r.competitor || {};
-        return `
+    el.innerHTML = groups
+      .map((g) => {
+        const cards = (g.items || [])
+          .map((r) => {
+            const shopee = r.shopee || {};
+            const tiktok = r.tiktok || {};
+            return `
         <article class="cai-review-card">
           <p><strong>Similarity:</strong> ${escapeHtml(r.similarity_score)}%
             (img ${escapeHtml(r.image_similarity)} · title ${escapeHtml(r.title_similarity)} · sku ${escapeHtml(r.sku_similarity)})</p>
+          <p class="cai-reason">${escapeHtml(r.reason || "")}</p>
           <div class="cai-compare-grid">
             <div class="cai-compare-col">
-              <h4>Our product</h4>
-              ${imgCell(our.product_image_url)}
-              <p>${escapeHtml(our.product_name || "—")}</p>
-              <p>${linkCell(our.product_link)}</p>
-              <p>SKU: ${skuList(our.sku_variations)}</p>
+              <h4>Shopee product</h4>
+              ${imgCell(shopee.product_image_url)}
+              <p>${escapeHtml(shopee.product_name || "—")}</p>
+              <p>${linkCell(shopee.product_link)}</p>
+              <p>SKU: ${skuList(shopee.sku_variations)}</p>
             </div>
             <div class="cai-compare-col">
-              <h4>Competitor product</h4>
-              ${imgCell(comp.product_image_url)}
-              <p>${escapeHtml(comp.product_name)}</p>
-              <p>${linkCell(comp.product_link)}</p>
-              <p>SKU: ${skuList(comp.sku_variations)}</p>
+              <h4>TikTok product</h4>
+              ${imgCell(tiktok.product_image_url)}
+              <p>${escapeHtml(tiktok.product_name || "—")}</p>
+              <p>${linkCell(tiktok.product_link)}</p>
+              <p>SKU: ${skuList(tiktok.sku_variations)}</p>
             </div>
           </div>
-          <p><strong>SKU comparison:</strong> ours [${skuList(r.sku_comparison?.our)}] vs competitor [${skuList(r.sku_comparison?.competitor)}]</p>
+          <p><strong>SKU comparison:</strong> Shopee [${skuList(r.sku_comparison?.shopee)}] vs TikTok [${skuList(r.sku_comparison?.tiktok)}]</p>
           <button type="button" class="btn btn-primary btn-sm" data-confirm-match="${r.match_id}">Confirm match</button>
         </article>`;
+          })
+          .join("");
+        return `${shopGroupHeader(g)}${cards}`;
       })
       .join("");
     el.querySelectorAll("[data-confirm-match]").forEach((btn) => {
@@ -277,13 +291,14 @@
     }
     const items = data.items || [];
     if (!items.length) {
-      el.innerHTML = '<p class="cai-empty">No confirmed matches for price analysis.</p>';
+      el.innerHTML = '<p class="cai-empty">No shop pairs for price gap analysis.</p>';
       return;
     }
     el.innerHTML = `
       <table class="cai-table">
         <thead><tr>
-          <th>Product</th><th>Our Price</th><th>Competitor Price</th><th>Gap %</th>
+          <th>Shop</th><th>Shopee Link</th><th>TikTok Link</th>
+          <th>Shopee Avg (top)</th><th>TikTok Avg (top 10)</th><th>Gap %</th><th>Status</th><th>Reason</th>
         </tr></thead>
         <tbody>
         ${items
@@ -293,12 +308,18 @@
                 ? "cai-gap-green"
                 : r.price_gap_band === "yellow"
                   ? "cai-gap-yellow"
-                  : "cai-gap-red";
+                  : r.price_gap_band === "red"
+                    ? "cai-gap-red"
+                    : "";
             return `<tr>
-              <td>${escapeHtml(r.product_name)}</td>
-              <td>${escapeHtml(r.our_price ?? "—")}</td>
-              <td>${escapeHtml(r.competitor_price ?? "—")}</td>
-              <td class="${cls}">${escapeHtml(r.price_gap_pct ?? "—")}%</td>
+              <td>${escapeHtml(r.seller_name)}</td>
+              <td>${linkCell(r.shopee_link)}</td>
+              <td>${linkCell(r.tiktok_link)}</td>
+              <td>${r.shopee_avg_price != null ? escapeHtml(r.shopee_avg_price) : "NA"}</td>
+              <td>${r.tiktok_top10_avg_price != null ? escapeHtml(r.tiktok_top10_avg_price) : "NA"}</td>
+              <td class="${cls}">${r.price_gap_pct != null ? escapeHtml(r.price_gap_pct) + "%" : "NA"}</td>
+              <td>${escapeHtml(r.price_gap_band || r.status || "—")}</td>
+              <td class="cai-reason">${escapeHtml(r.reason || "—")}</td>
             </tr>`;
           })
           .join("")}
@@ -313,30 +334,19 @@
       el.innerHTML = emptyBlock(data.empty_message);
       return;
     }
-    const items = data.items || [];
-    if (!items.length) {
-      el.innerHTML = '<p class="cai-empty">No new listing alerts.</p>';
+    const groups = data.groups || [];
+    if (!groups.length) {
+      el.innerHTML = '<p class="cai-empty">No recent TikTok listings missing from Shopee (30 days).</p>';
       return;
     }
-    el.innerHTML = `
-      <table class="cai-table">
-        <thead><tr>
-          <th>Image</th><th>Product</th><th>Link</th><th>First detected</th><th></th>
-        </tr></thead>
-        <tbody>
-        ${items
-          .map(
-            (r) => `<tr>
-            <td>${imgCell(r.product_image_url)}</td>
-            <td>${escapeHtml(r.product_name)}</td>
-            <td>${linkCell(r.product_link)}</td>
-            <td>${escapeHtml(r.first_detected_at || "—")}</td>
-            <td><button type="button" class="btn btn-ghost btn-sm" data-dismiss-new="${r.competitor_product_id}">Dismiss</button></td>
-          </tr>`
-          )
-          .join("")}
-        </tbody>
-      </table>`;
+    el.innerHTML = renderGroupedTables(groups, (r) => `<tr>
+      <td>${imgCell(r.product_image_url)}</td>
+      <td>${escapeHtml(r.product_name)}</td>
+      <td>${linkCell(r.product_link)}</td>
+      <td>${escapeHtml(r.listed_at || r.first_detected_at || "—")}</td>
+      <td class="cai-reason">${escapeHtml(r.reason || "")}</td>
+      <td><button type="button" class="btn btn-ghost btn-sm" data-dismiss-new="${r.competitor_product_id}">Dismiss</button></td>
+    </tr>`);
     el.querySelectorAll("[data-dismiss-new]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         await api(`/api/assortment/new-listings/${btn.dataset.dismissNew}/dismiss`, { method: "POST" });

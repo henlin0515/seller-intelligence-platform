@@ -15,6 +15,7 @@ import requests
 from requests.exceptions import RequestException
 
 from seller.competitor_tracker.fetcher import fetch_tiktok_page
+from seller.assortment.constants import TOP_PRODUCTS_FOR_PRICE_GAP
 from seller.competitor_tracker.profile import extract_shop_links_from_html, fetch_profile
 from seller.competitor_tracker.utils import deep_find_keys, parse_json_blobs_from_html, safe_http_url
 
@@ -37,6 +38,13 @@ _PRICE_KEYS = ("price", "sale_price", "salePrice", "min_price", "minPrice", "cur
 _IMAGE_KEYS = ("image", "image_url", "imageUrl", "cover", "cover_url", "thumb_url", "thumbnail")
 _LINK_KEYS = ("product_link", "productLink", "detail_url", "detailUrl", "url", "link", "pdp_url")
 _SKU_KEYS = ("sku_variations", "sku", "variants", "sku_list")
+
+
+def _top_visible_products(products: list[dict[str, Any]], limit: int = TOP_PRODUCTS_FOR_PRICE_GAP) -> list[dict[str, Any]]:
+    """Keep top N visible products (priced first) for shop-level averages."""
+    with_price = [p for p in products if p.get("price") is not None]
+    pool = with_price if len(with_price) >= 3 else products
+    return pool[:limit]
 
 
 def _side_result(
@@ -260,8 +268,12 @@ def fetch_shopee_catalog(shopee_link: str) -> dict[str, Any]:
             shop_link=link,
         )
     if products:
-        return _side_result(status="ok", products=products, shop_link=used)
-    return _side_result(status="na", reason=reason or "Unable to access competitor store.", shop_link=used)
+        return _side_result(status="ok", products=_top_visible_products(products), shop_link=used)
+    return _side_result(
+        status="na",
+        reason=reason or "Shopee page loaded but no products found in page data.",
+        shop_link=used,
+    )
 
 
 def fetch_tiktok_catalog(tiktok_link: str) -> dict[str, Any]:
@@ -286,11 +298,15 @@ def fetch_tiktok_catalog(tiktok_link: str) -> dict[str, Any]:
             used = shop_url
         last_link = used
         if products:
-            return _side_result(status="ok", products=products, shop_link=used)
+            return _side_result(status="ok", products=_top_visible_products(products), shop_link=used)
         if reason:
             last_reason = reason
 
-    return _side_result(status="na", reason=last_reason, shop_link=last_link)
+    return _side_result(
+        status="na",
+        reason=last_reason or "Unable to access TikTok profile / no products found.",
+        shop_link=last_link,
+    )
 
 
 def _product_name_set(products: list[dict[str, Any]]) -> set[str]:

@@ -55,12 +55,15 @@ class CompetitorProduct(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     import_batch_id: Mapped[int | None] = mapped_column(ForeignKey("assortment_import_batches.id"), nullable=True)
-    competitor_shop_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    competitor_shop_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    competitor_shop_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    platform: Mapped[str] = mapped_column(String(16), default="tiktok", index=True)  # shopee | tiktok
     product_name: Mapped[str] = mapped_column(String(512))
     product_link: Mapped[str | None] = mapped_column(Text, nullable=True)
     product_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     sku_variations: Mapped[str | None] = mapped_column(Text, nullable=True)
     price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    listed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     first_detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     is_new_listing: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -93,15 +96,25 @@ class TrackerFetchStatus(Base):
 
 
 class ProductMatch(Base):
-    """Best-match row per competitor product (recomputed after import)."""
+    """Shopee ↔ TikTok match within one COMPETITOR_TRACKER shop pair."""
 
     __tablename__ = "assortment_product_matches"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    competitor_shop_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     our_product_id: Mapped[int | None] = mapped_column(ForeignKey("assortment_our_products.id"), nullable=True)
-    competitor_product_id: Mapped[int] = mapped_column(
+    shopee_product_id: Mapped[int | None] = mapped_column(
         ForeignKey("assortment_competitor_products.id"),
-        nullable=False,
+        nullable=True,
+    )
+    tiktok_product_id: Mapped[int | None] = mapped_column(
+        ForeignKey("assortment_competitor_products.id"),
+        nullable=True,
+        index=True,
+    )
+    competitor_product_id: Mapped[int | None] = mapped_column(
+        ForeignKey("assortment_competitor_products.id"),
+        nullable=True,
         index=True,
     )
     image_similarity: Mapped[float] = mapped_column(Float, default=0.0)
@@ -114,11 +127,17 @@ class ProductMatch(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
 
+    shopee_product: Mapped[CompetitorProduct | None] = relationship(
+        foreign_keys=[shopee_product_id],
+    )
+    tiktok_product: Mapped[CompetitorProduct | None] = relationship(
+        foreign_keys=[tiktok_product_id],
+    )
     our_product: Mapped[OurProduct | None] = relationship(
         back_populates="matches",
         foreign_keys=[our_product_id],
     )
-    competitor_product: Mapped[CompetitorProduct] = relationship(
+    competitor_product: Mapped[CompetitorProduct | None] = relationship(
         back_populates="matches",
         foreign_keys=[competitor_product_id],
     )
