@@ -36,7 +36,7 @@ SECTION_METRIC_ORDER: dict[str, tuple[str, ...]] = {
         "lead",
         "bd_category",
     ),
-    "commercial": ("adgmv", "ado", "uv"),
+    "commercial": ("adgmv", "ado", "uv", "item_order"),
     "paid_ads": (
         "ads_spend",
         "ads_gmv",
@@ -75,6 +75,7 @@ BUSINESS_LABELS: dict[tuple[str, str], str] = {
     ("commercial", "adgmv"): "ADGMV",
     ("commercial", "ado"): "ADO",
     ("commercial", "uv"): "UV",
+    ("commercial", "item_order"): "Orders",
     ("paid_ads", "ads_spend"): "Ads Spend",
     ("paid_ads", "ads_gmv"): "Ads GMV",
     ("paid_ads", "ads_adopted"): "Ads Adopted",

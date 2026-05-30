@@ -1,5 +1,5 @@
 /**
- * Seller Performance Dashboard — fixed executive layout for all sellers.
+ * Seller Performance Dashboard — data-first executive layout.
  */
 (function () {
   const shopSearchInput = document.getElementById("shopSearchInput");
@@ -7,8 +7,10 @@
   const shopSearchResults = document.getElementById("shopSearchResults");
   const dashboardContent = document.getElementById("dashboardContent");
   const dashboardEmpty = document.getElementById("dashboardEmpty");
-  const sellerSummaryCard = document.getElementById("sellerSummaryCard");
+  const dashHealthHero = document.getElementById("dashHealthHero");
   const shopKpiBar = document.getElementById("shopKpiBar");
+  const dashSellerMeta = document.getElementById("dashSellerMeta");
+  const dashPaidAdsTerminal = document.getElementById("dashPaidAdsTerminal");
   const dashboardSections = document.getElementById("dashboardSections");
   const insightsSection = document.getElementById("insightsSection");
   const recommendationsSection = document.getElementById("recommendationsSection");
@@ -20,15 +22,27 @@
   const dashTopHeader = document.querySelector(".dash-top-header");
   const dashSearchSticky = document.getElementById("dashSearchSticky");
 
-  const SECTION_RENDER_ORDER = [
-    "shop_info",
-    "paid_ads",
-    "ams",
-    "mpa",
-    "fbs",
-    "livestream",
-    "video",
-    "mdv",
+  const SECTION_RENDER_ORDER = ["ams", "mpa", "fbs", "livestream", "video", "mdv"];
+
+  const PRIMARY_KPIS = [
+    { section: "commercial", key: "adgmv", label: "ADGMV" },
+    { section: "commercial", key: "ado", label: "ADO" },
+    { section: "commercial", key: "uv", label: "UV" },
+    { section: "paid_ads", key: "roas", label: "ROAS" },
+    { section: "commercial", key: "item_order", label: "Orders" },
+    { section: "paid_ads", key: "take_rate", label: "Take Rate" },
+  ];
+
+  const PAID_ADS_HERO = [
+    { key: "ads_spend", label: "Ad Spend" },
+    { key: "ads_gmv", label: "GMV" },
+    { key: "roas", label: "ROAS" },
+    { key: "take_rate", label: "Take Rate" },
+  ];
+
+  const PAID_ADS_SUPPORT = [
+    { key: "adg_pct", label: "Adg%" },
+    { key: "ads_adopted", label: "Ads Adopted" },
   ];
 
   let selectedShopId = null;
@@ -60,6 +74,13 @@
     return "growth-flat";
   }
 
+  function growthArrow(growth) {
+    if (growth == null || Number.isNaN(growth)) return "";
+    if (growth > 0.5) return "↑";
+    if (growth < -0.5) return "↓";
+    return "→";
+  }
+
   function badgeClass(status) {
     return `badge badge-${status || "neutral"}`;
   }
@@ -67,6 +88,15 @@
   function displayVal(v) {
     if (v == null || v === "" || v === "N/A") return "N/A";
     return String(v);
+  }
+
+  function sectionByKey(sections, key) {
+    return (sections || []).find((s) => s.key === key);
+  }
+
+  function metricByKey(sections, sectionKey, metricKey) {
+    const sec = sectionByKey(sections, sectionKey);
+    return (sec?.metrics || []).find((m) => m.key === metricKey);
   }
 
   function renderSearchResults(results) {
@@ -228,31 +258,44 @@
   function healthClass(label) {
     const l = String(label || "").toLowerCase();
     if (l.includes("healthy") || l.includes("good")) return "health-good";
-    if (l.includes("risk") || l.includes("critical")) return "health-risk";
+    if (l.includes("risk") || l.includes("critical") || l.includes("attention")) return "health-risk";
     return "health-neutral";
   }
 
-  function renderSellerSummary(shop, health) {
+  function primaryTrend(sections) {
+    const adgmv = metricByKey(sections, "commercial", "adgmv");
+    const g = adgmv?.growth ?? adgmv?.growthPct;
+    const disp = adgmv?.growth_display;
+    if (disp && disp !== "N/A" && disp !== "—") {
+      return {
+        text: `${disp} vs ${i18n("intel.m1", "M-1")}`,
+        cls: growthClass(g),
+      };
+    }
+    return { text: i18n("intel.trendUnavailable", "Trend unavailable"), cls: "growth-flat" };
+  }
+
+  function renderHealthHero(shop, health, sections) {
     const score = health?.score ?? "—";
     const label = health?.label || i18n("intel.health", "Health");
-    sellerSummaryCard.innerHTML = `
-      <div class="seller-hero-inner">
-        <div class="seller-hero-main">
-          <p class="seller-hero-eyebrow">${escapeHtml(i18n("intel.sellerProfile", "Seller profile"))}</p>
-          <h2 class="seller-hero-name">${escapeHtml(shop.shop_name || "—")}</h2>
-          <div class="seller-hero-meta">
-            <div class="hero-meta-pill"><span>${escapeHtml(i18n("intel.shopId", "Shop ID"))}</span><strong>${escapeHtml(shop.shop_id || "N/A")}</strong></div>
-            <div class="hero-meta-pill"><span>${escapeHtml(i18n("intel.tier", "Tier"))}</span><strong>${escapeHtml(shop.tier || "N/A")}</strong></div>
-            <div class="hero-meta-pill"><span>${escapeHtml(i18n("intel.category", "Category"))}</span><strong>${escapeHtml(shop.category || "N/A")}</strong></div>
-            <div class="hero-meta-pill"><span>${escapeHtml(i18n("intel.lead", "Lead"))}</span><strong>${escapeHtml(shop.lead || "N/A")}</strong></div>
-            <div class="hero-meta-pill"><span>BU</span><strong>${escapeHtml(shop.bu || "N/A")}</strong></div>
-          </div>
+    const trend = primaryTrend(sections);
+    const shopLine = shop?.shop_name
+      ? `<p class="dash-health-shop">${escapeHtml(shop.shop_name)} <span>${escapeHtml(shop.shop_id || "")}</span></p>`
+      : "";
+
+    dashHealthHero.innerHTML = `
+      <div class="dash-health-hero-inner ${healthClass(label)}">
+        <div class="dash-health-copy">
+          <p class="dash-health-eyebrow">${escapeHtml(i18n("intel.healthScore", "Health Score"))}</p>
+          ${shopLine}
         </div>
-        <div class="seller-health-ring ${healthClass(label)}">
-          <div class="health-score count-up" data-value="${escapeHtml(String(score))}">${escapeHtml(String(score))}</div>
-          <div class="health-label">${escapeHtml(label)}</div>
+        <div class="dash-health-score-block">
+          <div class="dash-health-value count-up" data-value="${escapeHtml(String(score))}">${escapeHtml(String(score))}</div>
+          <div class="dash-health-status">${escapeHtml(label)}</div>
+          <div class="dash-health-trend ${trend.cls}">${escapeHtml(trend.text)}</div>
         </div>
       </div>`;
+
     if (window.ShpPlatform) {
       window.ShpPlatform.setSellerContext?.({
         shop_id: shop.shop_id,
@@ -263,47 +306,115 @@
     }
   }
 
-  function renderCommercialKpis(section) {
-    if (!section || !shopKpiBar) return;
-    shopKpiBar.innerHTML = (section.metrics || [])
-      .map((m) => {
-        const g = m.growth ?? m.growthPct;
-        const health = m.healthStatus || "neutral";
-        const isNa = displayVal(m.mtd_display) === "N/A";
-        return `
-        <article class="kpi-tile${isNa ? " kpi-tile-na" : ""}">
-          <div class="kpi-tile-head">
-            <span class="kpi-tile-name">${escapeHtml(localizedMetricLabel("commercial", m))}</span>
-            <span class="${badgeClass(health)}">${escapeHtml(health)}</span>
-          </div>
-          <div class="kpi-tile-mtd count-up">${escapeHtml(displayVal(m.mtd_display))}</div>
-          <div class="kpi-tile-row">
-            <span>${escapeHtml(i18n("intel.m1", "M-1"))}</span>
-            <span>${escapeHtml(displayVal(m.m1_display))}</span>
-          </div>
-          <div class="kpi-tile-growth ${growthClass(g)}">${escapeHtml(displayVal(m.growth_display))}</div>
-        </article>`;
-      })
-      .join("");
+  function renderKpiTile(m, label) {
+    const g = m?.growth ?? m?.growthPct;
+    const isNa = !m || displayVal(m.mtd_display) === "N/A";
+    return `
+      <article class="dash-kpi-card${isNa ? " dash-kpi-card-na" : ""}">
+        <span class="dash-kpi-label">${escapeHtml(label)}</span>
+        <div class="dash-kpi-value count-up">${escapeHtml(displayVal(m?.mtd_display))}</div>
+        <div class="dash-kpi-growth ${growthClass(g)}">
+          <span class="dash-kpi-arrow" aria-hidden="true">${growthArrow(g)}</span>
+          ${escapeHtml(displayVal(m?.growth_display))}
+        </div>
+        <span class="dash-kpi-period">${escapeHtml(i18n("intel.mtd", "MTD"))}</span>
+      </article>`;
   }
 
-  function renderInsights(insights) {
+  function renderPrimaryKpis(sections) {
+    if (!shopKpiBar) return;
+    shopKpiBar.innerHTML = PRIMARY_KPIS.map(({ section, key, label }) => {
+      const m = metricByKey(sections, section, key);
+      return renderKpiTile(m, label);
+    }).join("");
+  }
+
+  function renderSellerMeta(shop, sections) {
+    if (!dashSellerMeta) return;
+    const info = sectionByKey(sections, "shop_info");
+    const fromInfo = (key) => {
+      const m = (info?.metrics || []).find((x) => x.key === key);
+      return displayVal(m?.mtd_display);
+    };
+
+    const cells = [
+      [i18n("intel.shopId", "Shop ID"), shop?.shop_id || fromInfo("shop_id")],
+      [i18n("intel.sellerName", "Seller Name"), shop?.shop_name || fromInfo("shop_name")],
+      ["BU", shop?.bu || fromInfo("bu")],
+      [i18n("intel.lead", "Lead"), shop?.lead || fromInfo("lead")],
+      [i18n("intel.bdOwner", "BD Owner"), fromInfo("bd_category")],
+    ];
+
+    dashSellerMeta.innerHTML = `
+      <h2 class="dash-block-title">${escapeHtml(i18n("intel.sellerInfo", "Seller Information"))}</h2>
+      <div class="dash-meta-row">
+        ${cells
+          .map(
+            ([lbl, val]) => `
+          <div class="dash-meta-cell">
+            <span class="dash-meta-label">${escapeHtml(lbl)}</span>
+            <span class="dash-meta-value">${escapeHtml(val)}</span>
+          </div>`
+          )
+          .join("")}
+      </div>`;
+  }
+
+  function renderPaidAdsTerminal(sections) {
+    if (!dashPaidAdsTerminal) return;
+    const paid = sectionByKey(sections, "paid_ads");
+    const metrics = paid?.metrics || [];
+
+    const heroHtml = PAID_ADS_HERO.map(({ key, label }) => {
+      const m = metrics.find((x) => x.key === key);
+      const g = m?.growth ?? m?.growthPct;
+      return `
+        <article class="dash-terminal-hero${displayVal(m?.mtd_display) === "N/A" ? " is-na" : ""}">
+          <span class="dash-terminal-label">${escapeHtml(label)}</span>
+          <div class="dash-terminal-value">${escapeHtml(displayVal(m?.mtd_display))}</div>
+          <div class="dash-terminal-growth ${growthClass(g)}">${escapeHtml(displayVal(m?.growth_display))}</div>
+          <span class="dash-terminal-period">${escapeHtml(i18n("intel.mtd", "MTD"))}</span>
+        </article>`;
+    }).join("");
+
+    const supportHtml = PAID_ADS_SUPPORT.map(({ key, label }) => {
+      const m = metrics.find((x) => x.key === key);
+      return `
+        <div class="dash-terminal-support">
+          <span class="dash-terminal-support-label">${escapeHtml(label)}</span>
+          <span class="dash-terminal-support-value">${escapeHtml(displayVal(m?.mtd_display))}</span>
+        </div>`;
+    }).join("");
+
+    dashPaidAdsTerminal.innerHTML = `
+      <h2 class="dash-block-title">${escapeHtml(i18n("intel.paidAds", "Paid Ads"))}</h2>
+      <div class="dash-terminal-hero-row">${heroHtml}</div>
+      <div class="dash-terminal-support-row">${supportHtml}</div>`;
+  }
+
+  function renderInsights(insights, recommendations) {
     if (!insights) {
       insightsSection.innerHTML = "";
       return;
     }
+
     const block = (title, cls, items) => `
-      <article class="insight-card ${cls}">
+      <article class="dash-insight-card ${cls}">
         <h3>${escapeHtml(title)}</h3>
-        <ul>${(items || []).map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>
+        <ul>${(items || []).length ? (items || []).map((i) => `<li>${escapeHtml(i)}</li>`).join("") : `<li class="dash-insight-empty">${escapeHtml(i18n("intel.none", "None identified"))}</li>`}</ul>
       </article>`;
 
+    const actionItems = (recommendations || []).slice(0, 4).map((r) => {
+      const action = r.recommended_action || r.issue_found || "";
+      return action ? `${r.priority ? `[${r.priority}] ` : ""}${action}` : "";
+    }).filter(Boolean);
+
     insightsSection.innerHTML = `
-      <h2 class="dash-block-title">${escapeHtml(i18n("intel.insightsTitle", "Strengths / Opportunities / Risks"))}</h2>
-      <div class="insights-grid">
-        ${block(i18n("intel.strengths", "Strengths"), "strengths", insights.strengths)}
-        ${block(i18n("intel.opportunities", "Opportunities"), "opportunities", insights.opportunities)}
-        ${block(i18n("intel.risks", "Risks"), "risks", insights.risks)}
+      <h2 class="dash-block-title">${escapeHtml(i18n("intel.aiInsights", "AI Insights"))}</h2>
+      <div class="dash-insights-grid">
+        ${block(i18n("intel.opportunities", "Opportunity"), "opportunity", insights.opportunities)}
+        ${block(i18n("intel.risks", "Risk"), "risk", insights.risks)}
+        ${block(i18n("intel.actionItems", "Action Items"), "actions", actionItems.length ? actionItems : insights.strengths)}
       </div>`;
   }
 
@@ -342,29 +453,6 @@
         </tr>`;
       })
       .join("");
-  }
-
-  function renderShopInfoSection(section) {
-    const items = (section.metrics || [])
-      .map(
-        (m) => `
-        <div class="shop-info-item${displayVal(m.mtd_display) === "N/A" ? " shop-info-na" : ""}">
-          <span>${escapeHtml(localizedMetricLabel("shop_info", m))}</span>
-          <strong>${escapeHtml(displayVal(m.mtd_display))}</strong>
-        </div>`
-      )
-      .join("");
-
-    return `
-      <section class="dash-section dash-section-collapsible is-open" id="section-${escapeHtml(section.key)}">
-        <button type="button" class="dash-section-toggle" aria-expanded="true">
-          <h2>${escapeHtml(localizedSectionTitle(section))}</h2>
-          <span class="toggle-chevron" aria-hidden="true"></span>
-        </button>
-        <div class="dash-section-body">
-          <div class="shop-info-grid">${items}</div>
-        </div>
-      </section>`;
   }
 
   function renderMetricSection(section) {
@@ -411,13 +499,9 @@
 
   function renderSections(sections) {
     const byKey = Object.fromEntries((sections || []).map((s) => [s.key, s]));
-    const commercial = byKey.commercial;
-    renderCommercialKpis(commercial);
-
     const html = SECTION_RENDER_ORDER.map((key) => {
       const section = byKey[key];
       if (!section) return "";
-      if (key === "shop_info") return renderShopInfoSection(section);
       return renderMetricSection(section);
     }).join("");
 
@@ -430,26 +514,16 @@
     });
   }
 
-  function renderRecommendations(recs) {
-    const list = (recs || []).slice(0, 4);
-    if (!list.length) {
-      recommendationsSection.innerHTML = "";
-      return;
-    }
-    recommendationsSection.innerHTML = `
-      <h2 class="dash-block-title">${escapeHtml(i18n("intel.aiRec", "AI Recommendation"))}</h2>
-      <div class="rec-grid">${list
-        .map((r) => {
-          const pri = (r.priority || "low").toLowerCase();
-          return `
-        <article class="rec-card priority-${pri}">
-          <div class="rec-priority">${escapeHtml(r.priority)} ${escapeHtml(i18n("intel.priority", "priority"))}</div>
-          <h4>${escapeHtml(r.issue_found)}</h4>
-          <p><strong>${escapeHtml(i18n("intel.action", "Action"))}</strong><br />${escapeHtml(r.recommended_action)}</p>
-          <p>${escapeHtml(r.supporting_data)}</p>
-        </article>`;
-        })
-        .join("")}</div>`;
+  function clearDashboardPanels() {
+    const loading = `<p class="dash-loading">${escapeHtml(i18n("intel.loadingSeller", "Loading seller…"))}</p>`;
+    if (dashHealthHero) dashHealthHero.innerHTML = loading;
+    if (shopKpiBar) shopKpiBar.innerHTML = "";
+    if (dashSellerMeta) dashSellerMeta.innerHTML = "";
+    if (dashPaidAdsTerminal) dashPaidAdsTerminal.innerHTML = "";
+    insightsSection.innerHTML = "";
+    dashboardSections.innerHTML = "";
+    if (recommendationsSection) recommendationsSection.innerHTML = "";
+    document.getElementById("dashboardCharts").innerHTML = "";
   }
 
   async function loadShop(shopId) {
@@ -457,37 +531,35 @@
     dashboardEmpty.classList.add("hidden");
     dashboardContent.classList.remove("hidden");
     shopSearchResults.classList.add("hidden");
-
-    sellerSummaryCard.innerHTML = `<p class="dash-loading">${escapeHtml(
-      i18n("intel.loadingSeller", "Loading seller…")
-    )}</p>`;
-    shopKpiBar.innerHTML = "";
-    insightsSection.innerHTML = "";
-    dashboardSections.innerHTML = "";
-    recommendationsSection.innerHTML = "";
-    document.getElementById("dashboardCharts").innerHTML = "";
+    clearDashboardPanels();
 
     try {
       const res = await fetch(`/api/seller/${encodeURIComponent(shopId)}`);
       const data = await res.json();
       if (!res.ok) throw new Error("not found");
 
-      renderSellerSummary(data.shop, data.health);
-      renderSections(data.sections || []);
-      renderInsights(data.insights);
-      renderRecommendations(data.recommendations);
+      const sections = data.sections || [];
+      renderHealthHero(data.shop, data.health, sections);
+      renderPrimaryKpis(sections);
+      renderInsights(data.insights, data.recommendations);
+      renderSellerMeta(data.shop, sections);
+      renderPaidAdsTerminal(sections);
+      renderSections(sections);
 
       if (window.renderDashboardCharts) {
         window.renderDashboardCharts(data.charts);
       }
     } catch {
-      sellerSummaryCard.innerHTML = `<p class="dash-loading">${escapeHtml(
-        i18n("intel.loadFailed", "Could not load shop. Refresh sheet data and try again.")
-      )}</p>`;
-      shopKpiBar.innerHTML = "";
+      if (dashHealthHero) {
+        dashHealthHero.innerHTML = `<p class="dash-loading">${escapeHtml(
+          i18n("intel.loadFailed", "Could not load shop. Refresh sheet data and try again.")
+        )}</p>`;
+      }
+      if (shopKpiBar) shopKpiBar.innerHTML = "";
+      if (dashSellerMeta) dashSellerMeta.innerHTML = "";
+      if (dashPaidAdsTerminal) dashPaidAdsTerminal.innerHTML = "";
       insightsSection.innerHTML = "";
       dashboardSections.innerHTML = "";
-      recommendationsSection.innerHTML = "";
       document.getElementById("dashboardCharts").innerHTML = "";
     }
   }

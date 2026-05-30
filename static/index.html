@@ -238,7 +238,7 @@
           </header>
 
           <div class="dashboard-scroll">
-            <section class="dash-search-sticky glass-bar" id="dashSearchSticky">
+            <section class="dash-search-sticky" id="dashSearchSticky">
               <div class="dash-search-inner">
                 <label for="shopSearchInput" class="dash-search-label" data-i18n="intel.searchLabel">Search seller</label>
                 <div class="dash-search-row">
@@ -262,17 +262,14 @@
             </div>
 
             <div id="dashboardContent" class="dashboard-content hidden">
-              <section id="sellerSummaryCard" class="seller-hero-card"></section>
-              <section id="commercialOverview" class="dash-commercial-block">
-                <div class="dash-section-head dash-section-head-standalone">
-                  <h2 data-i18n="intel.commercial">Commercial Overview</h2>
-                </div>
-                <div id="shopKpiBar" class="kpi-grid kpi-grid-commercial"></div>
-              </section>
-              <section id="insightsSection" class="insights-section"></section>
-              <div id="dashboardCharts" class="charts-grid"></div>
+              <section id="dashHealthHero" class="dash-health-hero"></section>
+              <section id="shopKpiBar" class="dash-kpi-row" aria-label="Key performance indicators"></section>
+              <section id="insightsSection" class="dash-insights-block"></section>
+              <section id="dashSellerMeta" class="dash-seller-meta"></section>
+              <section id="dashPaidAdsTerminal" class="dash-paid-terminal"></section>
+              <div id="dashboardCharts" class="charts-grid dash-charts-secondary"></div>
               <div id="dashboardSections" class="dash-sections"></div>
-              <section id="recommendationsSection" class="rec-section"></section>
+              <section id="recommendationsSection" class="rec-section rec-section-compact hidden" aria-hidden="true"></section>
             </div>
           </div>
         </div>

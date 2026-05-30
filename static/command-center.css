@@ -843,9 +843,14 @@ body.cc-mode .dash-app {
   background: transparent;
 }
 
-body.cc-mode .dash-top-header {
-  background: var(--cc-glass);
-  border-color: var(--cc-border);
+/* Seller Intelligence: data-first layout uses dashboard.css solids — no glass */
+body.cc-mode .dash-top-header,
+body.cc-mode .dash-search-sticky,
+body.cc-mode .dash-health-hero-inner,
+body.cc-mode .dash-kpi-card,
+body.cc-mode .dash-paid-terminal,
+body.cc-mode .dash-insight-card {
+  backdrop-filter: none;
 }
 
 body.cc-mode .settings-panel,
