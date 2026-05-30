@@ -1,0 +1,764 @@
+/**
+ * Seller Intelligence Platform — UI i18n (en, zh-TW, zh-CN, fil).
+ * Metric acronyms (ADGMV, ADO, ROAS, MDV, AMS, MPA, FBS) stay unchanged in API data.
+ */
+(function () {
+  const STORAGE_KEY = "sip_locale_v1";
+  const DEFAULT_LOCALE = "en";
+  const SUPPORTED = ["en", "zh-TW", "zh-CN", "fil"];
+
+  const METRIC_ACRONYMS = new Set([
+    "ADGMV",
+    "ADO",
+    "UV",
+    "ROAS",
+    "MDV",
+    "AMS",
+    "MPA",
+    "FBS",
+    "ADG%",
+    "ADG",
+    "GMV",
+    "BU",
+  ]);
+
+  const MESSAGES = {
+    en: {
+      "lang.label": "Language",
+      "lang.en": "English",
+      "lang.zh-TW": "繁體中文",
+      "lang.zh-CN": "简体中文",
+      "lang.fil": "Filipino",
+      "brand.name": "Seller Intelligence",
+      "brand.tagline": "Command Center",
+      "nav.home": "Dashboard",
+      "nav.intelligence": "Seller Intelligence",
+      "nav.assistant": "AI Assistant",
+      "nav.learning": "Learning Center",
+      "nav.settings": "Settings",
+      "nav.newChat": "New chat",
+      "nav.savedChats": "Saved chats",
+      "nav.sources": "Sources",
+      "nav.savedEmpty": "No saved chats yet.",
+      "nav.sourceHint": "Sources from this session appear here.",
+      "nav.sourceEmpty": "No sources collected yet.",
+      "footer.tag": "RM Seller Intelligence · Shopee",
+      "home.title": "Seller Intelligence Platform",
+      "home.hero": "Search any seller.<br />Analyze performance.<br />Identify opportunities.<br />Take action.",
+      "home.openDashboard": "Open Dashboard",
+      "home.searchSeller": "Search Seller",
+      "home.askAi": "Ask AI",
+      "home.statSellers": "Total sellers loaded",
+      "home.statRefresh": "Last refresh",
+      "home.statSheet": "Google Sheet status",
+      "home.statChecking": "Checking…",
+      "home.statConnected": "Connected",
+      "home.statError": "Error",
+      "home.statMock": "Mock data",
+      "home.statNotLoaded": "Not loaded",
+      "home.statUnavailable": "Unavailable",
+      "home.statRefreshing": "Refreshing…",
+      "home.featuresTitle": "What you can do",
+      "home.featSearchTitle": "Seller search",
+      "home.featSearchDesc": "Find any shop by name or ID from the live mirror sheet cache.",
+      "home.featPerfTitle": "Performance analysis",
+      "home.featPerfDesc":
+        "Commercial, ads, AMS, MPA, FBS, livestream, video, and MDV in one view.",
+      "home.featAiTitle": "AI recommendations",
+      "home.featAiDesc": "Strengths, risks, and prioritized actions powered by your seller data.",
+      "home.featLearnTitle": "Learning resources",
+      "home.featLearnDesc": "Program guides for Ads, MDV, AMS, and more — searchable in one place.",
+      "intel.title": "Seller Intelligence",
+      "intel.meta": "Performance command center · live cache",
+      "intel.metaLoading": "Executive seller performance · live cache",
+      "intel.sellers": "Sellers",
+      "intel.refreshed": "Refreshed",
+      "intel.refresh": "Refresh",
+      "intel.searchLabel": "Search seller",
+      "intel.searchPlaceholder": "Shop name or Shop ID…",
+      "intel.searchBtn": "Search",
+      "intel.emptyTitle": "Find a seller",
+      "intel.emptyText": "Refresh sheet data, then search by shop name or ID.",
+      "intel.emptyTextReady": "Search by shop name or Shop ID to open the performance dashboard.",
+      "intel.loadFirst": "Load sheet data first (Refresh)",
+      "intel.noShops": "No shops found",
+      "intel.openResult": "Open →",
+      "intel.loadingSeller": "Loading seller…",
+      "intel.loadFailed":
+        "Could not load shop. Refresh sheet data and try again.",
+      "intel.sellerProfile": "Seller profile",
+      "intel.shopId": "Shop ID",
+      "intel.tier": "Tier",
+      "intel.category": "Category",
+      "intel.lead": "Lead",
+      "intel.health": "Health",
+      "intel.commercial": "Commercial Overview",
+      "intel.insightsTitle": "Strengths / Opportunities / Risks",
+      "intel.strengths": "Strengths",
+      "intel.opportunities": "Opportunities",
+      "intel.risks": "Risks",
+      "intel.aiRec": "AI Recommendation",
+      "intel.priority": "priority",
+      "intel.action": "Action",
+      "intel.viewTable": "View detailed table",
+      "intel.metric": "Metric",
+      "intel.mtd": "MTD",
+      "intel.m1": "M-1",
+      "intel.growth": "Growth %",
+      "intel.status": "Status",
+      "section.shop_info": "Shop Info",
+      "section.commercial": "Commercial Overview",
+      "section.paid_ads": "Paid Ads",
+      "section.ams": "AMS",
+      "section.mpa": "MPA",
+      "section.fbs": "FBS",
+      "section.livestream": "Livestream",
+      "section.video": "Video",
+      "section.mdv": "MDV",
+      "label.shop_id": "Shop ID",
+      "label.shop_name": "Shop Name",
+      "label.managed_tier": "Managed Tier",
+      "label.bu": "BU",
+      "label.lead": "Lead",
+      "label.bd_category": "BD Category",
+      "label.ads_spend": "Ads Spend",
+      "label.ads_gmv": "Ads GMV",
+      "label.take_rate": "Take Rate",
+      "label.new_uploads": "New Uploads",
+      "label.seller_ls_hrs": "Livestream Hours",
+      "label.fbs_ado": "FBS ADO",
+      "label.fbs_gmv": "FBS GMV",
+      "label.mpa_gmv": "MPA GMV",
+      "label.video_adgmv": "Video ADGMV",
+      "label.mdv_adgmv": "MDV ADGMV",
+      "assistant.title": "AI Assistant",
+      "assistant.subtitle": "Seller programs, policies & education",
+      "assistant.saveChat": "Save chat",
+      "assistant.context": "Seller context:",
+      "assistant.clearContext": "Clear",
+      "assistant.recentSearches": "Recent seller searches",
+      "assistant.loadingResearch": "Researching Seller Education sources…",
+      "assistant.placeholder":
+        "Ask about programs, fees, eligibility, or seller strategy…",
+      "assistant.composerHint": "Enter to send · Shift+Enter for new line",
+      "assistant.send": "Send message",
+      "assistant.welcomeTitle": "How can I help you today?",
+      "assistant.welcomeBody":
+        "Research Shopee programs, fees, eligibility, and policies.<br />Replies follow the language of your question.",
+      "assistant.contextHint":
+        "Seller context is active — ask how to improve this shop's performance.",
+      "assistant.suggest1": "How do I join MDV?",
+      "assistant.suggest2": "What is FBS?",
+      "assistant.suggest3": "How can I improve Paid Ads ROAS?",
+      "assistant.suggest4": "Explain AMS take rate to a seller",
+      "assistant.suggest5": "怎麼加入 MDV？",
+      "learning.title": "Learning Center",
+      "learning.subtitle": "Searchable knowledge base for Shopee seller programs and campaigns.",
+      "learning.searchPlaceholder": "Search topics, programs, policies…",
+      "settings.title": "Settings",
+      "settings.subtitle": "Platform configuration and integrations.",
+      "settings.li1": "AI Assistant uses your Anthropic API key from .env",
+      "settings.li2": "Replies match the language of your question",
+      "settings.li3": "Sources are fetched from seller.shopee.ph/edu",
+      "settings.li4": "Seller Intelligence loads metrics from the Google Sheets mirror (AI DATA tab)",
+      "settings.li5": "Click Refresh on Seller Intelligence to reload the seller cache",
+      "modal.settingsTitle": "Settings",
+      "modal.settingsText": "Use the Settings page in the sidebar for platform options.",
+      "modal.close": "Close",
+    },
+    "zh-TW": {
+      "lang.label": "語言",
+      "lang.en": "English",
+      "lang.zh-TW": "繁體中文",
+      "lang.zh-CN": "简体中文",
+      "lang.fil": "Filipino",
+      "brand.name": "賣家情報平台",
+      "brand.tagline": "指揮中心",
+      "nav.home": "首頁",
+      "nav.intelligence": "賣家情報",
+      "nav.assistant": "AI 助理",
+      "nav.learning": "學習中心",
+      "nav.settings": "設定",
+      "nav.newChat": "新對話",
+      "nav.savedChats": "已儲存對話",
+      "nav.sources": "來源",
+      "nav.savedEmpty": "尚無已儲存對話。",
+      "nav.sourceHint": "本階段對話的來源會顯示於此。",
+      "nav.sourceEmpty": "尚無來源。",
+      "footer.tag": "RM 賣家情報 · Shopee",
+      "home.title": "賣家情報平台",
+      "home.hero": "搜尋任何賣家。<br />分析績效。<br />發現機會。<br />採取行動。",
+      "home.openDashboard": "開啟儀表板",
+      "home.searchSeller": "搜尋賣家",
+      "home.askAi": "詢問 AI",
+      "home.statSellers": "已載入賣家總數",
+      "home.statRefresh": "上次更新",
+      "home.statSheet": "Google 試算表狀態",
+      "home.statChecking": "檢查中…",
+      "home.statConnected": "已連線",
+      "home.statError": "錯誤",
+      "home.statMock": "模擬資料",
+      "home.statNotLoaded": "尚未載入",
+      "home.statUnavailable": "無法使用",
+      "home.statRefreshing": "更新中…",
+      "home.featuresTitle": "你可以做的事",
+      "home.featSearchTitle": "賣家搜尋",
+      "home.featSearchDesc": "從即時鏡像試算表快取依名稱或 ID 查找賣家。",
+      "home.featPerfTitle": "績效分析",
+      "home.featPerfDesc": "商業、廣告、AMS、MPA、FBS、直播、影片與 MDV 一站式檢視。",
+      "home.featAiTitle": "AI 建議",
+      "home.featAiDesc": "依賣家資料呈現優勢、風險與優先建議。",
+      "home.featLearnTitle": "學習資源",
+      "home.featLearnDesc": "Ads、MDV、AMS 等方案指南，可一站搜尋。",
+      "intel.title": "賣家情報",
+      "intel.meta": "績效指揮中心 · 即時快取",
+      "intel.metaLoading": "高階賣家績效 · 即時快取",
+      "intel.sellers": "賣家數",
+      "intel.refreshed": "更新時間",
+      "intel.refresh": "重新整理",
+      "intel.searchLabel": "搜尋賣家",
+      "intel.searchPlaceholder": "賣家名稱或 Shop ID…",
+      "intel.searchBtn": "搜尋",
+      "intel.emptyTitle": "尋找賣家",
+      "intel.emptyText": "請先重新整理試算表，再依名稱或 ID 搜尋。",
+      "intel.emptyTextReady": "依賣家名稱或 Shop ID 搜尋以開啟績效儀表板。",
+      "intel.loadFirst": "請先載入試算表（重新整理）",
+      "intel.noShops": "找不到賣家",
+      "intel.openResult": "開啟 →",
+      "intel.loadingSeller": "載入賣家中…",
+      "intel.loadFailed": "無法載入賣家。請重新整理試算表後再試。",
+      "intel.sellerProfile": "賣家檔案",
+      "intel.shopId": "Shop ID",
+      "intel.tier": "層級",
+      "intel.category": "類目",
+      "intel.lead": "Lead",
+      "intel.health": "健康度",
+      "intel.commercial": "商業總覽",
+      "intel.insightsTitle": "優勢 / 機會 / 風險",
+      "intel.strengths": "優勢",
+      "intel.opportunities": "機會",
+      "intel.risks": "風險",
+      "intel.aiRec": "AI 建議",
+      "intel.priority": "優先級",
+      "intel.action": "建議行動",
+      "intel.viewTable": "檢視詳細表格",
+      "intel.metric": "指標",
+      "intel.mtd": "MTD",
+      "intel.m1": "M-1",
+      "intel.growth": "成長 %",
+      "intel.status": "狀態",
+      "section.shop_info": "賣家資訊",
+      "section.commercial": "商業總覽",
+      "section.paid_ads": "Paid Ads",
+      "section.ams": "AMS",
+      "section.mpa": "MPA",
+      "section.fbs": "FBS",
+      "section.livestream": "Livestream",
+      "section.video": "Video",
+      "section.mdv": "MDV",
+      "label.shop_id": "Shop ID",
+      "label.shop_name": "賣家名稱",
+      "label.managed_tier": "管理層級",
+      "label.bu": "BU",
+      "label.lead": "Lead",
+      "label.bd_category": "BD 類目",
+      "label.ads_spend": "廣告花費",
+      "label.ads_gmv": "廣告 GMV",
+      "label.take_rate": "Take Rate",
+      "label.new_uploads": "新上架數",
+      "label.seller_ls_hrs": "直播時數",
+      "label.fbs_ado": "FBS ADO",
+      "label.fbs_gmv": "FBS GMV",
+      "label.mpa_gmv": "MPA GMV",
+      "label.video_adgmv": "Video ADGMV",
+      "label.mdv_adgmv": "MDV ADGMV",
+      "assistant.title": "AI 助理",
+      "assistant.subtitle": "賣家方案、政策與教育資源",
+      "assistant.saveChat": "儲存對話",
+      "assistant.context": "賣家情境：",
+      "assistant.clearContext": "清除",
+      "assistant.recentSearches": "最近搜尋的賣家",
+      "assistant.loadingResearch": "正在搜尋 Seller Education 來源…",
+      "assistant.placeholder": "詢問方案、費用、資格或賣家策略…",
+      "assistant.composerHint": "Enter 傳送 · Shift+Enter 換行",
+      "assistant.send": "傳送訊息",
+      "assistant.welcomeTitle": "今天我能幫你什麼？",
+      "assistant.welcomeBody":
+        "可查詢 Shopee 方案、費用、資格與政策。<br />回覆語言會與你的提問一致。",
+      "assistant.contextHint": "已啟用賣家情境 — 可詢問如何提升此賣家績效。",
+      "assistant.suggest1": "如何加入 MDV？",
+      "assistant.suggest2": "什麼是 FBS？",
+      "assistant.suggest3": "如何提升 Paid Ads ROAS？",
+      "assistant.suggest4": "向賣家說明 AMS take rate",
+      "assistant.suggest5": "怎麼加入 MDV？",
+      "learning.title": "學習中心",
+      "learning.subtitle": "可搜尋的 Shopee 賣家方案與活動知識庫。",
+      "learning.searchPlaceholder": "搜尋主題、方案、政策…",
+      "settings.title": "設定",
+      "settings.subtitle": "平台設定與整合。",
+      "settings.li1": "AI 助理使用 .env 中的 Anthropic API 金鑰",
+      "settings.li2": "回覆語言與你的提問一致",
+      "settings.li3": "來源來自 seller.shopee.ph/edu",
+      "settings.li4": "賣家情報從 Google 試算表鏡像（AI DATA 分頁）載入指標",
+      "settings.li5": "在賣家情報頁點擊「重新整理」以更新賣家快取",
+      "modal.settingsTitle": "設定",
+      "modal.settingsText": "請使用側欄的設定頁面。",
+      "modal.close": "關閉",
+    },
+    "zh-CN": {
+      "lang.label": "语言",
+      "lang.en": "English",
+      "lang.zh-TW": "繁體中文",
+      "lang.zh-CN": "简体中文",
+      "lang.fil": "Filipino",
+      "brand.name": "卖家情报平台",
+      "brand.tagline": "指挥中心",
+      "nav.home": "首页",
+      "nav.intelligence": "卖家情报",
+      "nav.assistant": "AI 助手",
+      "nav.learning": "学习中心",
+      "nav.settings": "设置",
+      "nav.newChat": "新对话",
+      "nav.savedChats": "已保存对话",
+      "nav.sources": "来源",
+      "nav.savedEmpty": "暂无已保存对话。",
+      "nav.sourceHint": "本会话的来源将显示在这里。",
+      "nav.sourceEmpty": "暂无来源。",
+      "footer.tag": "RM 卖家情报 · Shopee",
+      "home.title": "卖家情报平台",
+      "home.hero": "搜索任何卖家。<br />分析表现。<br />发现机会。<br />采取行动。",
+      "home.openDashboard": "打开仪表板",
+      "home.searchSeller": "搜索卖家",
+      "home.askAi": "询问 AI",
+      "home.statSellers": "已加载卖家总数",
+      "home.statRefresh": "上次刷新",
+      "home.statSheet": "Google 表格状态",
+      "home.statChecking": "检查中…",
+      "home.statConnected": "已连接",
+      "home.statError": "错误",
+      "home.statMock": "模拟数据",
+      "home.statNotLoaded": "尚未加载",
+      "home.statUnavailable": "不可用",
+      "home.statRefreshing": "刷新中…",
+      "home.featuresTitle": "你可以做什么",
+      "home.featSearchTitle": "卖家搜索",
+      "home.featSearchDesc": "从实时镜像表格缓存按名称或 ID 查找卖家。",
+      "home.featPerfTitle": "表现分析",
+      "home.featPerfDesc": "商业、广告、AMS、MPA、FBS、直播、视频与 MDV 一站式查看。",
+      "home.featAiTitle": "AI 建议",
+      "home.featAiDesc": "根据卖家数据展示优势、风险与优先建议。",
+      "home.featLearnTitle": "学习资源",
+      "home.featLearnDesc": "Ads、MDV、AMS 等方案指南，可统一搜索。",
+      "intel.title": "卖家情报",
+      "intel.meta": "表现指挥中心 · 实时缓存",
+      "intel.metaLoading": "高级卖家表现 · 实时缓存",
+      "intel.sellers": "卖家数",
+      "intel.refreshed": "刷新时间",
+      "intel.refresh": "刷新",
+      "intel.searchLabel": "搜索卖家",
+      "intel.searchPlaceholder": "店铺名称或 Shop ID…",
+      "intel.searchBtn": "搜索",
+      "intel.emptyTitle": "查找卖家",
+      "intel.emptyText": "请先刷新表格，再按名称或 ID 搜索。",
+      "intel.emptyTextReady": "按店铺名称或 Shop ID 搜索以打开表现仪表板。",
+      "intel.loadFirst": "请先加载表格（刷新）",
+      "intel.noShops": "未找到卖家",
+      "intel.openResult": "打开 →",
+      "intel.loadingSeller": "正在加载卖家…",
+      "intel.loadFailed": "无法加载卖家。请刷新表格后重试。",
+      "intel.sellerProfile": "卖家档案",
+      "intel.shopId": "Shop ID",
+      "intel.tier": "层级",
+      "intel.category": "类目",
+      "intel.lead": "Lead",
+      "intel.health": "健康度",
+      "intel.commercial": "商业总览",
+      "intel.insightsTitle": "优势 / 机会 / 风险",
+      "intel.strengths": "优势",
+      "intel.opportunities": "机会",
+      "intel.risks": "风险",
+      "intel.aiRec": "AI 建议",
+      "intel.priority": "优先级",
+      "intel.action": "建议行动",
+      "intel.viewTable": "查看详细表格",
+      "intel.metric": "指标",
+      "intel.mtd": "MTD",
+      "intel.m1": "M-1",
+      "intel.growth": "增长 %",
+      "intel.status": "状态",
+      "section.shop_info": "卖家信息",
+      "section.commercial": "商业总览",
+      "section.paid_ads": "Paid Ads",
+      "section.ams": "AMS",
+      "section.mpa": "MPA",
+      "section.fbs": "FBS",
+      "section.livestream": "Livestream",
+      "section.video": "Video",
+      "section.mdv": "MDV",
+      "label.shop_id": "Shop ID",
+      "label.shop_name": "店铺名称",
+      "label.managed_tier": "管理层级",
+      "label.bu": "BU",
+      "label.lead": "Lead",
+      "label.bd_category": "BD 类目",
+      "label.ads_spend": "广告花费",
+      "label.ads_gmv": "广告 GMV",
+      "label.take_rate": "Take Rate",
+      "label.new_uploads": "新上传数",
+      "label.seller_ls_hrs": "直播时长",
+      "label.fbs_ado": "FBS ADO",
+      "label.fbs_gmv": "FBS GMV",
+      "label.mpa_gmv": "MPA GMV",
+      "label.video_adgmv": "Video ADGMV",
+      "label.mdv_adgmv": "MDV ADGMV",
+      "assistant.title": "AI 助手",
+      "assistant.subtitle": "卖家方案、政策与教育资源",
+      "assistant.saveChat": "保存对话",
+      "assistant.context": "卖家上下文：",
+      "assistant.clearContext": "清除",
+      "assistant.recentSearches": "最近搜索的卖家",
+      "assistant.loadingResearch": "正在检索 Seller Education 来源…",
+      "assistant.placeholder": "询问方案、费用、资格或卖家策略…",
+      "assistant.composerHint": "Enter 发送 · Shift+Enter 换行",
+      "assistant.send": "发送消息",
+      "assistant.welcomeTitle": "今天我能帮你什么？",
+      "assistant.welcomeBody":
+        "可查询 Shopee 方案、费用、资格与政策。<br />回复语言与你的提问一致。",
+      "assistant.contextHint": "已启用卖家上下文 — 可询问如何提升此卖家表现。",
+      "assistant.suggest1": "如何加入 MDV？",
+      "assistant.suggest2": "什么是 FBS？",
+      "assistant.suggest3": "如何提升 Paid Ads ROAS？",
+      "assistant.suggest4": "向卖家说明 AMS take rate",
+      "assistant.suggest5": "怎么加入 MDV？",
+      "learning.title": "学习中心",
+      "learning.subtitle": "可搜索的 Shopee 卖家方案与活动知识库。",
+      "learning.searchPlaceholder": "搜索主题、方案、政策…",
+      "settings.title": "设置",
+      "settings.subtitle": "平台配置与集成。",
+      "settings.li1": "AI 助手使用 .env 中的 Anthropic API 密钥",
+      "settings.li2": "回复语言与你的提问一致",
+      "settings.li3": "来源来自 seller.shopee.ph/edu",
+      "settings.li4": "卖家情报从 Google 表格镜像（AI DATA 工作表）加载指标",
+      "settings.li5": "在卖家情报页点击「刷新」以更新卖家缓存",
+      "modal.settingsTitle": "设置",
+      "modal.settingsText": "请使用侧栏的设置页面。",
+      "modal.close": "关闭",
+    },
+    fil: {
+      "lang.label": "Wika",
+      "lang.en": "English",
+      "lang.zh-TW": "繁體中文",
+      "lang.zh-CN": "简体中文",
+      "lang.fil": "Filipino",
+      "brand.name": "Seller Intelligence",
+      "brand.tagline": "Command Center",
+      "nav.home": "Dashboard",
+      "nav.intelligence": "Seller Intelligence",
+      "nav.assistant": "AI Assistant",
+      "nav.learning": "Learning Center",
+      "nav.settings": "Mga Setting",
+      "nav.newChat": "Bagong chat",
+      "nav.savedChats": "Mga naka-save na chat",
+      "nav.sources": "Mga source",
+      "nav.savedEmpty": "Wala pang naka-save na chat.",
+      "nav.sourceHint": "Lalabas dito ang mga source sa session na ito.",
+      "nav.sourceEmpty": "Wala pang source.",
+      "footer.tag": "RM Seller Intelligence · Shopee",
+      "home.title": "Seller Intelligence Platform",
+      "home.hero":
+        "Maghanap ng seller.<br />Suriin ang performance.<br />Hanapin ang oportunidad.<br />Kumilos.",
+      "home.openDashboard": "Buksan ang Dashboard",
+      "home.searchSeller": "Maghanap ng Seller",
+      "home.askAi": "Magtanong sa AI",
+      "home.statSellers": "Kabuuang sellers na na-load",
+      "home.statRefresh": "Huling refresh",
+      "home.statSheet": "Status ng Google Sheet",
+      "home.statChecking": "Sinusuri…",
+      "home.statConnected": "Konektado",
+      "home.statError": "Error",
+      "home.statMock": "Mock data",
+      "home.statNotLoaded": "Hindi pa na-load",
+      "home.statUnavailable": "Hindi available",
+      "home.statRefreshing": "Nagre-refresh…",
+      "home.featuresTitle": "Ano ang magagawa mo",
+      "home.featSearchTitle": "Paghahanap ng seller",
+      "home.featSearchDesc":
+        "Hanapin ang shop sa pangalan o ID mula sa live mirror sheet cache.",
+      "home.featPerfTitle": "Pagsusuri ng performance",
+      "home.featPerfDesc":
+        "Commercial, ads, AMS, MPA, FBS, livestream, video, at MDV sa isang view.",
+      "home.featAiTitle": "Mga rekomendasyon ng AI",
+      "home.featAiDesc":
+        "Mga lakas, panganib, at priority actions mula sa seller data.",
+      "home.featLearnTitle": "Mga learning resource",
+      "home.featLearnDesc":
+        "Mga gabay sa Ads, MDV, AMS, at iba pa — searchable sa isang lugar.",
+      "intel.title": "Seller Intelligence",
+      "intel.meta": "Performance command center · live cache",
+      "intel.metaLoading": "Executive seller performance · live cache",
+      "intel.sellers": "Mga seller",
+      "intel.refreshed": "Na-refresh",
+      "intel.refresh": "I-refresh",
+      "intel.searchLabel": "Maghanap ng seller",
+      "intel.searchPlaceholder": "Pangalan ng shop o Shop ID…",
+      "intel.searchBtn": "Maghanap",
+      "intel.emptyTitle": "Maghanap ng seller",
+      "intel.emptyText": "I-refresh ang sheet, pagkatapos maghanap sa pangalan o ID.",
+      "intel.emptyTextReady":
+        "Maghanap sa pangalan ng shop o Shop ID para buksan ang performance dashboard.",
+      "intel.loadFirst": "I-load muna ang sheet (Refresh)",
+      "intel.noShops": "Walang nahanap na shop",
+      "intel.openResult": "Buksan →",
+      "intel.loadingSeller": "Nilo-load ang seller…",
+      "intel.loadFailed":
+        "Hindi ma-load ang shop. I-refresh ang sheet at subukan muli.",
+      "intel.sellerProfile": "Profile ng seller",
+      "intel.shopId": "Shop ID",
+      "intel.tier": "Tier",
+      "intel.category": "Category",
+      "intel.lead": "Lead",
+      "intel.health": "Health",
+      "intel.commercial": "Commercial Overview",
+      "intel.insightsTitle": "Mga Lakas / Oportunidad / Panganib",
+      "intel.strengths": "Mga Lakas",
+      "intel.opportunities": "Mga Oportunidad",
+      "intel.risks": "Mga Panganib",
+      "intel.aiRec": "Rekomendasyon ng AI",
+      "intel.priority": "priority",
+      "intel.action": "Aksyon",
+      "intel.viewTable": "Tingnan ang detalyadong table",
+      "intel.metric": "Metric",
+      "intel.mtd": "MTD",
+      "intel.m1": "M-1",
+      "intel.growth": "Growth %",
+      "intel.status": "Status",
+      "section.shop_info": "Impormasyon ng Shop",
+      "section.commercial": "Commercial Overview",
+      "section.paid_ads": "Paid Ads",
+      "section.ams": "AMS",
+      "section.mpa": "MPA",
+      "section.fbs": "FBS",
+      "section.livestream": "Livestream",
+      "section.video": "Video",
+      "section.mdv": "MDV",
+      "label.shop_id": "Shop ID",
+      "label.shop_name": "Pangalan ng Shop",
+      "label.managed_tier": "Managed Tier",
+      "label.bu": "BU",
+      "label.lead": "Lead",
+      "label.bd_category": "BD Category",
+      "label.ads_spend": "Ads Spend",
+      "label.ads_gmv": "Ads GMV",
+      "label.take_rate": "Take Rate",
+      "label.new_uploads": "Bagong Upload",
+      "label.seller_ls_hrs": "Oras ng Livestream",
+      "label.fbs_ado": "FBS ADO",
+      "label.fbs_gmv": "FBS GMV",
+      "label.mpa_gmv": "MPA GMV",
+      "label.video_adgmv": "Video ADGMV",
+      "label.mdv_adgmv": "MDV ADGMV",
+      "assistant.title": "AI Assistant",
+      "assistant.subtitle": "Mga programa, patakaran at edukasyon para sa seller",
+      "assistant.saveChat": "I-save ang chat",
+      "assistant.context": "Konteksto ng seller:",
+      "assistant.clearContext": "I-clear",
+      "assistant.recentSearches": "Mga kamakailang paghahanap ng seller",
+      "assistant.loadingResearch": "Nagsasaliksik ng Seller Education sources…",
+      "assistant.placeholder":
+        "Magtanong tungkol sa programa, bayad, eligibility, o strategy…",
+      "assistant.composerHint": "Enter para ipadala · Shift+Enter para bagong linya",
+      "assistant.send": "Ipadala ang mensahe",
+      "assistant.welcomeTitle": "Paano kita matutulungan ngayon?",
+      "assistant.welcomeBody":
+        "Magsaliksik ng Shopee programs, fees, eligibility, at policies.<br />Sasagot sa wika ng iyong tanong.",
+      "assistant.contextHint":
+        "Aktibo ang seller context — magtanong kung paano mapabuti ang shop na ito.",
+      "assistant.suggest1": "Paano sumali sa MDV?",
+      "assistant.suggest2": "Ano ang FBS?",
+      "assistant.suggest3": "Paano mapabuti ang Paid Ads ROAS?",
+      "assistant.suggest4": "Ipaliwanag ang AMS take rate sa seller",
+      "assistant.suggest5": "Paano sumali sa MDV?",
+      "learning.title": "Learning Center",
+      "learning.subtitle":
+        "Nahahanap na knowledge base para sa Shopee seller programs at campaigns.",
+      "learning.searchPlaceholder": "Maghanap ng topic, programa, patakaran…",
+      "settings.title": "Mga Setting",
+      "settings.subtitle": "Configuration at integrations ng platform.",
+      "settings.li1": "Gumagamit ang AI Assistant ng Anthropic API key mula sa .env",
+      "settings.li2": "Tumutugma ang sagot sa wika ng iyong tanong",
+      "settings.li3": "Kinukuha ang sources mula sa seller.shopee.ph/edu",
+      "settings.li4":
+        "Nilo-load ng Seller Intelligence ang metrics mula sa Google Sheets mirror (AI DATA tab)",
+      "settings.li5": "I-click ang Refresh sa Seller Intelligence para i-reload ang seller cache",
+      "modal.settingsTitle": "Mga Setting",
+      "modal.settingsText": "Gamitin ang Settings page sa sidebar para sa mga opsyon.",
+      "modal.close": "Isara",
+    },
+  };
+
+  let locale = DEFAULT_LOCALE;
+  const listeners = new Set();
+
+  function normalizeLocale(raw) {
+    if (!raw) return DEFAULT_LOCALE;
+    const lower = String(raw).toLowerCase();
+    if (lower === "zh-tw" || lower === "zh-hant" || lower === "zh-hk") return "zh-TW";
+    if (lower === "zh-cn" || lower === "zh-hans" || lower === "zh") return "zh-CN";
+    if (lower.startsWith("fil") || lower === "tl" || lower === "ph") return "fil";
+    if (lower.startsWith("en")) return "en";
+    if (SUPPORTED.includes(raw)) return raw;
+    return DEFAULT_LOCALE;
+  }
+
+  function detectBrowserLocale() {
+    const langs = navigator.languages?.length
+      ? navigator.languages
+      : [navigator.language || DEFAULT_LOCALE];
+    for (const lang of langs) {
+      const norm = normalizeLocale(lang);
+      if (SUPPORTED.includes(norm)) return norm;
+    }
+    return DEFAULT_LOCALE;
+  }
+
+  function getLocale() {
+    return locale;
+  }
+
+  function t(key, fallback = "") {
+    const pack = MESSAGES[locale] || MESSAGES[DEFAULT_LOCALE];
+    return pack[key] ?? MESSAGES[DEFAULT_LOCALE][key] ?? fallback ?? key;
+  }
+
+  function sectionTitle(sectionKey, apiTitle = "") {
+    const key = `section.${sectionKey}`;
+    const translated = t(key, "");
+    if (translated && translated !== key) return translated;
+    return apiTitle || sectionKey;
+  }
+
+  function metricLabel(sectionKey, metricKey, apiLabel = "") {
+    if (apiLabel && METRIC_ACRONYMS.has(apiLabel.trim())) return apiLabel;
+    const key = `label.${metricKey}`;
+    const translated = t(key, "");
+    if (translated && translated !== key) return translated;
+    return apiLabel || metricKey;
+  }
+
+  function apply(root = document) {
+    root.querySelectorAll("[data-i18n]").forEach((el) => {
+      const key = el.getAttribute("data-i18n");
+      if (!key) return;
+      const value = t(key);
+      if (el.dataset.i18nHtml === "true") el.innerHTML = value;
+      else el.textContent = value;
+    });
+    root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+      const key = el.getAttribute("data-i18n-placeholder");
+      if (key) el.placeholder = t(key);
+    });
+    root.querySelectorAll("[data-i18n-title]").forEach((el) => {
+      const key = el.getAttribute("data-i18n-title");
+      if (key) {
+        el.title = t(key);
+        if (el.hasAttribute("aria-label")) el.setAttribute("aria-label", t(key));
+      }
+    });
+    document.documentElement.lang = locale === "zh-TW" ? "zh-Hant" : locale === "zh-CN" ? "zh-Hans" : locale;
+    updateLangSwitcherUi();
+  }
+
+  function updateLangSwitcherUi() {
+    const label = document.getElementById("langSwitcherLabel");
+    const current = document.getElementById("langSwitcherCurrent");
+    if (label) label.textContent = t("lang.label");
+    if (current) {
+      const map = {
+        en: "🇺🇸 " + t("lang.en"),
+        "zh-TW": "🇹🇼 " + t("lang.zh-TW"),
+        "zh-CN": "🇨🇳 " + t("lang.zh-CN"),
+        fil: "🇵🇭 " + t("lang.fil"),
+      };
+      current.textContent = map[locale] || map.en;
+    }
+    document.querySelectorAll("[data-lang-option]").forEach((btn) => {
+      const code = btn.getAttribute("data-lang-option");
+      const active = code === locale;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+  }
+
+  function setLocale(next, persist = true) {
+    const norm = normalizeLocale(next);
+    if (!SUPPORTED.includes(norm)) return;
+    locale = norm;
+    if (persist) localStorage.setItem(STORAGE_KEY, locale);
+    apply();
+    listeners.forEach((fn) => {
+      try {
+        fn(locale);
+      } catch (e) {
+        console.warn("i18n listener error", e);
+      }
+    });
+  }
+
+  function initLangSwitcher() {
+    const wrap = document.getElementById("langSwitcher");
+    const btn = document.getElementById("langSwitcherBtn");
+    const menu = document.getElementById("langSwitcherMenu");
+    if (!wrap || !btn || !menu) return;
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = !menu.classList.contains("hidden");
+      menu.classList.toggle("hidden", open);
+      btn.setAttribute("aria-expanded", open ? "false" : "true");
+    });
+
+    menu.querySelectorAll("[data-lang-option]").forEach((opt) => {
+      opt.addEventListener("click", () => {
+        setLocale(opt.getAttribute("data-lang-option"));
+        menu.classList.add("hidden");
+        btn.setAttribute("aria-expanded", "false");
+      });
+    });
+
+    document.addEventListener("click", () => {
+      menu.classList.add("hidden");
+      btn.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  function init() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    locale = stored ? normalizeLocale(stored) : detectBrowserLocale();
+    if (!stored) localStorage.setItem(STORAGE_KEY, locale);
+    initLangSwitcher();
+    apply();
+  }
+
+  function onChange(fn) {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  }
+
+  window.SipI18n = {
+    t,
+    getLocale,
+    setLocale,
+    apply,
+    sectionTitle,
+    metricLabel,
+    onChange,
+    SUPPORTED,
+    init,
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();

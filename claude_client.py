@@ -44,23 +44,53 @@ def _debug(message: str) -> None:
         print(f"[debug] {message}")
 
 
+_SIMPLIFIED_HINT = re.compile(
+    r"[国学会说从此能这要让开发们吗么为时后里现发]"
+)
+_TAGALOG_HINT = re.compile(
+    r"\b(ano|paano|mga|ako|ikaw|salamat|bakit|hindi|kung|ng|sa|ang|po|opo|kayo|namin|"
+    r"naman|dito|diyan|gusto|pwede|puwede|tungkol|programa|bayad|seller)\b",
+    re.IGNORECASE,
+)
+
+
 def detect_response_language(question: str) -> str:
-    """Match seller input: Traditional Chinese if question contains Chinese, else English."""
-    if re.search(r"[\u4e00-\u9fff]", question):
+    """Match reply language to the seller's question (en, zh-TW, zh-CN, fil)."""
+    text = question or ""
+    if re.search(r"[\u4e00-\u9fff]", text):
+        if _SIMPLIFIED_HINT.search(text):
+            return "zh-CN"
         return "zh-TW"
+    if _TAGALOG_HINT.search(text) or re.search(r"[ñÑ]", text):
+        return "fil"
     return "en"
 
 
 def _language_instruction(lang: str) -> str:
     if lang == "zh-TW":
         return (
-            "LANGUAGE: The seller asked in Chinese. Write the entire reply in Traditional Chinese "
-            "(繁體中文) — Answer paragraph, every Key Point bullet, and source titles if translated. "
-            "Keep section headers exactly as: Answer, Key Points, Sources. Do not reply in English."
+            "LANGUAGE: The seller asked in Traditional Chinese. Write the entire reply in "
+            "Traditional Chinese (繁體中文) — Answer paragraph, every Key Point bullet, and source "
+            "titles if translated. Keep section headers exactly as: Answer, Key Points, Sources. "
+            "Do not reply in English or Simplified Chinese."
+        )
+    if lang == "zh-CN":
+        return (
+            "LANGUAGE: The seller asked in Simplified Chinese. Write the entire reply in "
+            "Simplified Chinese (简体中文) — Answer paragraph, every Key Point bullet, and source "
+            "titles if translated. Keep section headers exactly as: Answer, Key Points, Sources. "
+            "Do not reply in English or Traditional Chinese."
+        )
+    if lang == "fil":
+        return (
+            "LANGUAGE: The seller asked in Filipino / Tagalog. Write the entire reply in Filipino "
+            "(natural Tagalog, English loanwords OK for program names like MDV, FBS, ROAS). "
+            "Keep section headers exactly as: Answer, Key Points, Sources. Do not reply in English "
+            "unless quoting an official program name."
         )
     return (
         "LANGUAGE: The seller asked in English. Write the entire reply in English. "
-        "Keep section headers exactly as: Answer, Key Points, Sources. Do not reply in Chinese."
+        "Keep section headers exactly as: Answer, Key Points, Sources. Do not reply in Chinese or Filipino."
     )
 
 
@@ -71,6 +101,25 @@ def _empty_response(lang: str) -> str:
             "目前找不到相關的 Seller Education 內容。請改用官方方案名稱再問一次（例如 MDV 或 FBS）。\n\n"
             "Key Points:\n"
             "- 說明你想了解的操作（加入、退出、費用、資格）。\n\n"
+            "Sources:\n"
+            "(none)"
+        )
+    if lang == "zh-CN":
+        return (
+            "Answer:\n"
+            "目前找不到相关的 Seller Education 内容。请改用官方方案名称再问一次（例如 MDV 或 FBS）。\n\n"
+            "Key Points:\n"
+            "- 说明你想了解的操作（加入、退出、费用、资格）。\n\n"
+            "Sources:\n"
+            "(none)"
+        )
+    if lang == "fil":
+        return (
+            "Answer:\n"
+            "Wala pa akong nahanap na Seller Education content para dito. Subukan ulit gamit ang "
+            "opisyal na pangalan ng programa (halimbawa MDV o FBS).\n\n"
+            "Key Points:\n"
+            "- Sabihin kung ano ang gusto mong gawin (sumali, umalis, bayad, eligibility).\n\n"
             "Sources:\n"
             "(none)"
         )

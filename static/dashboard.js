@@ -33,6 +33,19 @@
 
   let selectedShopId = null;
   let sheetLoaded = false;
+  let lastDashboardStatus = null;
+
+  function i18n(key, fallback = "") {
+    return window.SipI18n?.t(key, fallback) ?? fallback ?? key;
+  }
+
+  function localizedSectionTitle(section) {
+    return window.SipI18n?.sectionTitle(section.key, section.title) ?? section.title;
+  }
+
+  function localizedMetricLabel(sectionKey, m) {
+    return window.SipI18n?.metricLabel(sectionKey, m.key, m.label) ?? m.label;
+  }
 
   function escapeHtml(text) {
     const div = document.createElement("div");
@@ -70,7 +83,7 @@
       btn.innerHTML = `
         <span><strong>${escapeHtml(shop.shop_name)}</strong><br />
         <span class="shop-result-meta">${escapeHtml(shop.shop_id)} · ${escapeHtml(shop.category || "")}</span></span>
-        <span class="shop-result-meta">Open →</span>`;
+        <span class="shop-result-meta">${escapeHtml(i18n("intel.openResult", "Open →"))}</span>`;
       btn.addEventListener("click", () => loadShop(shop.shop_id));
       li.appendChild(btn);
       shopSearchResults.appendChild(li);
@@ -96,20 +109,21 @@
   }
 
   function renderHeaderStatus(status) {
+    lastDashboardStatus = status;
     sheetLoaded = Boolean(status.loaded);
     syncPlatformStats(status);
     dashTopHeader?.classList.toggle("is-loading", Boolean(status.loading));
 
     if (status.loading) {
       sellerCountLabel.textContent = "…";
-      sheetLoadMeta.textContent = "Loading…";
+      sheetLoadMeta.textContent = i18n("home.statChecking", "Checking…");
       setSearchEnabled(false);
       return;
     }
 
     if (status.error) {
       sellerCountLabel.textContent = "—";
-      sheetLoadMeta.textContent = "Failed";
+      sheetLoadMeta.textContent = i18n("home.statError", "Error");
       if (dashHeaderMeta) dashHeaderMeta.textContent = status.error;
       setSearchEnabled(false);
       return;
@@ -119,19 +133,30 @@
       sellerCountLabel.textContent = String(status.seller_count ?? 0);
       sheetLoadMeta.textContent = formatRefreshed(status.last_loaded_at);
       if (dashHeaderMeta) {
-        dashHeaderMeta.textContent = "Executive seller performance · live cache";
+        dashHeaderMeta.textContent = i18n(
+          "intel.metaLoading",
+          "Executive seller performance · live cache"
+        );
       }
       setSearchEnabled(true);
       if (dashboardEmptyText) {
-        dashboardEmptyText.textContent =
-          "Search by shop name or Shop ID to open the performance dashboard.";
+        dashboardEmptyText.textContent = i18n(
+          "intel.emptyTextReady",
+          "Search by shop name or Shop ID to open the performance dashboard."
+        );
       }
       return;
     }
 
     sellerCountLabel.textContent = "—";
-    sheetLoadMeta.textContent = "Not loaded";
+    sheetLoadMeta.textContent = i18n("home.statNotLoaded", "Not loaded");
     setSearchEnabled(!status.live_sheets_configured);
+  }
+
+  function onLocaleChange() {
+    if (lastDashboardStatus) renderHeaderStatus(lastDashboardStatus);
+    window.SipI18n?.apply?.(document.getElementById("viewDashboard"));
+    if (selectedShopId) loadShop(selectedShopId);
   }
 
   async function fetchSheetStatus() {
@@ -181,8 +206,9 @@
     const q = shopSearchInput.value.trim();
     if (!q) return;
     if (!sheetLoaded) {
-      shopSearchResults.innerHTML =
-        "<li><button type='button' disabled>Load sheet data first (Refresh)</button></li>";
+      shopSearchResults.innerHTML = `<li><button type='button' disabled>${escapeHtml(
+        i18n("intel.loadFirst", "Load sheet data first (Refresh)")
+      )}</button></li>`;
       shopSearchResults.classList.remove("hidden");
       return;
     }
@@ -192,8 +218,9 @@
       if (!res.ok) throw new Error("search failed");
       renderSearchResults(data.results || []);
     } catch {
-      shopSearchResults.innerHTML =
-        "<li><button type='button' disabled>No shops found</button></li>";
+      shopSearchResults.innerHTML = `<li><button type='button' disabled>${escapeHtml(
+        i18n("intel.noShops", "No shops found")
+      )}</button></li>`;
       shopSearchResults.classList.remove("hidden");
     }
   }
@@ -207,17 +234,17 @@
 
   function renderSellerSummary(shop, health) {
     const score = health?.score ?? "—";
-    const label = health?.label || "Health";
+    const label = health?.label || i18n("intel.health", "Health");
     sellerSummaryCard.innerHTML = `
       <div class="seller-hero-inner">
         <div class="seller-hero-main">
-          <p class="seller-hero-eyebrow">Seller profile</p>
+          <p class="seller-hero-eyebrow">${escapeHtml(i18n("intel.sellerProfile", "Seller profile"))}</p>
           <h2 class="seller-hero-name">${escapeHtml(shop.shop_name || "—")}</h2>
           <div class="seller-hero-meta">
-            <div class="hero-meta-pill"><span>Shop ID</span><strong>${escapeHtml(shop.shop_id || "N/A")}</strong></div>
-            <div class="hero-meta-pill"><span>Tier</span><strong>${escapeHtml(shop.tier || "N/A")}</strong></div>
-            <div class="hero-meta-pill"><span>Category</span><strong>${escapeHtml(shop.category || "N/A")}</strong></div>
-            <div class="hero-meta-pill"><span>Lead</span><strong>${escapeHtml(shop.lead || "N/A")}</strong></div>
+            <div class="hero-meta-pill"><span>${escapeHtml(i18n("intel.shopId", "Shop ID"))}</span><strong>${escapeHtml(shop.shop_id || "N/A")}</strong></div>
+            <div class="hero-meta-pill"><span>${escapeHtml(i18n("intel.tier", "Tier"))}</span><strong>${escapeHtml(shop.tier || "N/A")}</strong></div>
+            <div class="hero-meta-pill"><span>${escapeHtml(i18n("intel.category", "Category"))}</span><strong>${escapeHtml(shop.category || "N/A")}</strong></div>
+            <div class="hero-meta-pill"><span>${escapeHtml(i18n("intel.lead", "Lead"))}</span><strong>${escapeHtml(shop.lead || "N/A")}</strong></div>
             <div class="hero-meta-pill"><span>BU</span><strong>${escapeHtml(shop.bu || "N/A")}</strong></div>
           </div>
         </div>
@@ -246,12 +273,12 @@
         return `
         <article class="kpi-tile${isNa ? " kpi-tile-na" : ""}">
           <div class="kpi-tile-head">
-            <span class="kpi-tile-name">${escapeHtml(m.label)}</span>
+            <span class="kpi-tile-name">${escapeHtml(localizedMetricLabel("commercial", m))}</span>
             <span class="${badgeClass(health)}">${escapeHtml(health)}</span>
           </div>
           <div class="kpi-tile-mtd count-up">${escapeHtml(displayVal(m.mtd_display))}</div>
           <div class="kpi-tile-row">
-            <span>M-1</span>
+            <span>${escapeHtml(i18n("intel.m1", "M-1"))}</span>
             <span>${escapeHtml(displayVal(m.m1_display))}</span>
           </div>
           <div class="kpi-tile-growth ${growthClass(g)}">${escapeHtml(displayVal(m.growth_display))}</div>
@@ -272,24 +299,24 @@
       </article>`;
 
     insightsSection.innerHTML = `
-      <h2 class="dash-block-title">Strengths / Opportunities / Risks</h2>
+      <h2 class="dash-block-title">${escapeHtml(i18n("intel.insightsTitle", "Strengths / Opportunities / Risks"))}</h2>
       <div class="insights-grid">
-        ${block("Strengths", "strengths", insights.strengths)}
-        ${block("Opportunities", "opportunities", insights.opportunities)}
-        ${block("Risks", "risks", insights.risks)}
+        ${block(i18n("intel.strengths", "Strengths"), "strengths", insights.strengths)}
+        ${block(i18n("intel.opportunities", "Opportunities"), "opportunities", insights.opportunities)}
+        ${block(i18n("intel.risks", "Risks"), "risks", insights.risks)}
       </div>`;
   }
 
-  function renderMetricCard(m) {
+  function renderMetricCard(m, sectionKey) {
     const g = m.growth ?? m.growthPct;
     const health = m.healthStatus || "neutral";
     const isNa = displayVal(m.mtd_display) === "N/A";
     return `
       <article class="metric-card${isNa ? " metric-card-na" : ""}">
-        <div class="metric-card-label">${escapeHtml(m.label)}</div>
+        <div class="metric-card-label">${escapeHtml(localizedMetricLabel(sectionKey, m))}</div>
         <div class="metric-card-mtd">${escapeHtml(displayVal(m.mtd_display))}</div>
         <div class="metric-card-compare">
-          <span>M-1</span>
+          <span>${escapeHtml(i18n("intel.m1", "M-1"))}</span>
           <span>${escapeHtml(displayVal(m.m1_display))}</span>
         </div>
         <div class="metric-card-foot">
@@ -299,7 +326,7 @@
       </article>`;
   }
 
-  function renderMetricTableRows(metrics) {
+  function renderMetricTableRows(metrics, sectionKey) {
     return metrics
       .map((m) => {
         const g = m.growth ?? m.growthPct;
@@ -307,7 +334,7 @@
         const naRow = displayVal(m.mtd_display) === "N/A" ? " row-na" : "";
         return `
         <tr class="${naRow}">
-          <td><strong>${escapeHtml(m.label)}</strong></td>
+          <td><strong>${escapeHtml(localizedMetricLabel(sectionKey, m))}</strong></td>
           <td class="num">${escapeHtml(displayVal(m.mtd_display))}</td>
           <td class="num">${escapeHtml(displayVal(m.m1_display))}</td>
           <td class="num ${growthClass(g)}">${escapeHtml(displayVal(m.growth_display))}</td>
@@ -322,7 +349,7 @@
       .map(
         (m) => `
         <div class="shop-info-item${displayVal(m.mtd_display) === "N/A" ? " shop-info-na" : ""}">
-          <span>${escapeHtml(m.label)}</span>
+          <span>${escapeHtml(localizedMetricLabel("shop_info", m))}</span>
           <strong>${escapeHtml(displayVal(m.mtd_display))}</strong>
         </div>`
       )
@@ -331,7 +358,7 @@
     return `
       <section class="dash-section dash-section-collapsible is-open" id="section-${escapeHtml(section.key)}">
         <button type="button" class="dash-section-toggle" aria-expanded="true">
-          <h2>${escapeHtml(section.title)}</h2>
+          <h2>${escapeHtml(localizedSectionTitle(section))}</h2>
           <span class="toggle-chevron" aria-hidden="true"></span>
         </button>
         <div class="dash-section-body">
@@ -342,28 +369,29 @@
 
   function renderMetricSection(section) {
     const metrics = section.metrics || [];
+    const sk = section.key;
     return `
       <section class="dash-section dash-section-collapsible is-open" id="section-${escapeHtml(section.key)}">
         <button type="button" class="dash-section-toggle" aria-expanded="true">
-          <h2>${escapeHtml(section.title)}</h2>
+          <h2>${escapeHtml(localizedSectionTitle(section))}</h2>
           <span class="toggle-chevron" aria-hidden="true"></span>
         </button>
         <div class="dash-section-body">
-          <div class="metric-cards">${metrics.map(renderMetricCard).join("")}</div>
+          <div class="metric-cards">${metrics.map((m) => renderMetricCard(m, sk)).join("")}</div>
           <details class="metric-table-details">
-            <summary>View detailed table</summary>
+            <summary>${escapeHtml(i18n("intel.viewTable", "View detailed table"))}</summary>
             <div class="metric-table-wrap">
               <table class="metric-table">
                 <thead>
                   <tr>
-                    <th>Metric</th>
-                    <th>MTD</th>
-                    <th>M-1</th>
-                    <th>Growth %</th>
-                    <th>Status</th>
+                    <th>${escapeHtml(i18n("intel.metric", "Metric"))}</th>
+                    <th>${escapeHtml(i18n("intel.mtd", "MTD"))}</th>
+                    <th>${escapeHtml(i18n("intel.m1", "M-1"))}</th>
+                    <th>${escapeHtml(i18n("intel.growth", "Growth %"))}</th>
+                    <th>${escapeHtml(i18n("intel.status", "Status"))}</th>
                   </tr>
                 </thead>
-                <tbody>${renderMetricTableRows(metrics)}</tbody>
+                <tbody>${renderMetricTableRows(metrics, sk)}</tbody>
               </table>
             </div>
           </details>
@@ -409,15 +437,15 @@
       return;
     }
     recommendationsSection.innerHTML = `
-      <h2 class="dash-block-title">AI Recommendation</h2>
+      <h2 class="dash-block-title">${escapeHtml(i18n("intel.aiRec", "AI Recommendation"))}</h2>
       <div class="rec-grid">${list
         .map((r) => {
           const pri = (r.priority || "low").toLowerCase();
           return `
         <article class="rec-card priority-${pri}">
-          <div class="rec-priority">${escapeHtml(r.priority)} priority</div>
+          <div class="rec-priority">${escapeHtml(r.priority)} ${escapeHtml(i18n("intel.priority", "priority"))}</div>
           <h4>${escapeHtml(r.issue_found)}</h4>
-          <p><strong>Action</strong><br />${escapeHtml(r.recommended_action)}</p>
+          <p><strong>${escapeHtml(i18n("intel.action", "Action"))}</strong><br />${escapeHtml(r.recommended_action)}</p>
           <p>${escapeHtml(r.supporting_data)}</p>
         </article>`;
         })
@@ -430,7 +458,9 @@
     dashboardContent.classList.remove("hidden");
     shopSearchResults.classList.add("hidden");
 
-    sellerSummaryCard.innerHTML = '<p class="dash-loading">Loading seller…</p>';
+    sellerSummaryCard.innerHTML = `<p class="dash-loading">${escapeHtml(
+      i18n("intel.loadingSeller", "Loading seller…")
+    )}</p>`;
     shopKpiBar.innerHTML = "";
     insightsSection.innerHTML = "";
     dashboardSections.innerHTML = "";
@@ -451,8 +481,9 @@
         window.renderDashboardCharts(data.charts);
       }
     } catch {
-      sellerSummaryCard.innerHTML =
-        '<p class="dash-loading">Could not load shop. Refresh sheet data and try again.</p>';
+      sellerSummaryCard.innerHTML = `<p class="dash-loading">${escapeHtml(
+        i18n("intel.loadFailed", "Could not load shop. Refresh sheet data and try again.")
+      )}</p>`;
       shopKpiBar.innerHTML = "";
       insightsSection.innerHTML = "";
       dashboardSections.innerHTML = "";
@@ -483,6 +514,8 @@
     });
   }
 
+  window.SipI18n?.onChange?.(onLocaleChange);
+
   window.ShpDashboard = {
     async onShow() {
       setSearchEnabled(false);
@@ -494,5 +527,6 @@
     },
     loadShop,
     refreshSheetData,
+    onLocaleChange,
   };
 })();

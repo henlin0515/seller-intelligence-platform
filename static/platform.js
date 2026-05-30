@@ -88,6 +88,11 @@
   const clearSellerContext = document.getElementById("clearSellerContext");
 
   let currentView = "home";
+  let lastHomeStatus = null;
+
+  function i18n(key, fallback = "") {
+    return window.SipI18n?.t(key, fallback) ?? fallback ?? key;
+  }
 
   function formatRefreshed(iso) {
     if (!iso) return "—";
@@ -100,6 +105,7 @@
 
   function updateHomeStats(status) {
     if (!status) return;
+    lastHomeStatus = status;
     if (homeSellerCount) {
       homeSellerCount.textContent =
         status.loaded && status.seller_count != null ? String(status.seller_count) : "—";
@@ -108,24 +114,24 @@
       homeLastRefresh.textContent = status.loaded
         ? formatRefreshed(status.last_loaded_at)
         : status.loading
-          ? "Loading…"
+          ? i18n("home.statChecking", "Checking…")
           : "—";
     }
     if (homeSheetStatus) {
       if (status.loading) {
-        homeSheetStatus.textContent = "Refreshing…";
+        homeSheetStatus.textContent = i18n("home.statRefreshing", "Refreshing…");
         homeSheetStatus.className = "stat-card-value status-warn";
       } else if (status.error) {
-        homeSheetStatus.textContent = "Error";
+        homeSheetStatus.textContent = i18n("home.statError", "Error");
         homeSheetStatus.className = "stat-card-value";
       } else if (status.loaded) {
-        homeSheetStatus.textContent = "Connected";
+        homeSheetStatus.textContent = i18n("home.statConnected", "Connected");
         homeSheetStatus.className = "stat-card-value status-ok";
       } else if (status.live_sheets_configured === false) {
-        homeSheetStatus.textContent = "Mock data";
+        homeSheetStatus.textContent = i18n("home.statMock", "Mock data");
         homeSheetStatus.className = "stat-card-value status-warn";
       } else {
-        homeSheetStatus.textContent = "Not loaded";
+        homeSheetStatus.textContent = i18n("home.statNotLoaded", "Not loaded");
         homeSheetStatus.className = "stat-card-value status-warn";
       }
     }
@@ -140,7 +146,7 @@
       return status;
     } catch {
       if (homeSheetStatus) {
-        homeSheetStatus.textContent = "Unavailable";
+        homeSheetStatus.textContent = i18n("home.statUnavailable", "Unavailable");
         homeSheetStatus.className = "stat-card-value";
       }
       return null;
@@ -331,6 +337,16 @@
     setSellerContext,
     getCurrentView: () => currentView,
   };
+
+  window.SipI18n?.onChange?.((locale) => {
+    if (lastHomeStatus) updateHomeStats(lastHomeStatus);
+    window.SipI18n?.apply?.(document);
+    renderLearningCenter();
+    window.ShpDashboard?.onLocaleChange?.();
+    if (currentView === "assistant" && window.ShpChat?.refreshWelcome) {
+      window.ShpChat.refreshWelcome();
+    }
+  });
 
   renderLearningCenter();
   fetchAndUpdateHomeStats();

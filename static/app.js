@@ -25,13 +25,19 @@ let sessionMessages = [];
 let sessionSources = [];
 let loadingMessageEl = null;
 
-const SUGGESTIONS = [
-  "How do I join MDV?",
-  "What is FBS?",
-  "How can I improve Paid Ads ROAS?",
-  "Explain AMS take rate to a seller",
-  "怎麼加入 MDV？",
-];
+function suggestionKeys() {
+  return [
+    "assistant.suggest1",
+    "assistant.suggest2",
+    "assistant.suggest3",
+    "assistant.suggest4",
+    "assistant.suggest5",
+  ];
+}
+
+function i18n(key, fallback = "") {
+  return window.SipI18n?.t(key, fallback) ?? fallback ?? key;
+}
 
 function escapeHtml(text) {
   const div = document.createElement("div");
@@ -43,19 +49,27 @@ function initChat() {
   sessionMessages = [];
   const contextHint =
     localStorage.getItem("sip_seller_context_v1")
-      ? '<p class="welcome-context">Seller context is active — ask how to improve this shop\'s performance.</p>'
+      ? `<p class="welcome-context">${escapeHtml(
+          i18n(
+            "assistant.contextHint",
+            "Seller context is active — ask how to improve this shop's performance."
+          )
+        )}</p>`
       : "";
+  const suggestions = suggestionKeys().map((k) => i18n(k));
   chatEl.innerHTML = `
     <div class="welcome-card">
       <div class="welcome-avatar" aria-hidden="true">✦</div>
-      <h2>How can I help you today?</h2>
-      <p>Research Shopee programs, fees, eligibility, and policies.<br />
-      Replies in <strong>English</strong> or <strong>繁體中文</strong>.</p>
+      <h2>${escapeHtml(i18n("assistant.welcomeTitle", "How can I help you today?"))}</h2>
+      <p>${i18n("assistant.welcomeBody", "Research Shopee programs, fees, eligibility, and policies.")}</p>
       ${contextHint}
       <div class="welcome-suggestions">
-        ${SUGGESTIONS.map(
-          (s) => `<button type="button" class="suggestion-chip" data-suggest="${escapeHtml(s)}">${escapeHtml(s)}</button>`
-        ).join("")}
+        ${suggestions
+          .map(
+            (s) =>
+              `<button type="button" class="suggestion-chip" data-suggest="${escapeHtml(s)}">${escapeHtml(s)}</button>`
+          )
+          .join("")}
       </div>
     </div>
   `;
@@ -93,7 +107,7 @@ function showLoadingMessage() {
     <div class="msg-content">
       <div class="bubble">
         <div class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-        <span>Researching Seller Education…</span>
+        <span>${escapeHtml(i18n("assistant.loadingResearch", "Researching Seller Education sources…"))}</span>
       </div>
     </div>
   `;
@@ -409,6 +423,8 @@ input.addEventListener("input", () => {
   input.style.height = "auto";
   input.style.height = `${Math.min(input.scrollHeight, 160)}px`;
 });
+
+window.ShpChat = { refreshWelcome: initChat };
 
 initChat();
 loadSourceLibrary();

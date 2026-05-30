@@ -754,6 +754,100 @@ body {
   color: var(--sip-accent);
 }
 
+/* Global language switcher — top-right */
+.lang-switcher {
+  position: fixed;
+  top: 0.75rem;
+  right: 1rem;
+  z-index: 50;
+}
+
+.lang-switcher-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  font-family: var(--sip-font);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--sip-text);
+  background: var(--sip-surface-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--sip-border);
+  border-radius: var(--sip-radius-pill);
+  box-shadow: var(--sip-shadow-sm);
+  cursor: pointer;
+  transition: border-color var(--sip-transition), box-shadow var(--sip-transition);
+}
+
+.lang-switcher-btn:hover {
+  border-color: var(--sip-accent);
+  box-shadow: var(--sip-shadow);
+}
+
+.lang-switcher-globe {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.lang-switcher-current {
+  color: var(--sip-text-secondary);
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lang-switcher-chevron {
+  font-size: 0.65rem;
+  color: var(--sip-text-muted);
+}
+
+.lang-switcher-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  min-width: 11rem;
+  padding: 0.35rem;
+  background: var(--sip-surface);
+  border: 1px solid var(--sip-border);
+  border-radius: var(--sip-radius-sm);
+  box-shadow: var(--sip-shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.lang-switcher-menu button {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sip-text);
+  cursor: pointer;
+}
+
+.lang-switcher-menu button:hover {
+  background: var(--sip-accent-soft);
+}
+
+.lang-switcher-menu button.is-active {
+  background: var(--sip-accent-soft);
+  color: var(--sip-accent);
+  font-weight: 600;
+}
+
+.main {
+  position: relative;
+}
+
 @media (max-width: 900px) {
   .sidebar {
     width: 72px;

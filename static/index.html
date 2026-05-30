@@ -14,8 +14,8 @@
         <button type="button" class="sidebar-brand" data-nav="home" aria-label="Home">
           <span class="brand-mark">SI</span>
           <span class="brand-text">
-            <span class="brand-name">Seller Intelligence</span>
-            <span class="brand-tagline">Command Center</span>
+            <span class="brand-name" data-i18n="brand.name">Seller Intelligence</span>
+            <span class="brand-tagline" data-i18n="brand.tagline">Command Center</span>
           </span>
         </button>
 
@@ -24,88 +24,109 @@
             <span class="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1v-9.5z"/></svg>
             </span>
-            Dashboard
+            <span data-i18n="nav.home">Dashboard</span>
           </button>
           <button type="button" class="nav-item nav-main" data-view="intelligence">
             <span class="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M4 19h16M6 16l3-9 3 5 3-7 3 11"/></svg>
             </span>
-            Seller Intelligence
+            <span data-i18n="nav.intelligence">Seller Intelligence</span>
           </button>
           <button type="button" class="nav-item nav-main" data-view="assistant">
             <span class="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M12 3a8 8 0 018 8c0 3.2-1.9 5.9-4.6 7.2L15 21H9l-.4-2.8A8 8 0 0112 3z"/></svg>
             </span>
-            AI Assistant
+            <span data-i18n="nav.assistant">AI Assistant</span>
           </button>
           <button type="button" class="nav-item nav-main" data-view="learning">
             <span class="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg>
             </span>
-            Learning Center
+            <span data-i18n="nav.learning">Learning Center</span>
           </button>
           <button type="button" class="nav-item nav-main" data-view="settings">
             <span class="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
             </span>
-            Settings
+            <span data-i18n="nav.settings">Settings</span>
           </button>
         </nav>
 
         <div id="assistantSidebarTools" class="assistant-tools hidden">
           <button type="button" id="newChatBtn" class="nav-item nav-item-sub">
             <span class="nav-icon">+</span>
-            New chat
+            <span data-i18n="nav.newChat">New chat</span>
           </button>
           <button type="button" id="savedChatsBtn" class="nav-item nav-item-sub">
             <span class="nav-icon">☰</span>
-            Saved chats
+            <span data-i18n="nav.savedChats">Saved chats</span>
           </button>
           <button type="button" id="sourceLibraryBtn" class="nav-item nav-item-sub">
             <span class="nav-icon">◇</span>
-            Sources
+            <span data-i18n="nav.sources">Sources</span>
           </button>
         </div>
 
         <div id="savedChatsPanel" class="sidebar-panel hidden">
-          <h3>Saved chats</h3>
+          <h3 data-i18n="nav.savedChats">Saved chats</h3>
           <ul id="savedChatsList" class="saved-list"></ul>
-          <p id="savedChatsEmpty" class="panel-empty">No saved chats yet.</p>
+          <p id="savedChatsEmpty" class="panel-empty" data-i18n="nav.savedEmpty">No saved chats yet.</p>
         </div>
 
         <div id="sourceLibraryPanel" class="sidebar-panel hidden">
-          <h3>Source library</h3>
-          <p class="panel-hint">Sources from this session appear here.</p>
+          <h3 data-i18n="nav.sources">Sources</h3>
+          <p class="panel-hint" data-i18n="nav.sourceHint">Sources from this session appear here.</p>
           <ul id="sourceLibraryList" class="source-library-list"></ul>
-          <p id="sourceLibraryEmpty" class="panel-empty">No sources collected yet.</p>
+          <p id="sourceLibraryEmpty" class="panel-empty" data-i18n="nav.sourceEmpty">No sources collected yet.</p>
         </div>
 
         <div class="sidebar-footer">
-          <p>RM Seller Intelligence · Shopee</p>
+          <p data-i18n="footer.tag">RM Seller Intelligence · Shopee</p>
         </div>
       </aside>
 
       <div class="main">
+        <div id="langSwitcher" class="lang-switcher" aria-label="Language">
+          <button
+            type="button"
+            id="langSwitcherBtn"
+            class="lang-switcher-btn"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+          >
+            <span class="lang-switcher-globe" aria-hidden="true">🌐</span>
+            <span id="langSwitcherLabel" data-i18n="lang.label">Language</span>
+            <span id="langSwitcherCurrent" class="lang-switcher-current"></span>
+            <span class="lang-switcher-chevron" aria-hidden="true">▾</span>
+          </button>
+          <div id="langSwitcherMenu" class="lang-switcher-menu hidden" role="listbox">
+            <button type="button" role="option" data-lang-option="en">🇺🇸 <span data-i18n="lang.en">English</span></button>
+            <button type="button" role="option" data-lang-option="zh-TW">🇹🇼 <span data-i18n="lang.zh-TW">繁體中文</span></button>
+            <button type="button" role="option" data-lang-option="zh-CN">🇨🇳 <span data-i18n="lang.zh-CN">简体中文</span></button>
+            <button type="button" role="option" data-lang-option="fil">🇵🇭 <span data-i18n="lang.fil">Filipino</span></button>
+          </div>
+        </div>
+
         <!-- Home -->
         <div id="viewHome" class="app-view">
           <div class="home-scroll">
             <section class="home-hero">
               <div class="home-hero-glow" aria-hidden="true"></div>
-              <h1>Seller Intelligence Platform</h1>
-              <p class="hero-sub">
+              <h1 data-i18n="home.title">Seller Intelligence Platform</h1>
+              <p class="hero-sub" data-i18n="home.hero" data-i18n-html="true">
                 Search any seller.<br />
                 Analyze performance.<br />
                 Identify opportunities.<br />
                 Take action.
               </p>
               <div class="home-hero-actions">
-                <button type="button" class="btn btn-primary" data-action="open-intelligence">
+                <button type="button" class="btn btn-primary" data-action="open-intelligence" data-i18n="home.openDashboard">
                   Open Dashboard
                 </button>
-                <button type="button" class="btn btn-secondary" data-action="search-seller">
+                <button type="button" class="btn btn-secondary" data-action="search-seller" data-i18n="home.searchSeller">
                   Search Seller
                 </button>
-                <button type="button" class="btn btn-ghost" data-action="ask-ai">
+                <button type="button" class="btn btn-ghost" data-action="ask-ai" data-i18n="home.askAi">
                   Ask AI
                 </button>
               </div>
@@ -113,37 +134,37 @@
 
             <section class="home-stats" aria-label="System status">
               <article class="stat-card">
-                <div class="stat-card-label">Total sellers loaded</div>
+                <div class="stat-card-label" data-i18n="home.statSellers">Total sellers loaded</div>
                 <div id="homeSellerCount" class="stat-card-value">—</div>
               </article>
               <article class="stat-card">
-                <div class="stat-card-label">Last refresh</div>
+                <div class="stat-card-label" data-i18n="home.statRefresh">Last refresh</div>
                 <div id="homeLastRefresh" class="stat-card-value">—</div>
               </article>
               <article class="stat-card">
-                <div class="stat-card-label">Google Sheet status</div>
-                <div id="homeSheetStatus" class="stat-card-value status-warn">Checking…</div>
+                <div class="stat-card-label" data-i18n="home.statSheet">Google Sheet status</div>
+                <div id="homeSheetStatus" class="stat-card-value status-warn" data-i18n="home.statChecking">Checking…</div>
               </article>
             </section>
 
             <section class="home-features">
-              <h2>What you can do</h2>
+              <h2 data-i18n="home.featuresTitle">What you can do</h2>
               <div class="feature-grid">
                 <article class="feature-card">
-                  <h3>Seller search</h3>
-                  <p>Find any shop by name or ID from the live mirror sheet cache.</p>
+                  <h3 data-i18n="home.featSearchTitle">Seller search</h3>
+                  <p data-i18n="home.featSearchDesc">Find any shop by name or ID from the live mirror sheet cache.</p>
                 </article>
                 <article class="feature-card">
-                  <h3>Performance analysis</h3>
-                  <p>Commercial, ads, AMS, MPA, FBS, livestream, video, and MDV in one view.</p>
+                  <h3 data-i18n="home.featPerfTitle">Performance analysis</h3>
+                  <p data-i18n="home.featPerfDesc">Commercial, ads, AMS, MPA, FBS, livestream, video, and MDV in one view.</p>
                 </article>
                 <article class="feature-card">
-                  <h3>AI recommendations</h3>
-                  <p>Strengths, risks, and prioritized actions powered by your seller data.</p>
+                  <h3 data-i18n="home.featAiTitle">AI recommendations</h3>
+                  <p data-i18n="home.featAiDesc">Strengths, risks, and prioritized actions powered by your seller data.</p>
                 </article>
                 <article class="feature-card">
-                  <h3>Learning resources</h3>
-                  <p>Program guides for Ads, MDV, AMS, and more — searchable in one place.</p>
+                  <h3 data-i18n="home.featLearnTitle">Learning resources</h3>
+                  <p data-i18n="home.featLearnDesc">Program guides for Ads, MDV, AMS, and more — searchable in one place.</p>
                 </article>
               </div>
             </section>
@@ -154,19 +175,19 @@
         <div id="viewDashboard" class="app-view hidden dash-app">
           <header class="dash-top-header">
             <div class="dash-top-header-text">
-              <h1>Seller Intelligence</h1>
-              <p id="dashHeaderMeta" class="dash-header-meta">Performance command center · live cache</p>
+              <h1 data-i18n="intel.title">Seller Intelligence</h1>
+              <p id="dashHeaderMeta" class="dash-header-meta" data-i18n="intel.meta">Performance command center · live cache</p>
             </div>
             <div class="dash-top-header-actions">
               <div class="dash-header-stat">
-                <span class="dash-header-stat-label">Sellers</span>
+                <span class="dash-header-stat-label" data-i18n="intel.sellers">Sellers</span>
                 <span id="sellerCountLabel" class="dash-header-stat-value">—</span>
               </div>
               <div class="dash-header-stat">
-                <span class="dash-header-stat-label">Refreshed</span>
+                <span class="dash-header-stat-label" data-i18n="intel.refreshed">Refreshed</span>
                 <span id="sheetLoadMeta" class="dash-header-stat-value">—</span>
               </div>
-              <button type="button" id="refreshSheetBtn" class="btn btn-dash-refresh">
+              <button type="button" id="refreshSheetBtn" class="btn btn-dash-refresh" data-i18n="intel.refresh">
                 Refresh
               </button>
             </div>
@@ -175,15 +196,16 @@
           <div class="dashboard-scroll">
             <section class="dash-search-sticky glass-bar" id="dashSearchSticky">
               <div class="dash-search-inner">
-                <label for="shopSearchInput" class="dash-search-label">Search seller</label>
+                <label for="shopSearchInput" class="dash-search-label" data-i18n="intel.searchLabel">Search seller</label>
                 <div class="dash-search-row">
                   <input
                     type="text"
                     id="shopSearchInput"
+                    data-i18n-placeholder="intel.searchPlaceholder"
                     placeholder="Shop name or Shop ID…"
                     autocomplete="off"
                   />
-                  <button type="button" id="shopSearchBtn" class="btn btn-primary">Search</button>
+                  <button type="button" id="shopSearchBtn" class="btn btn-primary" data-i18n="intel.searchBtn">Search</button>
                 </div>
                 <ul id="shopSearchResults" class="shop-results-list hidden"></ul>
               </div>
@@ -191,15 +213,15 @@
 
             <div id="dashboardEmpty" class="dashboard-empty">
               <div class="empty-illustration" aria-hidden="true">◎</div>
-              <h2>Find a seller</h2>
-              <p id="dashboardEmptyText">Refresh sheet data, then search by shop name or ID.</p>
+              <h2 data-i18n="intel.emptyTitle">Find a seller</h2>
+              <p id="dashboardEmptyText" data-i18n="intel.emptyText">Refresh sheet data, then search by shop name or ID.</p>
             </div>
 
             <div id="dashboardContent" class="dashboard-content hidden">
               <section id="sellerSummaryCard" class="seller-hero-card"></section>
               <section id="commercialOverview" class="dash-commercial-block">
                 <div class="dash-section-head dash-section-head-standalone">
-                  <h2>Commercial Overview</h2>
+                  <h2 data-i18n="intel.commercial">Commercial Overview</h2>
                 </div>
                 <div id="shopKpiBar" class="kpi-grid kpi-grid-commercial"></div>
               </section>
@@ -215,22 +237,22 @@
         <div id="viewAssistant" class="app-view hidden">
           <header class="main-header glass-header">
             <div>
-              <h1>AI Assistant</h1>
-              <p class="subtitle">Seller programs, policies & education · English or 繁體中文</p>
+              <h1 data-i18n="assistant.title">AI Assistant</h1>
+              <p class="subtitle" data-i18n="assistant.subtitle">Seller programs, policies & education</p>
             </div>
-            <button type="button" id="saveChatBtn" class="btn btn-outline btn-sm">Save chat</button>
+            <button type="button" id="saveChatBtn" class="btn btn-outline btn-sm" data-i18n="assistant.saveChat">Save chat</button>
           </header>
 
           <div id="sellerContextBar" class="seller-context-bar hidden">
             <div class="seller-context-inner">
-              <span>Seller context:</span>
+              <span data-i18n="assistant.context">Seller context:</span>
               <strong id="sellerContextName">—</strong>
-              <button type="button" id="clearSellerContext" class="btn btn-ghost btn-sm">Clear</button>
+              <button type="button" id="clearSellerContext" class="btn btn-ghost btn-sm" data-i18n="assistant.clearContext">Clear</button>
             </div>
           </div>
 
           <div id="recentSearchesWrap" class="recent-searches hidden">
-            <div class="recent-searches-label">Recent seller searches</div>
+            <div class="recent-searches-label" data-i18n="assistant.recentSearches">Recent seller searches</div>
             <div id="recentSearchesChips" class="recent-chips"></div>
           </div>
 
@@ -243,7 +265,7 @@
               <div class="loading-dots" aria-hidden="true">
                 <span></span><span></span><span></span>
               </div>
-              <span class="loading-text">Researching Seller Education sources…</span>
+              <span class="loading-text" data-i18n="assistant.loadingResearch">Researching Seller Education sources…</span>
             </div>
 
             <form id="chatForm" class="composer">
@@ -251,16 +273,17 @@
                 <textarea
                   id="questionInput"
                   rows="1"
+                  data-i18n-placeholder="assistant.placeholder"
                   placeholder="Ask about programs, fees, eligibility, or seller strategy…"
                   required
                 ></textarea>
-                <button type="submit" id="sendBtn" class="btn-send" title="Send" aria-label="Send message">
+                <button type="submit" id="sendBtn" class="btn-send" data-i18n-title="assistant.send" title="Send message" aria-label="Send message">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 4l-1.4 1.4 6.6 6.6H4v2h13.2l-6.6 6.6L12 20l10-8-10-8z" fill="currentColor"/>
                   </svg>
                 </button>
               </div>
-              <p class="composer-hint">Enter to send · Shift+Enter for new line</p>
+              <p class="composer-hint" data-i18n="assistant.composerHint">Enter to send · Shift+Enter for new line</p>
             </form>
           </div>
         </div>
@@ -269,8 +292,8 @@
         <div id="viewLearning" class="app-view hidden">
           <div class="learning-scroll">
             <header class="learning-header">
-              <h1>Learning Center</h1>
-              <p>Searchable knowledge base for Shopee seller programs and campaigns.</p>
+              <h1 data-i18n="learning.title">Learning Center</h1>
+              <p data-i18n="learning.subtitle">Searchable knowledge base for Shopee seller programs and campaigns.</p>
             </header>
             <div class="learning-search-wrap">
               <span class="learning-search-icon" aria-hidden="true">⌕</span>
@@ -278,6 +301,7 @@
                 type="search"
                 id="learningSearch"
                 class="learning-search"
+                data-i18n-placeholder="learning.searchPlaceholder"
                 placeholder="Search topics, programs, policies…"
                 autocomplete="off"
               />
@@ -290,14 +314,14 @@
         <div id="viewSettings" class="app-view hidden">
           <div class="settings-scroll">
             <div class="settings-panel">
-              <h1>Settings</h1>
-              <p class="subtitle">Platform configuration and integrations.</p>
+              <h1 data-i18n="settings.title">Settings</h1>
+              <p class="subtitle" data-i18n="settings.subtitle">Platform configuration and integrations.</p>
               <ul class="settings-list">
-                <li>AI Assistant uses your Anthropic API key from <code>.env</code></li>
-                <li>Replies match your language (English / 繁體中文)</li>
-                <li>Sources are fetched from seller.shopee.ph/edu</li>
-                <li>Seller Intelligence loads metrics from the Google Sheets mirror (AI DATA tab)</li>
-                <li>Click <strong>Refresh</strong> on Seller Intelligence to reload the seller cache</li>
+                <li data-i18n="settings.li1">AI Assistant uses your Anthropic API key from <code>.env</code></li>
+                <li data-i18n="settings.li2">Replies match the language of your question</li>
+                <li data-i18n="settings.li3">Sources are fetched from seller.shopee.ph/edu</li>
+                <li data-i18n="settings.li4">Seller Intelligence loads metrics from the Google Sheets mirror (AI DATA tab)</li>
+                <li data-i18n="settings.li5">Click Refresh on Seller Intelligence to reload the seller cache</li>
               </ul>
             </div>
           </div>
@@ -308,9 +332,9 @@
     <div id="settingsModal" class="modal hidden" role="dialog" aria-labelledby="settingsTitle">
       <div class="modal-backdrop" data-close-modal></div>
       <div class="modal-card">
-        <h2 id="settingsTitle">Settings</h2>
-        <p class="modal-text">Use the Settings page in the sidebar for platform options.</p>
-        <button type="button" class="btn btn-primary" data-close-modal>Close</button>
+        <h2 id="settingsTitle" data-i18n="modal.settingsTitle">Settings</h2>
+        <p class="modal-text" data-i18n="modal.settingsText">Use the Settings page in the sidebar for platform options.</p>
+        <button type="button" class="btn btn-primary" data-close-modal data-i18n="modal.close">Close</button>
       </div>
     </div>
 
@@ -323,6 +347,7 @@
         }
       }
     </script>
+    <script src="/static/i18n.js"></script>
     <script src="/static/platform.js"></script>
     <script src="/static/app.js"></script>
     <script src="/static/dashboard.js"></script>
