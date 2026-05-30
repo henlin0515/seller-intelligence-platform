@@ -120,6 +120,21 @@ body {
   flex: 1;
 }
 
+.nav-section-label {
+  margin: 0.75rem 0.35rem 0.25rem;
+  padding: 0 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sip-text-muted);
+}
+
+.nav-assortment .nav-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
 .nav-item {
   display: flex;
   align-items: center;

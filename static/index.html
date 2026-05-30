@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/static/styles.css" />
     <link rel="stylesheet" href="/static/dashboard.css" />
     <link rel="stylesheet" href="/static/competitor-tracker.css" />
+    <link rel="stylesheet" href="/static/assortment.css" />
   </head>
   <body>
     <div class="layout">
@@ -44,6 +45,37 @@
               <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg>
             </span>
             <span data-i18n="nav.learning">Learning Center</span>
+          </button>
+          <p class="nav-section-label" data-i18n="nav.assortmentSection">Assortment Intelligence</p>
+          <button type="button" class="nav-item nav-main nav-assortment" data-view="assortment" data-cai-tab="dashboard">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 4h6v2h-6z"/></svg>
+            </span>
+            <span data-i18n="nav.assortmentDashboard">Dashboard</span>
+          </button>
+          <button type="button" class="nav-item nav-main nav-assortment" data-view="assortment" data-cai-tab="missing">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 8L2 5v3l10 5 10-5V5l-10 5zm0 4L2 13v3l10 5 10-5v-3l-10-5z"/></svg>
+            </span>
+            <span data-i18n="nav.assortmentMissing">Missing Assortment</span>
+          </button>
+          <button type="button" class="nav-item nav-main nav-assortment" data-view="assortment" data-cai-tab="review">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M2 20h20"/></svg>
+            </span>
+            <span data-i18n="nav.assortmentReview">Need Review</span>
+          </button>
+          <button type="button" class="nav-item nav-main nav-assortment" data-view="assortment" data-cai-tab="priceGap">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </span>
+            <span data-i18n="nav.assortmentPriceGap">Price Gap Analysis</span>
+          </button>
+          <button type="button" class="nav-item nav-main nav-assortment" data-view="assortment" data-cai-tab="newListings">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 6v6l4 2M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>
+            </span>
+            <span data-i18n="nav.assortmentNewListings">New Listing Alert</span>
           </button>
           <button type="button" class="nav-item nav-main" data-view="competitorTracker">
             <span class="nav-icon" aria-hidden="true">
@@ -378,6 +410,67 @@
           </div>
         </div>
 
+        <!-- Competitor Assortment Intelligence -->
+        <div id="viewAssortment" class="app-view hidden cai-app">
+          <header class="cai-header">
+            <h1 data-i18n="assortment.title">Competitor Assortment Intelligence</h1>
+            <p class="subtitle" data-i18n="assortment.subtitle">
+              Connected to COMPETITOR_TRACKER — catalog sync from competitor shop links
+            </p>
+            <div class="cai-toolbar">
+              <button type="button" id="caiSyncTrackerBtn" class="btn btn-primary btn-sm" data-i18n="assortment.syncTracker">
+                Sync from Tracker
+              </button>
+              <span id="caiSyncStatus" class="cai-hint"></span>
+            </div>
+          </header>
+          <div class="cai-body">
+            <section id="caiPanelDashboard" class="cai-panel">
+              <div id="caiMetrics" class="cai-metrics"></div>
+              <h2 class="cai-section-title" data-i18n="assortment.trackerTitle">Tracker competitors</h2>
+              <div id="caiTrackerTable" class="cai-table-wrap"></div>
+              <details class="cai-manual-import">
+                <summary data-i18n="assortment.manualImport">Manual JSON import (optional)</summary>
+                <div id="caiPanelImport" class="cai-import-panel">
+                  <p class="cai-hint">
+                    Paste JSON: <code>[{"product_name":"...","product_link":"...","product_image_url":"...","sku_variations":["S"],"price":99}]</code>
+                  </p>
+                  <div class="cai-import-box">
+                    <div>
+                      <h3>Our assortment</h3>
+                      <textarea id="caiImportOur" placeholder='{"products":[]}'></textarea>
+                      <button type="button" id="caiImportOurBtn" class="btn btn-secondary btn-sm">Import our products</button>
+                    </div>
+                    <div>
+                      <h3>Competitor assortment</h3>
+                      <input type="text" id="caiImportShopId" placeholder="Competitor Shop ID (optional)" style="width:100%;margin-bottom:0.5rem" />
+                      <input type="text" id="caiImportShopName" placeholder="Competitor Shop Name (optional)" style="width:100%;margin-bottom:0.5rem" />
+                      <textarea id="caiImportCompetitor" placeholder='{"products":[]}'></textarea>
+                      <button type="button" id="caiImportCompetitorBtn" class="btn btn-primary btn-sm">Import competitor + run matching</button>
+                    </div>
+                  </div>
+                  <p style="margin-top:1rem">
+                    <button type="button" id="caiRunMatchingBtn" class="btn btn-ghost btn-sm">Re-run matching only</button>
+                  </p>
+                  <p id="caiImportStatus" class="cai-hint"></p>
+                </div>
+              </details>
+            </section>
+            <section id="caiPanelMissing" class="cai-panel hidden">
+              <div id="caiMissingTable" class="cai-table-wrap"></div>
+            </section>
+            <section id="caiPanelReview" class="cai-panel hidden">
+              <div id="caiReviewList"></div>
+            </section>
+            <section id="caiPanelPriceGap" class="cai-panel hidden">
+              <div id="caiPriceGapTable" class="cai-table-wrap"></div>
+            </section>
+            <section id="caiPanelNewListings" class="cai-panel hidden">
+              <div id="caiNewListingsTable" class="cai-table-wrap"></div>
+            </section>
+          </div>
+        </div>
+
         <!-- Settings -->
         <div id="viewSettings" class="app-view hidden">
           <div class="settings-scroll">
@@ -420,6 +513,7 @@
     <script src="/static/app.js"></script>
     <script src="/static/dashboard.js"></script>
     <script src="/static/competitor-tracker.js"></script>
+    <script src="/static/assortment.js"></script>
     <script type="module" src="/static/dashboard-charts.js"></script>
   </body>
 </html>

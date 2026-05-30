@@ -22,6 +22,8 @@ from seller.competitor_tracker.service import (
     clear_competitor_sheet_cache,
     get_competitor_list_payload,
 )
+from seller.assortment.db import init_assortment_db
+from seller.assortment.router import router as assortment_router
 from seller.service import (
     get_dashboard_payload,
     get_seller_data_status,
@@ -68,6 +70,8 @@ app.add_middleware(
 if STATIC_DIR.is_dir():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+app.include_router(assortment_router)
+
 
 class CompetitorCheckRequest(BaseModel):
     shop_ids: list[str] | None = None
@@ -103,6 +107,7 @@ async def index():
 async def on_startup() -> None:
     clear_settings_cache()
     log_startup_configuration()
+    init_assortment_db()
 
 
 @app.get("/health")

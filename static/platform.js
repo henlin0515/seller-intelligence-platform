@@ -73,6 +73,7 @@
     assistant: document.getElementById("viewAssistant"),
     learning: document.getElementById("viewLearning"),
     competitorTracker: document.getElementById("viewCompetitorTracker"),
+    assortment: document.getElementById("viewAssortment"),
     settings: document.getElementById("viewSettings"),
   };
 
@@ -271,10 +272,16 @@
   function navigate(view, options = {}) {
     currentView = view;
     const viewKey = view === "dashboard" ? "intelligence" : view;
+    const caiTab = options.caiTab || null;
 
     document.querySelectorAll(".nav-main").forEach((btn) => {
       const v = btn.dataset.view;
-      btn.classList.toggle("active", v === viewKey || (view === "dashboard" && v === "intelligence"));
+      const tab = btn.dataset.caiTab;
+      let active = v === viewKey || (view === "dashboard" && v === "intelligence");
+      if (viewKey === "assortment" && v === "assortment") {
+        active = tab === (caiTab || "dashboard");
+      }
+      btn.classList.toggle("active", active);
     });
 
     Object.entries(views).forEach(([key, el]) => {
@@ -296,6 +303,9 @@
     if (viewKey === "competitorTracker" && window.ShpCompetitorTracker?.onShow) {
       window.ShpCompetitorTracker.onShow();
     }
+    if (viewKey === "assortment" && window.ShpAssortment?.onShow) {
+      window.ShpAssortment.onShow(caiTab || "dashboard");
+    }
 
     if (options.focusSearch) {
       setTimeout(() => document.getElementById("shopSearchInput")?.focus(), 120);
@@ -303,7 +313,9 @@
   }
 
   document.querySelectorAll(".nav-main").forEach((btn) => {
-    btn.addEventListener("click", () => navigate(btn.dataset.view));
+    btn.addEventListener("click", () =>
+      navigate(btn.dataset.view, { caiTab: btn.dataset.caiTab || null })
+    );
   });
 
   document.querySelector(".sidebar-brand")?.addEventListener("click", () => navigate("home"));

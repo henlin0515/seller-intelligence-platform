@@ -26,7 +26,12 @@ def _is_header_row(row: list[Any]) -> bool:
 
 
 def parse_competitor_grid(grid: list[list[Any]]) -> list[dict[str, str]]:
-    """Parse COMPETITOR_TRACKER columns A–D."""
+    """
+    Parse COMPETITOR_TRACKER tab (columns A–D).
+
+    A = Shop ID, B = Shop Name, C = Shopee competitor link, D = TikTok competitor link.
+    Includes any row with Column C and/or Column D — TikTok is not required.
+    """
     if not grid:
         return []
 
@@ -34,22 +39,24 @@ def parse_competitor_grid(grid: list[list[Any]]) -> list[dict[str, str]]:
     competitors: list[dict[str, str]] = []
     seen_ids: set[str] = set()
 
-    for row in grid[start:]:
+    for offset, row in enumerate(grid[start:]):
         shop_id = _cell(row, 0)
         shop_name = _cell(row, 1)
-        shopee_link = _cell(row, 2)
-        tiktok_link = _cell(row, 3)
-        if not shop_id and not shop_name and not tiktok_link:
+        shopee_link = _cell(row, 2)  # Column C
+        tiktok_link = _cell(row, 3)  # Column D
+        if not shop_id and not shop_name and not shopee_link and not tiktok_link:
             continue
-        if not tiktok_link:
+        if not shopee_link and not tiktok_link:
             continue
         if not shop_id:
-            shop_id = shop_name or tiktok_link
+            shop_id = shop_name or shopee_link or tiktok_link
+        row_number = start + offset + 1
         if shop_id in seen_ids:
-            continue
+            shop_id = f"{shop_id}__row{row_number}"
         seen_ids.add(shop_id)
         competitors.append(
             {
+                "row_number": str(row_number),
                 "shop_id": shop_id,
                 "shop_name": shop_name or shop_id,
                 "shopee_link": shopee_link,

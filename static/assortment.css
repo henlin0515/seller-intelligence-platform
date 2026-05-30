@@ -1,0 +1,245 @@
+/* Competitor Assortment Intelligence */
+.cai-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.cai-header {
+  padding: 1.25rem 2rem 0;
+  border-bottom: 1px solid var(--sip-border);
+  background: var(--sip-surface);
+}
+
+.cai-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.cai-header .subtitle {
+  margin: 0.35rem 0 1rem;
+  color: var(--sip-text-secondary);
+  font-size: 0.9rem;
+}
+
+.cai-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.cai-tab {
+  padding: 0.55rem 1rem;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--sip-text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.cai-tab.active {
+  color: var(--sip-accent);
+  border-bottom-color: var(--sip-accent);
+  font-weight: 600;
+}
+
+.cai-body {
+  flex: 1;
+  overflow: auto;
+  padding: 1.25rem 2rem 2rem;
+}
+
+.cai-panel.hidden {
+  display: none;
+}
+
+.cai-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.cai-section-title {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.cai-status {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--sip-radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cai-status-ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.cai-status-na {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.cai-reason {
+  max-width: 280px;
+  font-size: 0.85rem;
+  color: var(--sip-text-secondary);
+}
+
+.cai-manual-import {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+}
+
+.cai-manual-import summary {
+  cursor: pointer;
+  color: var(--sip-accent);
+}
+
+.cai-import-panel {
+  margin-top: 0.75rem;
+}
+
+.cai-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.cai-metric-card {
+  background: var(--sip-surface);
+  border: 1px solid var(--sip-border);
+  border-radius: var(--sip-radius-sm);
+  padding: 1rem;
+}
+
+.cai-metric-card .label {
+  font-size: 0.75rem;
+  color: var(--sip-text-secondary);
+}
+
+.cai-metric-card .value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+.cai-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--sip-border);
+  border-radius: var(--sip-radius);
+  background: var(--sip-surface);
+}
+
+.cai-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.cai-table th,
+.cai-table td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--sip-border);
+  vertical-align: top;
+  text-align: left;
+}
+
+.cai-table th {
+  background: var(--sip-bg);
+  font-weight: 600;
+  color: var(--sip-text-secondary);
+  position: sticky;
+  top: 0;
+}
+
+.cai-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--sip-bg);
+}
+
+.cai-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.cai-compare-col h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: var(--sip-text-secondary);
+}
+
+.cai-review-card {
+  border: 1px solid var(--sip-border);
+  border-radius: var(--sip-radius-sm);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: var(--sip-surface);
+}
+
+.cai-gap-green {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.cai-gap-yellow {
+  color: #a16207;
+  font-weight: 600;
+}
+
+.cai-gap-red {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.cai-import-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.cai-import-box textarea {
+  width: 100%;
+  min-height: 200px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  padding: 0.75rem;
+  border: 1px solid var(--sip-border);
+  border-radius: var(--sip-radius-sm);
+}
+
+.cai-import-box h3 {
+  margin: 0 0 0.5rem;
+}
+
+.cai-hint {
+  font-size: 0.8rem;
+  color: var(--sip-text-muted);
+  margin: 0.5rem 0 1rem;
+}
+
+.cai-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--sip-text-muted);
+}
+
+@media (max-width: 900px) {
+  .cai-import-box,
+  .cai-compare-grid {
+    grid-template-columns: 1fr;
+  }
+}

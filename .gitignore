@@ -35,6 +35,9 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# Assortment SQLite (local dev)
+data/assortment.db
+
 # Test / tooling artifacts
 playwright-report/
 test-results/
