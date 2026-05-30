@@ -1,5 +1,5 @@
 /**
- * Competitor Assortment Intelligence — Tracker-backed UI.
+ * Competitor Assortment Intelligence — Command Center UI
  */
 (function () {
   const panels = {
@@ -21,19 +21,40 @@
     return d.innerHTML;
   }
 
-  function imgCell(url) {
-    if (!url) return "—";
-    return `<img class="cai-thumb" src="${escapeHtml(url)}" alt="" loading="lazy" onerror="this.style.display='none'" />`;
+  function imgCell(url, cls) {
+    const c = cls || "cai-thumb";
+    if (!url) return `<div class="${c} cc-img-placeholder">NO SIGNAL</div>`;
+    return `<img class="${c}" src="${escapeHtml(url)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'${c} cc-img-placeholder\\'>NO SIGNAL</div>'" />`;
   }
 
-  function linkCell(url) {
-    if (!url || url === "NA") return "NA";
-    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Link</a>`;
+  function linkCell(url, label) {
+    if (!url || url === "NA") return '<span class="cc-link-na">NA</span>';
+    const text = label || "OPEN INTEL";
+    return `<a class="cc-intel-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`;
   }
 
   function skuList(arr) {
     if (!arr || !arr.length) return "—";
     return escapeHtml(arr.join(", "));
+  }
+
+  function formatRelativeTime(iso) {
+    if (!iso) return "Unknown";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return escapeHtml(String(iso));
+    const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+    if (days <= 0) return "Today";
+    if (days === 1) return "1 day ago";
+    return `${days} days ago`;
+  }
+
+  function confidenceBar(score) {
+    const pct = Math.min(100, Math.max(0, Number(score) || 0));
+    return `<div class="cc-confidence">
+      <span class="cc-confidence-label">CONF</span>
+      <div class="cc-confidence-bar"><div class="cc-confidence-fill" style="width:${pct}%"></div></div>
+      <span class="cc-confidence-val">${escapeHtml(pct)}%</span>
+    </div>`;
   }
 
   async function api(path, options = {}) {
@@ -44,26 +65,17 @@
   }
 
   function emptyBlock(message) {
-    return `<p class="cai-empty">${escapeHtml(message || "No competitor data available")}</p>`;
+    return `<p class="cai-empty cc-empty-terminal">${escapeHtml(message || "No competitor data available")}</p>`;
+  }
+
+  function shopSectorHeader(g) {
+    return `<div class="cc-shop-sector">
+      <div class="cc-sector-label">SECTOR · ${escapeHtml(g.seller_name)} <span class="cc-sector-id">[${escapeHtml(g.seller_id)}]</span></div>
+      <p class="cai-hint cc-sector-links">Shopee ${linkCell(g.shopee_link, "SHOPEE")} · TikTok ${linkCell(g.tiktok_link, "TIKTOK")}</p>`;
   }
 
   function shopGroupHeader(g) {
-    return `<header class="cai-shop-header">
-      <h3>${escapeHtml(g.seller_name)} <small>(${escapeHtml(g.seller_id)})</small></h3>
-      <p>Shopee: ${linkCell(g.shopee_link)} · TikTok: ${linkCell(g.tiktok_link)}</p>
-    </header>`;
-  }
-
-  function renderGroupedTables(groups, rowHtml) {
-    if (!groups.length) return "";
-    return groups
-      .map(
-        (g) => `${shopGroupHeader(g)}
-      <table class="cai-table">
-        <tbody>${(g.items || []).map(rowHtml).join("")}</tbody>
-      </table>`
-      )
-      .join("");
+    return shopSectorHeader(g);
   }
 
   function updateSidebarTabHighlight(tab) {
@@ -86,13 +98,6 @@
     if (activeTab === "review") loadReview();
     if (activeTab === "priceGap") loadPriceGap();
     if (activeTab === "newListings") loadNewListings();
-  }
-
-  function statusBadge(status) {
-    const s = (status || "na").toLowerCase();
-    const cls = s === "ok" ? "sip-badge sip-badge-ok" : "sip-badge sip-badge-na";
-    const label = s === "ok" ? "OK" : "NA";
-    return `<span class="${cls}">${label}</span>`;
   }
 
   function sideStatusBadge(label) {
@@ -180,21 +185,21 @@
 
   async function loadDashboard() {
     const m = await api("/api/assortment/dashboard");
+    const priceGapCount = (m.higher_priced_products || 0) + (m.lower_priced_products || 0);
     const cards = [
       ["Total Products Compared", m.total_products_compared],
       ["Matched Products", m.matched_products],
       ["Missing Products", m.missing_products],
-      ["Need Review Products", m.need_review_products],
-      ["Higher Priced Products", m.higher_priced_products],
-      ["Lower Priced Products", m.lower_priced_products],
-      ["Recent New Listings (30d, not on Shopee)", m.new_listings_recent ?? m.new_listings_today],
+      ["Need Review", m.need_review_products],
+      ["Price Gap", priceGapCount],
+      ["New Listings", m.new_listings_recent ?? m.new_listings_today],
     ];
     let html = cards
       .map(
-        ([label, value]) => `
-      <article class="cai-metric-card">
+        ([label, value], i) => `
+      <article class="cai-metric-card" style="animation-delay:${i * 0.06}s">
         <div class="label">${escapeHtml(label)}</div>
-        <div class="value">${escapeHtml(value)}</div>
+        <div class="value">${escapeHtml(value ?? 0)}</div>
       </article>`
       )
       .join("");
@@ -202,6 +207,28 @@
       html += emptyBlock(m.empty_message || "No competitor data available");
     }
     metricsEl.innerHTML = html;
+  }
+
+  function renderReconCards(groups) {
+    return groups
+      .map((g) => {
+        const cards = (g.items || [])
+          .map(
+            (r) => `
+        <article class="cc-recon-card">
+          <div class="cc-recon-tag">RECON · MISSING FROM SHOPEE</div>
+          ${imgCell(r.product_image_url, "cc-recon-img")}
+          <h4 class="cc-recon-title">${escapeHtml(r.product_name)}</h4>
+          <p class="cc-recon-shop">Shop: ${escapeHtml(g.seller_name || r.seller_name)}</p>
+          <p>${linkCell(r.product_link, "PRODUCT INTEL")}</p>
+          ${confidenceBar(r.confidence_score)}
+          <p class="cai-reason cc-recon-reason">${escapeHtml(r.reason || "")}</p>
+        </article>`
+          )
+          .join("");
+        return `${shopSectorHeader(g)}<div class="cc-recon-grid">${cards}</div></div>`;
+      })
+      .join("");
   }
 
   async function loadMissing() {
@@ -216,14 +243,41 @@
       el.innerHTML = '<p class="cai-empty">No TikTok products missing from Shopee.</p>';
       return;
     }
-    el.innerHTML = renderGroupedTables(groups, (r) => `<tr>
-      <td>${imgCell(r.product_image_url)}</td>
-      <td>${escapeHtml(r.product_name)}</td>
-      <td>${linkCell(r.product_link)}</td>
-      <td>${skuList(r.sku_variations)}</td>
-      <td>${escapeHtml(r.confidence_score)}%</td>
-      <td class="cai-reason">${escapeHtml(r.reason || "")}</td>
-    </tr>`);
+    el.innerHTML = renderReconCards(groups);
+  }
+
+  function renderVsPanel(r) {
+    const shopee = r.shopee || {};
+    const tiktok = r.tiktok || {};
+    const sim = Math.min(100, Math.max(0, Number(r.similarity_score) || 0));
+    return `
+    <article class="cc-vs-panel">
+      <div class="cc-vs-header">
+        <div class="cc-vs-score">${escapeHtml(sim)}%</div>
+        <p class="cai-hint">SIMILARITY INDEX · img ${escapeHtml(r.image_similarity)} · title ${escapeHtml(r.title_similarity)} · sku ${escapeHtml(r.sku_similarity)}</p>
+        <div class="cc-vs-meter"><div class="cc-vs-meter-fill" style="width:${sim}%"></div></div>
+      </div>
+      <div class="cc-vs-grid">
+        <div class="cc-vs-side">
+          <h4>SHOPEE PRODUCT</h4>
+          ${imgCell(shopee.product_image_url, "cc-vs-side-img")}
+          <p class="cc-recon-title">${escapeHtml(shopee.product_name || "—")}</p>
+          <p>${linkCell(shopee.product_link)}</p>
+          <p class="cai-hint">SKU: ${skuList(shopee.sku_variations)}</p>
+        </div>
+        <div class="cc-vs-divider">VS</div>
+        <div class="cc-vs-side">
+          <h4>TIKTOK PRODUCT</h4>
+          ${imgCell(tiktok.product_image_url, "cc-vs-side-img")}
+          <p class="cc-recon-title">${escapeHtml(tiktok.product_name || "—")}</p>
+          <p>${linkCell(tiktok.product_link)}</p>
+          <p class="cai-hint">SKU: ${skuList(tiktok.sku_variations)}</p>
+        </div>
+      </div>
+      <p class="cai-reason">${escapeHtml(r.reason || "")}</p>
+      <p class="cai-hint"><strong>SKU comparison:</strong> Shopee [${skuList(r.sku_comparison?.shopee)}] vs TikTok [${skuList(r.sku_comparison?.tiktok)}]</p>
+      <button type="button" class="btn btn-primary btn-sm" data-confirm-match="${r.match_id}">CONFIRM MATCH</button>
+    </article>`;
   }
 
   async function loadReview() {
@@ -240,37 +294,8 @@
     }
     el.innerHTML = groups
       .map((g) => {
-        const cards = (g.items || [])
-          .map((r) => {
-            const shopee = r.shopee || {};
-            const tiktok = r.tiktok || {};
-            return `
-        <article class="cai-review-card">
-          <p><strong>Similarity:</strong> ${escapeHtml(r.similarity_score)}%
-            (img ${escapeHtml(r.image_similarity)} · title ${escapeHtml(r.title_similarity)} · sku ${escapeHtml(r.sku_similarity)})</p>
-          <p class="cai-reason">${escapeHtml(r.reason || "")}</p>
-          <div class="cai-compare-grid">
-            <div class="cai-compare-col">
-              <h4>Shopee product</h4>
-              ${imgCell(shopee.product_image_url)}
-              <p>${escapeHtml(shopee.product_name || "—")}</p>
-              <p>${linkCell(shopee.product_link)}</p>
-              <p>SKU: ${skuList(shopee.sku_variations)}</p>
-            </div>
-            <div class="cai-compare-col">
-              <h4>TikTok product</h4>
-              ${imgCell(tiktok.product_image_url)}
-              <p>${escapeHtml(tiktok.product_name || "—")}</p>
-              <p>${linkCell(tiktok.product_link)}</p>
-              <p>SKU: ${skuList(tiktok.sku_variations)}</p>
-            </div>
-          </div>
-          <p><strong>SKU comparison:</strong> Shopee [${skuList(r.sku_comparison?.shopee)}] vs TikTok [${skuList(r.sku_comparison?.tiktok)}]</p>
-          <button type="button" class="btn btn-primary btn-sm" data-confirm-match="${r.match_id}">Confirm match</button>
-        </article>`;
-          })
-          .join("");
-        return `${shopGroupHeader(g)}${cards}`;
+        const panels = (g.items || []).map(renderVsPanel).join("");
+        return `${shopSectorHeader(g)}${panels}</div>`;
       })
       .join("");
     el.querySelectorAll("[data-confirm-match]").forEach((btn) => {
@@ -280,6 +305,14 @@
         loadDashboard();
       });
     });
+  }
+
+  function priceZoneMeta(band) {
+    const b = (band || "").toLowerCase();
+    if (b === "green") return { cls: "zone-green", badge: "competitive", label: "COMPETITIVE" };
+    if (b === "yellow") return { cls: "zone-yellow", badge: "watch", label: "WATCH" };
+    if (b === "red") return { cls: "zone-red", badge: "risk", label: "RISK" };
+    return { cls: "", badge: "watch", label: "NA" };
   }
 
   async function loadPriceGap() {
@@ -294,60 +327,68 @@
       el.innerHTML = '<p class="cai-empty">No shop pairs for price gap analysis.</p>';
       return;
     }
-    el.innerHTML = `
-      <table class="cai-table">
-        <thead><tr>
-          <th>Shop</th><th>Shopee Link</th><th>TikTok Link</th>
-          <th>Shopee Avg (top)</th><th>TikTok Avg (top 10)</th><th>Gap %</th><th>Status</th><th>Reason</th>
-        </tr></thead>
-        <tbody>
-        ${items
+    el.innerHTML = `<div class="cc-price-grid">${items
+      .map((r) => {
+        const zone = priceZoneMeta(r.price_gap_band);
+        const gapTxt = r.price_gap_pct != null ? `${escapeHtml(r.price_gap_pct)}%` : "NA";
+        return `
+        <article class="cc-price-card ${zone.cls}">
+          <span class="cc-heat-badge ${zone.badge}">${zone.label}</span>
+          <h3>${escapeHtml(r.seller_name)}</h3>
+          <p class="cai-hint">${linkCell(r.shopee_link, "SHOPEE")} · ${linkCell(r.tiktok_link, "TIKTOK")}</p>
+          <dl class="cc-price-stats">
+            <div><dt>Shopee avg (top)</dt><dd>${r.shopee_avg_price != null ? escapeHtml(r.shopee_avg_price) : "NA"}</dd></div>
+            <div><dt>TikTok avg (top 10)</dt><dd>${r.tiktok_top10_avg_price != null ? escapeHtml(r.tiktok_top10_avg_price) : "NA"}</dd></div>
+            <div><dt>Gap</dt><dd class="cc-gap-val">${gapTxt}</dd></div>
+          </dl>
+          <p class="cai-reason">${escapeHtml(r.reason || "—")}</p>
+        </article>`;
+      })
+      .join("")}</div>`;
+  }
+
+  function renderSurveillanceFeed(groups) {
+    return groups
+      .map((g) => {
+        const items = (g.items || [])
           .map((r) => {
-            const cls =
-              r.price_gap_band === "green"
-                ? "cai-gap-green"
-                : r.price_gap_band === "yellow"
-                  ? "cai-gap-yellow"
-                  : r.price_gap_band === "red"
-                    ? "cai-gap-red"
-                    : "";
-            return `<tr>
-              <td>${escapeHtml(r.seller_name)}</td>
-              <td>${linkCell(r.shopee_link)}</td>
-              <td>${linkCell(r.tiktok_link)}</td>
-              <td>${r.shopee_avg_price != null ? escapeHtml(r.shopee_avg_price) : "NA"}</td>
-              <td>${r.tiktok_top10_avg_price != null ? escapeHtml(r.tiktok_top10_avg_price) : "NA"}</td>
-              <td class="${cls}">${r.price_gap_pct != null ? escapeHtml(r.price_gap_pct) + "%" : "NA"}</td>
-              <td>${escapeHtml(r.price_gap_band || r.status || "—")}</td>
-              <td class="cai-reason">${escapeHtml(r.reason || "—")}</td>
-            </tr>`;
+            const when = formatRelativeTime(r.listed_at || r.first_detected_at);
+            return `
+          <div class="cc-feed-item">
+            <div class="cc-feed-stamp">NEW DETECTED</div>
+            <div class="cc-feed-time">${escapeHtml(when)}</div>
+            <div class="cc-feed-body">
+              ${imgCell(r.product_image_url, "cc-feed-img")}
+              <div>
+                <h4 class="cc-recon-title">${escapeHtml(r.product_name)}</h4>
+                <p class="cc-recon-shop">Shop: ${escapeHtml(g.seller_name)}</p>
+                <p>${linkCell(r.product_link, "TRACK PRODUCT")}</p>
+                <p class="cai-reason">${escapeHtml(r.reason || "")}</p>
+                <button type="button" class="btn btn-ghost btn-sm" data-dismiss-new="${r.competitor_product_id}">DISMISS ALERT</button>
+              </div>
+            </div>
+          </div>`;
           })
-          .join("")}
-        </tbody>
-      </table>`;
+          .join("");
+        return `${shopSectorHeader(g)}<div class="cc-feed">${items}</div></div>`;
+      })
+      .join("");
   }
 
   async function loadNewListings() {
-    const el = document.getElementById("caiNewListingsTable");
+    const target = document.getElementById("caiNewListingsTable");
     const data = await api("/api/assortment/new-listings");
     if (!data.has_competitor_data) {
-      el.innerHTML = emptyBlock(data.empty_message);
+      target.innerHTML = emptyBlock(data.empty_message);
       return;
     }
     const groups = data.groups || [];
     if (!groups.length) {
-      el.innerHTML = '<p class="cai-empty">No recent TikTok listings missing from Shopee (30 days).</p>';
+      target.innerHTML = '<p class="cai-empty">No recent TikTok listings missing from Shopee (30 days).</p>';
       return;
     }
-    el.innerHTML = renderGroupedTables(groups, (r) => `<tr>
-      <td>${imgCell(r.product_image_url)}</td>
-      <td>${escapeHtml(r.product_name)}</td>
-      <td>${linkCell(r.product_link)}</td>
-      <td>${escapeHtml(r.listed_at || r.first_detected_at || "—")}</td>
-      <td class="cai-reason">${escapeHtml(r.reason || "")}</td>
-      <td><button type="button" class="btn btn-ghost btn-sm" data-dismiss-new="${r.competitor_product_id}">Dismiss</button></td>
-    </tr>`);
-    el.querySelectorAll("[data-dismiss-new]").forEach((btn) => {
+    target.innerHTML = renderSurveillanceFeed(groups);
+    target.querySelectorAll("[data-dismiss-new]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         await api(`/api/assortment/new-listings/${btn.dataset.dismissNew}/dismiss`, { method: "POST" });
         loadNewListings();
