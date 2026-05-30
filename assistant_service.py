@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from claude_client import generate_search_keywords, summarize_answer
 from query_mode import resolve_search_plan
 from response_parser import parse_assistant_reply
 from search import search_edu_articles
+
+logger = logging.getLogger("assistant_service")
 
 
 def _sources_for_api(fetched: list[dict]) -> list[dict]:
@@ -37,7 +40,13 @@ async def process_question(question: str) -> dict:
 
     plan = resolve_search_plan(question)
     keywords = await asyncio.to_thread(generate_search_keywords, question)
-    fetched_sources, strong_match = await search_edu_articles(question, keywords, plan=plan)
+    try:
+        fetched_sources, strong_match = await search_edu_articles(
+            question, keywords, plan=plan
+        )
+    except Exception as exc:
+        logger.warning("Seller Education search failed (non-fatal): %s", exc)
+        fetched_sources, strong_match = [], False
     formatted = await asyncio.to_thread(
         summarize_answer, question, fetched_sources, strong_match
     )
