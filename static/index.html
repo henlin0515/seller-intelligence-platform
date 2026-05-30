@@ -354,10 +354,24 @@
                     <th scope="col" data-i18n="tracker.colStatus">Voucher Status</th>
                     <th scope="col" data-i18n="tracker.colVoucherText">Voucher Text</th>
                     <th scope="col" data-i18n="tracker.colLastChecked">Last Checked</th>
+                    <th scope="col" data-i18n="tracker.colReason">Check reason</th>
+                    <th scope="col" data-i18n="tracker.colDetails">Details</th>
                   </tr>
                 </thead>
                 <tbody id="cvtTableBody"></tbody>
               </table>
+            </div>
+          </div>
+
+          <div id="cvtDebugModal" class="cvt-modal hidden" role="dialog" aria-labelledby="cvtDebugTitle">
+            <div class="cvt-modal-backdrop" data-cvt-close-modal></div>
+            <div class="cvt-modal-card">
+              <header class="cvt-modal-header">
+                <h2 id="cvtDebugTitle" data-i18n="tracker.debugTitle">Check details</h2>
+                <button type="button" class="btn btn-ghost btn-sm" data-cvt-close-modal data-i18n="tracker.debugClose">Close</button>
+              </header>
+              <p id="cvtDebugShop" class="cvt-modal-shop"></p>
+              <dl id="cvtDebugBody" class="cvt-debug-dl"></dl>
             </div>
           </div>
         </div>

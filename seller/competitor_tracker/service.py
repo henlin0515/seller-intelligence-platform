@@ -10,8 +10,13 @@ from seller.competitor_tracker.constants import (
     DEFAULT_DELAY_SEC,
     MAX_SHOPS_PER_RUN,
 )
-from seller.competitor_tracker.detector import detect_voucher_signals
+from seller.competitor_tracker.detector import (
+    detect_voucher_signals,
+    enrich_fetch_with_access,
+    resolve_voucher_status,
+)
 from seller.competitor_tracker.fetcher import fetch_tiktok_page
+from seller.competitor_tracker.page_analysis import public_check_reason
 from seller.competitor_tracker.sheet import load_competitors_from_sheet
 
 logger = logging.getLogger("seller.competitor_tracker")
@@ -35,6 +40,8 @@ def _public_result(row: dict[str, str], check: dict[str, Any] | None = None) -> 
         "voucher_status": "unchecked",
         "voucher_text": "",
         "last_checked_at": None,
+        "check_reason": None,
+        "check_summary": "",
     }
     if check:
         base.update(
@@ -42,6 +49,8 @@ def _public_result(row: dict[str, str], check: dict[str, Any] | None = None) -> 
                 "voucher_status": check.get("voucher_status", "unchecked"),
                 "voucher_text": check.get("voucher_text") or "",
                 "last_checked_at": check.get("last_checked_at"),
+                "check_reason": check.get("check_reason"),
+                "check_summary": check.get("check_summary") or "",
             }
         )
     return base
@@ -49,7 +58,43 @@ def _public_result(row: dict[str, str], check: dict[str, Any] | None = None) -> 
 
 def get_cached_result(shop_id: str) -> dict[str, Any] | None:
     with _lock:
-        return _cache.get(shop_id)
+        cached = _cache.get(shop_id)
+        if not cached:
+            return None
+        return _to_api_result(cached)
+
+
+def _to_api_result(stored: dict[str, Any]) -> dict[str, Any]:
+    """Strip internal fields for API responses."""
+    return {
+        "shop_id": stored.get("shop_id"),
+        "voucher_status": stored.get("voucher_status"),
+        "voucher_text": stored.get("voucher_text", ""),
+        "last_checked_at": stored.get("last_checked_at"),
+        "check_reason": stored.get("check_reason"),
+        "check_summary": stored.get("check_summary", ""),
+    }
+
+
+def _run_detection_pipeline(url: str) -> dict[str, Any]:
+    fetch = fetch_tiktok_page(url)
+    fetch = enrich_fetch_with_access(fetch)
+
+    detection = detect_voucher_signals(
+        fetch.get("page_text") or "",
+        html=fetch.get("html") or "",
+        dom_snippets=fetch.get("dom_snippets"),
+    )
+    voucher_status = resolve_voucher_status(fetch, detection)
+    check_reason = public_check_reason(fetch, detection, voucher_status)
+
+    return {
+        "voucher_status": voucher_status,
+        "voucher_text": detection.get("voucher_text") or "",
+        "check_reason": check_reason,
+        "check_summary": check_reason.get("summary") or "",
+        "_internal_error": fetch.get("fetch_error"),
+    }
 
 
 def _load_competitors(force: bool = False) -> tuple[list[dict[str, str]], dict[str, Any]]:
@@ -73,7 +118,7 @@ def get_competitor_list_payload(*, refresh_sheet: bool = False) -> dict[str, Any
     competitors = []
     for row in rows:
         check = cached.get(row["shop_id"])
-        competitors.append(_public_result(row, check))
+        competitors.append(_public_result(row, _to_api_result(check) if check else None))
 
     return {
         "competitors": competitors,
@@ -90,39 +135,54 @@ def check_tiktok_shop(row: dict[str, str]) -> dict[str, Any]:
     """Check one competitor TikTok shop; updates in-memory cache."""
     shop_id = row["shop_id"]
     url = row.get("tiktok_link", "")
-    logger.info("Checking TikTok vouchers for shop_id=%s", shop_id)
+    logger.info("Checking TikTok vouchers for shop_id=%s (%s)", shop_id, row.get("shop_name", ""))
 
-    fetch = fetch_tiktok_page(url)
     checked_at = _utc_now()
-
-    if not fetch.get("ok"):
+    try:
+        pipeline = _run_detection_pipeline(url)
+        result = {
+            "shop_id": shop_id,
+            "voucher_status": pipeline["voucher_status"],
+            "voucher_text": pipeline["voucher_text"],
+            "last_checked_at": checked_at,
+            "check_reason": pipeline["check_reason"],
+            "check_summary": pipeline["check_summary"],
+            "_internal_error": pipeline.get("_internal_error"),
+        }
+    except Exception as exc:
+        logger.exception("Voucher check failed for %s", shop_id)
         result = {
             "shop_id": shop_id,
             "voucher_status": "unable_to_check",
             "voucher_text": "",
             "last_checked_at": checked_at,
-            "_internal_error": fetch.get("error"),
-        }
-    else:
-        detection = detect_voucher_signals(fetch["page_text"])
-        result = {
-            "shop_id": shop_id,
-            "voucher_status": detection["voucher_status"],
-            "voucher_text": detection.get("voucher_text") or "",
-            "last_checked_at": checked_at,
-            "_internal_error": None,
-            "_method": fetch.get("method"),
+            "check_reason": {
+                "final_url": url,
+                "http_status": None,
+                "page_title": "",
+                "html_loaded": False,
+                "html_length": 0,
+                "visible_text_length": 0,
+                "tiktok_blocked": False,
+                "login_required": False,
+                "voucher_keywords_found": False,
+                "matched_keywords": [],
+                "dom_voucher_found": False,
+                "dom_matches": [],
+                "used_playwright": False,
+                "used_http": False,
+                "redirect_chain": [url] if url else [],
+                "fetch_error": "check_exception",
+                "summary": f"Check failed safely · Result: unable to check ({type(exc).__name__})",
+            },
+            "check_summary": "Check failed safely · Result: unable to check",
+            "_internal_error": type(exc).__name__,
         }
 
     with _lock:
         _cache[shop_id] = result
 
-    return {
-        "shop_id": shop_id,
-        "voucher_status": result["voucher_status"],
-        "voucher_text": result["voucher_text"],
-        "last_checked_at": result["last_checked_at"],
-    }
+    return _to_api_result(result)
 
 
 def check_tiktok_vouchers_for_all(
@@ -135,7 +195,6 @@ def check_tiktok_vouchers_for_all(
     Check TikTok voucher visibility for competitors.
 
     Callable from API, future cron, or external trigger.
-    Limits shops per run and adds delay between requests.
     """
     delay = delay_sec if delay_sec is not None else DEFAULT_DELAY_SEC
     limit = min(max_shops or MAX_SHOPS_PER_RUN, MAX_SHOPS_PER_RUN)
@@ -160,21 +219,7 @@ def check_tiktok_vouchers_for_all(
     results: list[dict[str, Any]] = []
 
     for i, row in enumerate(targets):
-        try:
-            results.append(check_tiktok_shop(row))
-        except Exception as exc:
-            logger.exception("Voucher check failed for %s", row.get("shop_id"))
-            checked_at = _utc_now()
-            fallback = {
-                "shop_id": row["shop_id"],
-                "voucher_status": "unable_to_check",
-                "voucher_text": "",
-                "last_checked_at": checked_at,
-            }
-            with _lock:
-                _cache[row["shop_id"]] = {**fallback, "_internal_error": str(exc)}
-            results.append(fallback)
-
+        results.append(check_tiktok_shop(row))
         if i < len(targets) - 1 and delay > 0:
             time.sleep(delay)
 
@@ -190,8 +235,16 @@ def check_tiktok_vouchers_for_all(
     }
 
 
+def find_competitor_by_name(name_substring: str) -> list[dict[str, str]]:
+    """Find sheet rows whose shop name contains substring (case-insensitive)."""
+    rows, _ = _load_competitors()
+    q = (name_substring or "").strip().lower()
+    if not q:
+        return []
+    return [r for r in rows if q in (r.get("shop_name") or "").lower()]
+
+
 def clear_competitor_sheet_cache() -> None:
-    """Force reload of sheet rows on next list request."""
     global _competitors_cache, _competitors_loaded_at
     with _lock:
         _competitors_cache = None

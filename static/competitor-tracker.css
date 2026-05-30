@@ -144,3 +144,81 @@
   font-size: 0.875rem;
   color: var(--sip-text-secondary);
 }
+
+.cvt-reason-summary {
+  max-width: 220px;
+  font-size: 0.75rem;
+  color: var(--sip-text-secondary);
+  line-height: 1.35;
+}
+
+.cvt-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.cvt-modal.hidden {
+  display: none;
+}
+
+.cvt-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 15, 18, 0.45);
+}
+
+.cvt-modal-card {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: 85vh;
+  overflow: auto;
+  background: var(--sip-surface);
+  border: 1px solid var(--sip-border);
+  border-radius: var(--sip-radius);
+  box-shadow: var(--sip-shadow-lg);
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.cvt-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.cvt-modal-header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.cvt-modal-shop {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--sip-text-secondary);
+}
+
+.cvt-debug-dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(140px, 42%) 1fr;
+  gap: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+.cvt-debug-dl dt {
+  margin: 0;
+  font-weight: 600;
+  color: var(--sip-text-secondary);
+}
+
+.cvt-debug-dl dd {
+  margin: 0;
+  word-break: break-word;
+  color: var(--sip-text);
+}
