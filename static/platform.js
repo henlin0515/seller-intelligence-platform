@@ -80,7 +80,6 @@
   const assistantSidebarTools = document.getElementById("assistantSidebarTools");
   const homeSellerCount = document.getElementById("homeSellerCount");
   const homeLastRefresh = document.getElementById("homeLastRefresh");
-  const homeSheetStatus = document.getElementById("homeSheetStatus");
   const learningCategories = document.getElementById("learningCategories");
   const learningSearch = document.getElementById("learningSearch");
   const recentSearchesWrap = document.getElementById("recentSearchesWrap");
@@ -113,44 +112,24 @@
         status.loaded && status.seller_count != null ? String(status.seller_count) : "—";
     }
     if (homeLastRefresh) {
-      homeLastRefresh.textContent = status.loaded
-        ? formatRefreshed(status.last_loaded_at)
-        : status.loading
-          ? i18n("home.statChecking", "Checking…")
+      homeLastRefresh.textContent = status.loading
+        ? i18n("home.statChecking", "Updating…")
+        : status.loaded
+          ? formatRefreshed(status.last_loaded_at)
           : "—";
-    }
-    if (homeSheetStatus) {
-      if (status.loading) {
-        homeSheetStatus.textContent = i18n("home.statRefreshing", "Refreshing…");
-        homeSheetStatus.className = "stat-card-value status-warn";
-      } else if (status.error) {
-        homeSheetStatus.textContent = i18n("home.statError", "Error");
-        homeSheetStatus.className = "stat-card-value";
-      } else if (status.loaded) {
-        homeSheetStatus.textContent = i18n("home.statConnected", "Connected");
-        homeSheetStatus.className = "stat-card-value status-ok";
-      } else if (status.live_sheets_configured === false) {
-        homeSheetStatus.textContent = i18n("home.statMock", "Mock data");
-        homeSheetStatus.className = "stat-card-value status-warn";
-      } else {
-        homeSheetStatus.textContent = i18n("home.statNotLoaded", "Not loaded");
-        homeSheetStatus.className = "stat-card-value status-warn";
-      }
     }
   }
 
   async function fetchAndUpdateHomeStats() {
     try {
-      const res = await fetch("/api/seller/status");
+      const res = await (window.SipApi ? window.SipApi.fetch : fetch)("/api/seller/status", {
+        credentials: "same-origin",
+      });
       if (!res.ok) throw new Error("status failed");
       const status = await res.json();
       updateHomeStats(status);
       return status;
     } catch {
-      if (homeSheetStatus) {
-        homeSheetStatus.textContent = i18n("home.statUnavailable", "Unavailable");
-        homeSheetStatus.className = "stat-card-value";
-      }
       return null;
     }
   }
@@ -364,7 +343,41 @@
     }
   });
 
+  async function initAuthUi() {
+    const logoutBtn = document.getElementById("logoutBtn");
+    const authUserEl = document.getElementById("settingsAuthUser");
+    try {
+      const res = await (window.SipApi ? window.SipApi.fetch : fetch)("/api/auth/me", {
+        credentials: "same-origin",
+      });
+      const data = await res.json();
+      if (!data.authenticated) {
+        window.location.replace("/login");
+        return;
+      }
+      if (authUserEl && data.username) {
+        authUserEl.textContent = `Signed in as ${data.username}`;
+        authUserEl.classList.remove("hidden");
+      }
+    } catch {
+      window.location.replace("/login");
+      return;
+    }
+    logoutBtn?.addEventListener("click", async () => {
+      try {
+        await (window.SipApi ? window.SipApi.fetch : fetch)("/api/auth/logout", {
+          method: "POST",
+          credentials: "same-origin",
+        });
+      } finally {
+        window.location.replace("/login");
+      }
+    });
+  }
+
   renderLearningCenter();
-  fetchAndUpdateHomeStats();
-  navigate("home");
+  initAuthUi().then(() => {
+    fetchAndUpdateHomeStats();
+    navigate("home");
+  });
 })();

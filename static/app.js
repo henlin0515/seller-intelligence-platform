@@ -242,7 +242,8 @@ function friendlyError(status) {
 async function sendQuestion(question) {
   setLoading(true);
   try {
-    const res = await fetch("/chat", {
+    const res = await (window.SipApi ? window.SipApi.fetch : fetch)("/chat", {
+      credentials: "same-origin",
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question }),

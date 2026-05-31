@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
     <title>Seller Intelligence Platform</title>
     <link rel="stylesheet" href="/static/platform.css" />
     <link rel="stylesheet" href="/static/styles.css" />
@@ -176,18 +177,14 @@
               </div>
             </section>
 
-            <section class="home-stats" aria-label="System status">
+            <section class="home-stats" aria-label="Overview">
               <article class="stat-card">
-                <div class="stat-card-label" data-i18n="home.statSellers">Total sellers loaded</div>
+                <div class="stat-card-label" data-i18n="home.statSellers">Current seller count</div>
                 <div id="homeSellerCount" class="stat-card-value">—</div>
               </article>
               <article class="stat-card">
-                <div class="stat-card-label" data-i18n="home.statRefresh">Last refresh</div>
+                <div class="stat-card-label" data-i18n="home.statRefresh">Last updated</div>
                 <div id="homeLastRefresh" class="stat-card-value">—</div>
-              </article>
-              <article class="stat-card">
-                <div class="stat-card-label" data-i18n="home.statSheet">Google Sheet status</div>
-                <div id="homeSheetStatus" class="stat-card-value status-warn" data-i18n="home.statChecking">Checking…</div>
               </article>
             </section>
 
@@ -196,7 +193,7 @@
               <div class="feature-grid">
                 <article class="feature-card">
                   <h3 data-i18n="home.featSearchTitle">Seller search</h3>
-                  <p data-i18n="home.featSearchDesc">Find any shop by name or ID from the live mirror sheet cache.</p>
+                  <p data-i18n="home.featSearchDesc">Find any shop by name or Shop ID across the seller directory.</p>
                 </article>
                 <article class="feature-card">
                   <h3 data-i18n="home.featPerfTitle">Performance analysis</h3>
@@ -220,7 +217,7 @@
           <header class="dash-top-header">
             <div class="dash-top-header-text">
               <h1 data-i18n="intel.title">Seller Intelligence</h1>
-              <p id="dashHeaderMeta" class="dash-header-meta" data-i18n="intel.meta">Performance command center · live cache</p>
+              <p id="dashHeaderMeta" class="dash-header-meta" data-i18n="intel.meta">Performance command center</p>
             </div>
             <div class="dash-top-header-actions">
               <div class="dash-header-stat">
@@ -479,8 +476,10 @@
             <div class="settings-panel">
               <h1 data-i18n="settings.title">Settings</h1>
               <p class="subtitle" data-i18n="settings.subtitle">Platform configuration and integrations.</p>
+              <p class="settings-auth-user hidden" id="settingsAuthUser"></p>
+              <button type="button" id="logoutBtn" class="btn btn-secondary btn-sm">Sign out</button>
               <ul class="settings-list">
-                <li data-i18n="settings.li1">AI Assistant uses your Anthropic API key from <code>.env</code></li>
+                <li data-i18n="settings.li1">AI Assistant uses your Anthropic API key from server environment (not exposed to browser)</li>
                 <li data-i18n="settings.li2">Replies match the language of your question</li>
                 <li data-i18n="settings.li3">Sources are fetched from seller.shopee.ph/edu</li>
                 <li data-i18n="settings.li4">Seller Intelligence loads metrics from the Google Sheets mirror (AI DATA tab)</li>
@@ -510,6 +509,7 @@
         }
       }
     </script>
+    <script src="/static/api.js"></script>
     <script src="/static/i18n.js"></script>
     <script src="/static/platform.js"></script>
     <script src="/static/app.js"></script>

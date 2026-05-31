@@ -245,7 +245,10 @@
     setMeta(i18n("tracker.loading", "Loading competitors from sheet…"));
     try {
       const q = refresh ? "?refresh=1" : "";
-      const res = await fetch(`/api/competitor-voucher/competitors${q}`);
+      const res = await (window.SipApi ? window.SipApi.fetch : fetch)(
+        `/api/competitor-voucher/competitors${q}`,
+        { credentials: "same-origin" }
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "load failed");
       competitors = data.competitors || [];
@@ -270,7 +273,8 @@
     markChecking(shopIds);
     setMeta(i18n("tracker.checking", "Checking TikTok profiles and shops…"));
     try {
-      const res = await fetch("/api/competitor-voucher/check", {
+      const res = await (window.SipApi ? window.SipApi.fetch : fetch)("/api/competitor-voucher/check", {
+        credentials: "same-origin",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ shop_ids: shopIds }),

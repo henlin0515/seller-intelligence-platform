@@ -97,6 +97,17 @@ def get_status() -> dict[str, Any]:
         }
 
 
+def get_public_status() -> dict[str, Any]:
+    """Minimal status for authenticated UI — no sheet IDs, sources, or diagnostics."""
+    full = get_status()
+    return {
+        "loaded": bool(full.get("loaded")),
+        "loading": bool(full.get("loading")),
+        "seller_count": int(full.get("seller_count") or 0),
+        "last_loaded_at": full.get("last_loaded_at"),
+    }
+
+
 def refresh(*, force: bool = False) -> dict[str, Any]:
     """
     Load or reload all mirror tabs into memory.

@@ -9,21 +9,25 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
+from starlette.middleware.sessions import SessionMiddleware
 
 from assistant_service import process_question
-from seller.raw_debug import get_raw_debug_payload
+from seller.assortment.db import init_assortment_db
+from seller.assortment.router import router as assortment_router
+from seller.auth.config import dev_session_secret, get_auth_settings, validate_auth_config
+from seller.auth.dependencies import require_auth
+from seller.auth.middleware import AuthMiddleware, SecurityHeadersMiddleware
+from seller.auth.router import router as auth_router
 from seller.competitor_tracker.service import (
     check_tiktok_vouchers_for_all,
     clear_competitor_sheet_cache,
     get_competitor_list_payload,
 )
-from seller.assortment.db import init_assortment_db
-from seller.assortment.router import router as assortment_router
+from seller.raw_debug import get_raw_debug_payload
 from seller.service import (
     get_dashboard_payload,
     get_seller_data_status,
@@ -57,20 +61,53 @@ USER_FACING_ERROR = (
 ROOT = Path(__file__).resolve().parent
 STATIC_DIR = ROOT / "static"
 
-app = FastAPI(title="Shopee Seller AI Assistant", version="1.0.0")
+
+def _session_secret() -> str:
+    settings = get_auth_settings()
+    if settings.session_secret:
+        return settings.session_secret
+    dev = dev_session_secret()
+    if dev:
+        logger.warning(
+            "Using ephemeral AUTH session secret (AUTH_ALLOW_DEV_DEFAULTS). "
+            "Set AUTH_SESSION_SECRET in production."
+        )
+        return dev
+    validate_auth_config()
+    return ""  # unreachable
+
+
+_auth_settings = get_auth_settings()
+app = FastAPI(title="Shopee Seller AI Assistant", version="1.0.0", docs_url=None, redoc_url=None)
+
+# Middleware order: last added runs first on incoming requests.
+# Session must run before Auth so request.session is available.
+app.add_middleware(SecurityHeadersMiddleware, hsts=_auth_settings.cookie_secure)
+app.add_middleware(AuthMiddleware)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=_session_secret(),
+    session_cookie=_auth_settings.session_cookie_name,
+    max_age=_auth_settings.inactivity_seconds,
+    same_site="strict",
+    https_only=_auth_settings.cookie_secure,
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
 if STATIC_DIR.is_dir():
+    from fastapi.staticfiles import StaticFiles
+
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-app.include_router(assortment_router)
+app.include_router(auth_router)
+app.include_router(assortment_router, dependencies=[Depends(require_auth)])
 
 
 class CompetitorCheckRequest(BaseModel):
@@ -95,19 +132,37 @@ class ChatResponse(BaseModel):
     mode: str
 
 
+@app.get("/login")
+async def login_page():
+    login_file = STATIC_DIR / "login.html"
+    if not login_file.is_file():
+        raise HTTPException(status_code=404, detail="Login page not found")
+    return FileResponse(login_file)
+
+
 @app.get("/")
-async def index():
+async def index(_user: str = Depends(require_auth)):
     index_file = STATIC_DIR / "index.html"
     if not index_file.is_file():
         raise HTTPException(status_code=404, detail="Frontend not found")
     return FileResponse(index_file)
 
 
+@app.get("/robots.txt")
+async def robots_txt():
+    robots_file = STATIC_DIR / "robots.txt"
+    if robots_file.is_file():
+        return FileResponse(robots_file, media_type="text/plain")
+    return PlainTextResponse("User-agent: *\nDisallow: /\n", media_type="text/plain")
+
+
 @app.on_event("startup")
 async def on_startup() -> None:
+    validate_auth_config()
     clear_settings_cache()
     log_startup_configuration()
     init_assortment_db()
+    logger.info("Authentication enabled for all protected routes")
 
 
 @app.get("/health")
@@ -116,32 +171,43 @@ async def health():
 
 
 @app.get("/api/seller/status")
-async def seller_data_status():
+async def seller_data_status(_user: str = Depends(require_auth)):
     return get_seller_data_status()
 
 
 @app.post("/api/seller/refresh")
-async def seller_data_refresh():
-    from seller.sheets_cache import refresh
+async def seller_data_refresh(_user: str = Depends(require_auth)):
+    from seller.sheets_cache import get_public_status, refresh
 
     try:
-        return await asyncio.to_thread(refresh, force=True)
+        await asyncio.to_thread(refresh, force=True)
+        return get_public_status()
     except Exception as exc:
         logger.exception("Seller sheet refresh failed")
         raise HTTPException(
             status_code=500,
-            detail="Could not refresh mirror Google Sheet. Check credentials and sharing.",
+            detail="Could not refresh seller data. Try again later.",
         ) from exc
 
 
 @app.get("/api/seller/search")
-async def seller_search(q: str = ""):
+async def seller_search(q: str = "", _user: str = Depends(require_auth)):
     return {"results": search_seller_shops(q)}
 
 
+def _debug_endpoint_enabled() -> bool:
+    return os.getenv("ENABLE_SELLER_DEBUG_ENDPOINT", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
 @app.get("/api/seller/debug/{shop_id}")
-async def seller_raw_debug(shop_id: str):
-    """Temporary: live raw row only (no metric calculation)."""
+async def seller_raw_debug(shop_id: str, _user: str = Depends(require_auth)):
+    """Disabled in production unless ENABLE_SELLER_DEBUG_ENDPOINT is set."""
+    if not _debug_endpoint_enabled():
+        raise HTTPException(status_code=404, detail="Not found")
     payload = get_raw_debug_payload(shop_id)
     if not payload:
         raise HTTPException(status_code=404, detail="Shop not found")
@@ -149,7 +215,7 @@ async def seller_raw_debug(shop_id: str):
 
 
 @app.get("/api/competitor-voucher/competitors")
-async def competitor_voucher_list(refresh: bool = False):
+async def competitor_voucher_list(refresh: bool = False, _user: str = Depends(require_auth)):
     """List competitors from COMPETITOR_TRACKER with cached voucher status."""
     if refresh:
         await asyncio.to_thread(clear_competitor_sheet_cache)
@@ -157,7 +223,9 @@ async def competitor_voucher_list(refresh: bool = False):
 
 
 @app.post("/api/competitor-voucher/check")
-async def competitor_voucher_check(body: CompetitorCheckRequest):
+async def competitor_voucher_check(
+    body: CompetitorCheckRequest, _user: str = Depends(require_auth)
+):
     """Check selected shops (shop_ids) or all competitors (max 50 per run)."""
     try:
         return await asyncio.to_thread(
@@ -173,7 +241,7 @@ async def competitor_voucher_check(body: CompetitorCheckRequest):
 
 
 @app.get("/api/seller/{shop_id}")
-async def seller_dashboard(shop_id: str):
+async def seller_dashboard(shop_id: str, _user: str = Depends(require_auth)):
     payload = get_dashboard_payload(shop_id)
     if not payload:
         raise HTTPException(status_code=404, detail="Shop not found")
@@ -181,7 +249,7 @@ async def seller_dashboard(shop_id: str):
 
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(body: ChatRequest):
+async def chat(body: ChatRequest, _user: str = Depends(require_auth)):
     if not os.getenv("ANTHROPIC_API_KEY"):
         logger.error("ANTHROPIC_API_KEY is not set")
         raise HTTPException(status_code=500, detail=USER_FACING_ERROR)

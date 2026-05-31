@@ -13,7 +13,7 @@ from seller.metric_resolver import build_dashboard_from_raw, metric_lookup, shop
 from seller.metrics import calculate_health_score_from_sections
 from seller.raw_data import SHEET_NAME, get_raw_shop_row, search_raw_shops
 from seller.recommendations import generate_recommendations
-from seller.sheets_cache import get_status
+from seller.sheets_cache import get_public_status
 
 
 def build_chart_data(sections: list[dict[str, Any]]) -> dict[str, Any]:
@@ -150,4 +150,4 @@ def search_seller_shops(query: str) -> list[dict[str, str]]:
 
 
 def get_seller_data_status() -> dict[str, Any]:
-    return get_status()
+    return get_public_status()

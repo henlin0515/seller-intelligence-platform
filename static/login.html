@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <title>Sign in — Seller Intelligence</title>
+    <link rel="stylesheet" href="/static/login.css" />
+  </head>
+  <body class="login-page">
+    <main class="login-card" aria-labelledby="loginTitle">
+      <div class="login-brand">
+        <span class="login-mark">SI</span>
+        <div>
+          <h1 id="loginTitle">Seller Intelligence</h1>
+          <p class="login-sub">Authorized access only</p>
+        </div>
+      </div>
+      <form id="loginForm" class="login-form" autocomplete="on">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" required autofocus />
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required />
+        <p id="loginError" class="login-error hidden" role="alert"></p>
+        <button type="submit" id="loginSubmit" class="login-btn">Sign in</button>
+      </form>
+    </main>
+    <script src="/static/auth.js"></script>
+  </body>
+</html>

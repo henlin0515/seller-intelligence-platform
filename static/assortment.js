@@ -2,6 +2,9 @@
  * Competitor Assortment Intelligence — Command Center UI
  */
 (function () {
+  const apiFetch = (url, options) =>
+    window.SipApi ? window.SipApi.fetch(url, options) : fetch(url, { credentials: "same-origin", ...options });
+
   const panels = {
     dashboard: document.getElementById("caiPanelDashboard"),
     missing: document.getElementById("caiPanelMissing"),
@@ -58,7 +61,7 @@
   }
 
   async function api(path, options = {}) {
-    const res = await fetch(path, options);
+    const res = await apiFetch(path, options);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || data.sheet_error || "Request failed");
     return data;

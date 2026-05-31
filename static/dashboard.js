@@ -2,6 +2,9 @@
  * Seller Performance Dashboard — data-first executive layout.
  */
 (function () {
+  const apiFetch = (url, options) =>
+    window.SipApi ? window.SipApi.fetch(url, options) : fetch(url, { credentials: "same-origin", ...options });
+
   const shopSearchInput = document.getElementById("shopSearchInput");
   const shopSearchBtn = document.getElementById("shopSearchBtn");
   const shopSearchResults = document.getElementById("shopSearchResults");
@@ -151,36 +154,31 @@
       return;
     }
 
-    if (status.error) {
+    if (!status.loaded) {
       sellerCountLabel.textContent = "—";
-      sheetLoadMeta.textContent = i18n("home.statError", "Error");
-      if (dashHeaderMeta) dashHeaderMeta.textContent = status.error;
+      sheetLoadMeta.textContent = i18n("home.statUnavailable", "Unavailable");
+      if (dashHeaderMeta) {
+        dashHeaderMeta.textContent = i18n("intel.meta", "Performance command center");
+      }
       setSearchEnabled(false);
       return;
     }
 
-    if (status.loaded) {
-      sellerCountLabel.textContent = String(status.seller_count ?? 0);
-      sheetLoadMeta.textContent = formatRefreshed(status.last_loaded_at);
-      if (dashHeaderMeta) {
-        dashHeaderMeta.textContent = i18n(
-          "intel.metaLoading",
-          "Executive seller performance · live cache"
-        );
-      }
-      setSearchEnabled(true);
-      if (dashboardEmptyText) {
-        dashboardEmptyText.textContent = i18n(
-          "intel.emptyTextReady",
-          "Search by shop name or Shop ID to open the performance dashboard."
-        );
-      }
-      return;
+    sellerCountLabel.textContent = String(status.seller_count ?? 0);
+    sheetLoadMeta.textContent = formatRefreshed(status.last_loaded_at);
+    if (dashHeaderMeta) {
+      dashHeaderMeta.textContent = i18n(
+        "intel.metaLoading",
+        "Executive seller performance"
+      );
     }
-
-    sellerCountLabel.textContent = "—";
-    sheetLoadMeta.textContent = i18n("home.statNotLoaded", "Not loaded");
-    setSearchEnabled(!status.live_sheets_configured);
+    setSearchEnabled(true);
+    if (dashboardEmptyText) {
+      dashboardEmptyText.textContent = i18n(
+        "intel.emptyTextReady",
+        "Search by shop name or Shop ID to open the performance dashboard."
+      );
+    }
   }
 
   function onLocaleChange() {
@@ -190,7 +188,7 @@
   }
 
   async function fetchSheetStatus() {
-    const res = await fetch("/api/seller/status");
+    const res = await apiFetch("/api/seller/status");
     if (!res.ok) throw new Error("status failed");
     return res.json();
   }
@@ -199,18 +197,13 @@
     setSearchEnabled(false);
     renderHeaderStatus({ loading: true, loaded: false });
     try {
-      const res = await fetch("/api/seller/refresh", { method: "POST" });
+      const res = await apiFetch("/api/seller/refresh", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "refresh failed");
       renderHeaderStatus(data);
       return data;
     } catch (err) {
-      renderHeaderStatus({
-        loaded: false,
-        loading: false,
-        error: String(err.message || err),
-        live_sheets_configured: true,
-      });
+      renderHeaderStatus({ loaded: false, loading: false });
       throw err;
     }
   }
@@ -219,10 +212,6 @@
     try {
       let status = await fetchSheetStatus();
       renderHeaderStatus(status);
-      if (!status.live_sheets_configured) {
-        sheetLoaded = true;
-        return status;
-      }
       if (!status.loaded && !status.loading) {
         status = await refreshSheetData();
       }
@@ -243,7 +232,7 @@
       return;
     }
     try {
-      const res = await fetch(`/api/seller/search?q=${encodeURIComponent(q)}`);
+      const res = await apiFetch(`/api/seller/search?q=${encodeURIComponent(q)}`);
       const data = await res.json();
       if (!res.ok) throw new Error("search failed");
       renderSearchResults(data.results || []);
@@ -534,7 +523,7 @@
     clearDashboardPanels();
 
     try {
-      const res = await fetch(`/api/seller/${encodeURIComponent(shopId)}`);
+      const res = await apiFetch(`/api/seller/${encodeURIComponent(shopId)}`);
       const data = await res.json();
       if (!res.ok) throw new Error("not found");
 
