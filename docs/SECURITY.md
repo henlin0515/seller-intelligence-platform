@@ -15,7 +15,7 @@ All routes except:
 - `GET /login`
 - `GET /health`
 - `GET /robots.txt`
-- `GET /static/*`
+- `GET /static/*` (except `/static/index.html`, which redirects to login)
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
@@ -37,5 +37,6 @@ Set these variables in the Railway service (not in source code):
 ## Secrets not exposed to browser
 
 - Google credentials and spreadsheet IDs are backend-only.
-- `/api/seller/status` does not return `spreadsheet_id`.
+- `/api/seller/status` returns only `loaded`, `loading`, `seller_count`, `last_loaded_at`.
+- `/api/seller/debug/{shop_id}` returns 404 unless `ENABLE_SELLER_DEBUG_ENDPOINT=true`.
 - OpenAPI docs (`/docs`) are disabled.
