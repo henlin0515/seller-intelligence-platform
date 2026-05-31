@@ -5,6 +5,16 @@
   const form = document.getElementById("loginForm");
   const errorEl = document.getElementById("loginError");
   const submitBtn = document.getElementById("loginSubmit");
+  const loginCard = document.querySelector(".login-card");
+  const warpEl = document.getElementById("loginWarp");
+  const warpStatus = document.getElementById("warpStatus");
+
+  const WARP_DURATION_MS = 1800;
+  const WARP_LINES = [
+    { at: 0, text: "Access Granted" },
+    { at: 550, text: "Initializing Seller Intelligence" },
+    { at: 1100, text: "Entering Dashboard" },
+  ];
 
   function showError(msg) {
     if (!errorEl) return;
@@ -14,6 +24,31 @@
 
   function hideError() {
     errorEl?.classList.add("hidden");
+  }
+
+  function playWarpTransition() {
+    return new Promise((resolve) => {
+      if (!warpEl || !warpStatus) {
+        resolve();
+        return;
+      }
+
+      loginCard?.classList.add("login-card--exit");
+      warpEl.classList.remove("hidden");
+      warpEl.setAttribute("aria-hidden", "false");
+      document.body.classList.add("login-warp-active");
+
+      WARP_LINES.forEach(({ at, text }) => {
+        setTimeout(() => {
+          warpStatus.textContent = text;
+          warpStatus.classList.remove("warp-status--flash");
+          void warpStatus.offsetWidth;
+          warpStatus.classList.add("warp-status--flash");
+        }, at);
+      });
+
+      setTimeout(resolve, WARP_DURATION_MS);
+    });
   }
 
   async function checkExistingSession() {
@@ -45,12 +80,13 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         showError(data.detail || "Invalid username or password");
+        submitBtn.disabled = false;
         return;
       }
+      await playWarpTransition();
       window.location.replace("/");
     } catch {
       showError("Unable to sign in. Try again.");
-    } finally {
       submitBtn.disabled = false;
     }
   });
