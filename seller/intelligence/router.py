@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends
 
 from seller.auth.dependencies import require_auth
 from seller.intelligence import get_seller_intelligence_v1_snapshot
-from seller.intelligence.assortment import build_assortment_intelligence_structure
-from seller.intelligence.business import get_mock_business_intelligence
+from seller.intelligence.assortment import get_mock_assortment_intelligence
+from seller.intelligence.business.meta import get_mock_business_intelligence_payload
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.periods import resolve_periods
 from seller.intelligence.voucher import build_voucher_intelligence_placeholder
@@ -22,7 +22,7 @@ router = APIRouter(
 
 
 def _shop_list() -> list[tuple[str, str]]:
-    business = get_mock_business_intelligence()
+    business = get_mock_business_intelligence_payload()
     return [(r["shop_id"], r["shop_name"]) for r in business]
 
 
@@ -36,7 +36,7 @@ async def intelligence_v1_snapshot():
 async def intelligence_v1_dashboard():
     """V1 dashboard summary (periods + module status)."""
     today = date.today()
-    business = get_mock_business_intelligence()
+    business = get_mock_business_intelligence_payload()
     return {
         "version": "v1",
         "reference_today": today.isoformat(),
@@ -49,7 +49,7 @@ async def intelligence_v1_dashboard():
                 "seller_count": len(business),
             },
             "assortment_intelligence": {
-                "status": "structure_only",
+                "status": "mock",
                 "tracker_connected": False,
                 "fastmoss_connected": False,
             },
@@ -69,13 +69,13 @@ async def intelligence_v1_business():
         "data_source": "mock",
         "periods": resolve_periods(today).as_dict(),
         "usd_php_rate": USD_PHP_RATE,
-        "sellers": get_mock_business_intelligence(),
+        "sellers": get_mock_business_intelligence_payload(),
     }
 
 
 @router.get("/assortment")
 async def intelligence_v1_assortment():
-    return build_assortment_intelligence_structure(_shop_list())
+    return get_mock_assortment_intelligence()
 
 
 @router.get("/voucher")
