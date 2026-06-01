@@ -69,6 +69,10 @@
 
   const views = {
     home: document.getElementById("viewHome"),
+    siDashboard: document.getElementById("viewSiDashboard"),
+    siBusiness: document.getElementById("viewSiBusiness"),
+    siAssortment: document.getElementById("viewSiAssortment"),
+    siVoucher: document.getElementById("viewSiVoucher"),
     intelligence: document.getElementById("viewDashboard"),
     assistant: document.getElementById("viewAssistant"),
     learning: document.getElementById("viewLearning"),
@@ -284,6 +288,15 @@
     }
     if (viewKey === "assortment" && window.ShpAssortment?.onShow) {
       window.ShpAssortment.onShow(caiTab || "dashboard");
+    }
+    if (
+      (viewKey === "siDashboard" ||
+        viewKey === "siBusiness" ||
+        viewKey === "siAssortment" ||
+        viewKey === "siVoucher") &&
+      window.ShpIntelligenceV1?.onShow
+    ) {
+      window.ShpIntelligenceV1.onShow(viewKey);
     }
 
     if (options.focusSearch) {

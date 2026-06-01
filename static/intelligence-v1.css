@@ -1,0 +1,133 @@
+/* Seller Intelligence V1 — module views */
+
+.si-v1-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.si-v1-header {
+  flex-shrink: 0;
+  padding: 1.5rem 2rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 106, 0, 0.2);
+}
+
+.si-v1-header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+.si-v1-meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: #9a9a9a;
+}
+
+.si-v1-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 1.25rem 2rem 2rem;
+}
+
+.si-v1-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.si-v1-card {
+  background: #141414;
+  border: 1px solid rgba(255, 106, 0, 0.22);
+  border-radius: 6px;
+  padding: 1rem 1.15rem;
+}
+
+.si-v1-card-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8f8f8f;
+}
+
+.si-v1-card-value {
+  margin-top: 0.35rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ff8c33;
+}
+
+.si-v1-card-sub {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.si-v1-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 106, 0, 0.18);
+  border-radius: 6px;
+}
+
+.si-v1-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.si-v1-table th,
+.si-v1-table td {
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
+.si-v1-table th {
+  position: sticky;
+  top: 0;
+  background: #1a1a1a;
+  color: #ff8c33;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.65rem;
+}
+
+.si-v1-table tbody tr:hover {
+  background: rgba(255, 106, 0, 0.06);
+}
+
+.si-v1-badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(255, 106, 0, 0.15);
+  color: #ff9a4d;
+}
+
+.si-v1-badge--muted {
+  background: rgba(255, 255, 255, 0.08);
+  color: #999;
+}
+
+.si-v1-error {
+  padding: 1rem;
+  color: #ff6b7a;
+  border: 1px solid rgba(255, 61, 87, 0.35);
+  border-radius: 4px;
+}
+
+.si-v1-loading {
+  color: #8f8f8f;
+  font-size: 0.85rem;
+}

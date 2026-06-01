@@ -18,6 +18,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from assistant_service import process_question
 from seller.assortment.db import init_assortment_db
 from seller.assortment.router import router as assortment_router
+from seller.intelligence.router import router as intelligence_v1_router
 from seller.auth.config import dev_session_secret, get_auth_settings, validate_auth_config
 from seller.auth.dependencies import require_auth
 from seller.auth.middleware import AuthMiddleware, SecurityHeadersMiddleware
@@ -108,6 +109,7 @@ if STATIC_DIR.is_dir():
 
 app.include_router(auth_router)
 app.include_router(assortment_router, dependencies=[Depends(require_auth)])
+app.include_router(intelligence_v1_router)
 
 
 class CompetitorCheckRequest(BaseModel):
