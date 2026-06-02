@@ -12,6 +12,11 @@ class PeriodRange:
     start: date
     end: date
 
+    @property
+    def day_count(self) -> int:
+        """Inclusive calendar days in the range."""
+        return (self.end - self.start).days + 1
+
     def as_dict(self) -> dict[str, str]:
         return {
             "start": self.start.isoformat(),

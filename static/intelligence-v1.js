@@ -74,9 +74,40 @@
     });
   }
 
+  function fmtUsd(n) {
+    if (n == null || Number.isNaN(n)) return null;
+    return `$${fmtNum(n, 2)}`;
+  }
+
+  function fmtPhp(n) {
+    if (n == null || Number.isNaN(n)) return null;
+    return `₱${fmtNum(n, 0)}`;
+  }
+
   function fmtPct(n) {
     if (n == null || Number.isNaN(n)) return "—";
     return `${fmtNum(n, 1)}%`;
+  }
+
+  function fmtNa(reason) {
+    const title = reason ? ` title="${escapeHtml(reason)}"` : "";
+    return `<span class="si-v1-na"${title}>NA</span>`;
+  }
+
+  function fastmossStatusBadge(status) {
+    const map = {
+      MAPPED: ["si-v1-badge--ok", "Mapped"],
+      NEED_REVIEW: ["si-v1-badge--warn", "Need review"],
+      NOT_FOUND: ["si-v1-badge--risk", "Not found"],
+    };
+    const [cls, label] = map[status] || ["si-v1-badge--muted", status || "—"];
+    return `<span class="si-v1-badge ${cls}">${escapeHtml(label)}</span>`;
+  }
+
+  function fmtTikTokUsd(value, gmvPhp, label) {
+    if (value == null || Number.isNaN(value)) return fmtNa(label);
+    const tip = gmvPhp != null ? ` title="GMV ${fmtPhp(gmvPhp)}"` : "";
+    return `<span${tip}>${fmtUsd(value)}</span>`;
   }
 
   function periodLabel(periods) {
@@ -113,22 +144,19 @@
   }
 
   function deriveBusinessStatus(s) {
-    const sh = s.shopee_mom_percent;
+    if (s.tiktok_data_status !== "available") return "unknown";
     const tk = s.tiktok_mom_percent;
-    if (sh == null && tk == null) return "unknown";
-    if ((sh != null && sh < -5) && (tk != null && tk < -5)) return "at_risk";
-    if ((sh != null && sh < 0) || (tk != null && tk < 0)) return "attention";
+    if (tk == null) return "unknown";
+    if (tk < -5) return "at_risk";
+    if (tk < 0) return "attention";
     return "healthy";
   }
 
   function deriveBusinessRisk(s) {
-    const mtdSh = s.mtd_shopee_sob_percent;
-    const mtdTk = s.mtd_tiktok_sob_percent;
-    if (mtdTk != null && mtdSh != null && mtdTk > mtdSh) return "tiktok_leading";
-    const sh = s.shopee_mom_percent;
+    if (s.tiktok_data_status !== "available") return "medium";
     const tk = s.tiktok_mom_percent;
-    if ((sh != null && sh < -8) || (tk != null && tk < -8)) return "high";
-    if ((sh != null && sh > 5) || (tk != null && tk > 5)) return "low";
+    if (tk != null && tk < -8) return "high";
+    if (tk != null && tk > 5) return "low";
     return "medium";
   }
 
@@ -156,6 +184,8 @@
           return cmp(b.shopee_mom_percent ?? -999, a.shopee_mom_percent ?? -999);
         case "tiktok_mom":
           return cmp(b.tiktok_mom_percent ?? -999, a.tiktok_mom_percent ?? -999);
+        case "fastmoss":
+          return (a.fastmoss_match_status || "").localeCompare(b.fastmoss_match_status || "");
         default:
           return (a.shop_name || "").localeCompare(b.shop_name || "");
       }
@@ -287,6 +317,7 @@
             <option value="tiktok_mtd"${f.sort === "tiktok_mtd" ? " selected" : ""}>TikTok MTD ADGMV</option>
             <option value="shopee_mom"${f.sort === "shopee_mom" ? " selected" : ""}>Shopee MoM</option>
             <option value="tiktok_mom"${f.sort === "tiktok_mom" ? " selected" : ""}>TikTok MoM</option>
+            <option value="fastmoss"${f.sort === "fastmoss" ? " selected" : ""}>FastMoss status</option>
           </select>
         </div>
         <button type="button" class="si-v1-btn-reset" data-reset>Reset filters</button>
@@ -361,46 +392,54 @@
 
   /* ---------- Business render ---------- */
 
-  function renderBusinessRow(s, expanded) {
-    const tkLeading =
-      s.mtd_tiktok_sob_percent != null &&
-      s.mtd_shopee_sob_percent != null &&
-      s.mtd_tiktok_sob_percent > s.mtd_shopee_sob_percent;
-    const rowCls = tkLeading ? "si-v1-row si-v1-row--tk-leading" : "si-v1-row";
-    const expCls = expanded ? " is-expanded" : "";
+  function renderBusinessTableRow(s) {
+    const tkReason = s.tiktok_na_reason || "TikTok data unavailable";
+    const shReason = s.shopee_na_reason || "Shopee ADGMV source not connected";
+    const sobReason = s.sob_na_reason || "SOB requires Shopee ADGMV";
+    const tkMom =
+      s.tiktok_data_status === "available"
+        ? renderMom(s.tiktok_mom_percent, tkReason)
+        : fmtNa(tkReason);
     return `
-      <article class="${rowCls}${expCls}" data-shop-id="${escapeHtml(s.shop_id)}">
-        <div class="si-v1-row-head" data-toggle-row>
-          <div class="si-v1-row-toggle" aria-hidden="true">▶</div>
-          <div class="si-v1-row-title">
-            <strong>${escapeHtml(s.shop_name)}</strong>
-            <span>${escapeHtml(s.shop_id)} · ${escapeHtml(s.tiktok_shop_name || "")}</span>
-          </div>
-          <div class="si-v1-row-summary">
-            <div class="si-v1-row-metrics-inline">
-              ${renderMom(s.shopee_mom_percent, "Shopee MoM")}
-              ${renderMom(s.tiktok_mom_percent, "TikTok MoM")}
-              ${tkLeading ? '<span class="si-v1-badge si-v1-badge--purple">TK SOB lead</span>' : ""}
-            </div>
-            ${renderSobBar(s.mtd_shopee_sob_percent, s.mtd_tiktok_sob_percent, "MTD SOB", true)}
-            ${renderSobBar(s.m1_shopee_sob_percent, s.m1_tiktok_sob_percent, "M-1 SOB", true)}
-          </div>
-        </div>
-        <div class="si-v1-row-body">
-          <dl class="si-detail-grid">
-            <div class="si-detail-cell"><dt>Shopee MTD ADGMV</dt><dd>$${fmtNum(s.shopee_mtd_adgmv_usd)}</dd></div>
-            <div class="si-detail-cell"><dt>TikTok MTD ADGMV</dt><dd>$${fmtNum(s.tiktok_mtd_adgmv_usd)}</dd></div>
-            <div class="si-detail-cell"><dt>Shopee M-1 ADGMV</dt><dd>$${fmtNum(s.shopee_m1_adgmv_usd)}</dd></div>
-            <div class="si-detail-cell"><dt>TikTok M-1 ADGMV</dt><dd>$${fmtNum(s.tiktok_m1_adgmv_usd)}</dd></div>
-            <div class="si-detail-cell"><dt>Shopee MoM</dt><dd>${renderMom(s.shopee_mom_percent, "")}</dd></div>
-            <div class="si-detail-cell"><dt>TikTok MoM</dt><dd>${renderMom(s.tiktok_mom_percent, "")}</dd></div>
-          </dl>
-          <div class="si-sob-detail-row">
-            ${renderSobBar(s.mtd_shopee_sob_percent, s.mtd_tiktok_sob_percent, "MTD share of business", true)}
-            ${renderSobBar(s.m1_shopee_sob_percent, s.m1_tiktok_sob_percent, "M-1 share of business", true)}
-          </div>
-        </div>
-      </article>`;
+      <tr data-shop-id="${escapeHtml(s.shop_id)}">
+        <td>${escapeHtml(s.shop_id)}</td>
+        <td>${escapeHtml(s.shop_name)}</td>
+        <td>${escapeHtml(s.tiktok_shop_name || "—")}</td>
+        <td>${fastmossStatusBadge(s.fastmoss_match_status)}</td>
+        <td>${escapeHtml(s.fastmoss_matched_shop || "—")}</td>
+        <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_mtd_adgmv_usd, s.tiktok_mtd_gmv_php, tkReason)}</td>
+        <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_m1_adgmv_usd, s.tiktok_m1_gmv_php, tkReason)}</td>
+        <td class="si-v1-num">${tkMom}</td>
+        <td class="si-v1-num">${fmtNa(shReason)}</td>
+        <td class="si-v1-num">${fmtNa(shReason)}</td>
+        <td class="si-v1-num">${fmtNa(sobReason)}</td>
+        <td class="si-v1-num">${fmtNa(sobReason)}</td>
+      </tr>`;
+  }
+
+  function renderBusinessTable(sellers) {
+    return `
+      <div class="si-v1-table-wrap si-v1-table-wrap--wide">
+        <table class="si-v1-table si-v1-table--business">
+          <thead>
+            <tr>
+              <th>Shop ID</th>
+              <th>Shop Name</th>
+              <th>TikTok Shop Name</th>
+              <th>FastMoss Match Status</th>
+              <th>FastMoss Matched Shop</th>
+              <th>TikTok MTD ADGMV USD</th>
+              <th>TikTok M-1 ADGMV USD</th>
+              <th>TikTok MoM %</th>
+              <th>Shopee MTD ADGMV</th>
+              <th>Shopee M-1 ADGMV</th>
+              <th>MTD SOB</th>
+              <th>M-1 SOB</th>
+            </tr>
+          </thead>
+          <tbody>${sellers.map(renderBusinessTableRow).join("")}</tbody>
+        </table>
+      </div>`;
   }
 
   function paintBusinessList() {
@@ -418,19 +457,19 @@
       listEl.innerHTML = '<p class="si-v1-empty">No sellers match the current filters.</p>';
       return;
     }
-    listEl.innerHTML = filtered
-      .map((s) => renderBusinessRow(s, st.expanded.has(s.shop_id)))
-      .join("");
-    bindRowToggles(listEl, st.expanded);
-    animateSobBars(listEl);
+    listEl.innerHTML = renderBusinessTable(filtered);
   }
 
   function setupBusiness(data) {
     const el = containers.siBusiness;
     if (!el) return;
     state.business.raw = data;
+    const fm = data.fastmoss || {};
+    const summary = data.summary || {};
+    const src = fm.fastmoss_connected ? "FastMoss TikTok" : "Seller master";
+    const collected = fm.summary?.success != null ? ` · ${summary.tiktok_available ?? fm.summary.success} TikTok` : "";
     if (metas.siBusiness) {
-      metas.siBusiness.textContent = `${periodLabel(data.periods)} · Mock · USD/PHP ${data.usd_php_rate}`;
+      metas.siBusiness.textContent = `${periodLabel(data.periods)} · ${src}${collected} · USD/PHP ${data.usd_php_rate}`;
     }
     if (!state.business.shellReady) {
       el.innerHTML = `${businessToolbarHtml(state.business.filters)}<div class="si-v1-list" data-si-list></div>`;
@@ -599,12 +638,13 @@
     el.innerHTML = `
       <div class="si-v1-cards">
         <article class="si-v1-card">
-          <div class="si-v1-card-label">Sellers (mock)</div>
+          <div class="si-v1-card-label">Sellers</div>
           <div class="si-v1-card-value">${escapeHtml(String(data.seller_count ?? 0))}</div>
         </article>
         <article class="si-v1-card">
           <div class="si-v1-card-label">Business</div>
-          <div class="si-v1-card-value"><span class="si-v1-badge">${escapeHtml(mods.business_intelligence?.status || "—")}</span></div>
+          <div class="si-v1-card-value"><span class="si-v1-badge si-v1-badge--ok">${escapeHtml(mods.business_intelligence?.status || "—")}</span></div>
+          <p class="si-v1-card-sub">FastMoss ${mods.business_intelligence?.fastmoss_connected ? "on" : "off"} · TikTok ${mods.business_intelligence?.tiktok_collected ?? "—"}</p>
         </article>
         <article class="si-v1-card">
           <div class="si-v1-card-label">Assortment</div>

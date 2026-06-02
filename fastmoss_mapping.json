@@ -1,0 +1,323 @@
+{
+  "generated_at": "2026-06-02T01:45:25Z",
+  "region": "PH",
+  "source": "seller_master_google_sheet",
+  "summary": {
+    "total": 31,
+    "mapped": 26,
+    "need_review": 0,
+    "not_found": 5
+  },
+  "mappings": [
+    {
+      "shop_id": "64329852",
+      "shop_name": "LaLa_Shoes.PH",
+      "tiktok_shop_name": "YOTO SHOES",
+      "fastmoss_shop_name": "YOTO SHOES",
+      "fastmoss_shop_id": "7494609333713275265",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494609333713275265",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "15868997",
+      "shop_name": "Sklyer",
+      "tiktok_shop_name": "Skyler Shop",
+      "fastmoss_shop_name": "Skyler shop8",
+      "fastmoss_shop_id": "7494113782734292853",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494113782734292853",
+      "mapping_status": "MAPPED",
+      "confidence": 0.9565
+    },
+    {
+      "shop_id": "132438217",
+      "shop_name": "HONGFA",
+      "tiktok_shop_name": "fitflop_sandals",
+      "fastmoss_shop_name": null,
+      "fastmoss_shop_id": null,
+      "fastmoss_shop_url": null,
+      "mapping_status": "NOT_FOUND",
+      "confidence": 0.0
+    },
+    {
+      "shop_id": "157416761",
+      "shop_name": "JEIKY SHOES Philippines",
+      "tiktok_shop_name": "Jeiky Shoes Ph",
+      "fastmoss_shop_name": "Jeiky Shoes Ph",
+      "fastmoss_shop_id": "7495148725198883606",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495148725198883606",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "187057274",
+      "shop_name": "SJ MALL SHOES",
+      "tiktok_shop_name": "SJ MALL SHOES",
+      "fastmoss_shop_name": "SJ MALL SHOES",
+      "fastmoss_shop_id": "7494619488610388367",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494619488610388367",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "464536928",
+      "shop_name": "Ahsin shop",
+      "tiktok_shop_name": "SLF-shop",
+      "fastmoss_shop_name": "SLF shop",
+      "fastmoss_shop_id": "7494619366239406774",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494619366239406774",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "19100527",
+      "shop_name": "Mumu PH",
+      "tiktok_shop_name": "Mumu PH",
+      "fastmoss_shop_name": "Mumu PH",
+      "fastmoss_shop_id": "7494615843035646064",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494615843035646064",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "50099410",
+      "shop_name": "UISN Mall",
+      "tiktok_shop_name": "STAY YOUNG.PH",
+      "fastmoss_shop_name": "STAYOUNG.PH",
+      "fastmoss_shop_id": "7494955659735107850",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494955659735107850",
+      "mapping_status": "MAPPED",
+      "confidence": 0.9167
+    },
+    {
+      "shop_id": "5185360",
+      "shop_name": "YQY BAG'S ACCESSORIES",
+      "tiktok_shop_name": "YQY BAG SHOP",
+      "fastmoss_shop_name": "YQY BAG SHOP",
+      "fastmoss_shop_id": "7494613092289710139",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494613092289710139",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "201629115",
+      "shop_name": "Demasia",
+      "tiktok_shop_name": "ACHS AWAKE",
+      "fastmoss_shop_name": "ACHS AWAKE",
+      "fastmoss_shop_id": "7494617615266384751",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494617615266384751",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "62404318",
+      "shop_name": "Kinwooph",
+      "tiktok_shop_name": "Kinwoo.ph",
+      "fastmoss_shop_name": "Kinwoo.ph",
+      "fastmoss_shop_id": "7494600626141628535",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494600626141628535",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "110768099",
+      "shop_name": "Aya shop.",
+      "tiktok_shop_name": "AKIK.PH",
+      "fastmoss_shop_name": "AKIK.PH",
+      "fastmoss_shop_id": "7494615817280391638",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494615817280391638",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "3256461",
+      "shop_name": "PHFSSHOP",
+      "tiktok_shop_name": "Unique Trends",
+      "fastmoss_shop_name": "UNIQUE TRENDS",
+      "fastmoss_shop_id": "7494614302805625391",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494614302805625391",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "55748694",
+      "shop_name": "SS Swim Shop Fashion",
+      "tiktok_shop_name": "MPMG Official Store",
+      "fastmoss_shop_name": null,
+      "fastmoss_shop_id": null,
+      "fastmoss_shop_url": null,
+      "mapping_status": "NOT_FOUND",
+      "confidence": 0.0
+    },
+    {
+      "shop_id": "35129186",
+      "shop_name": "calvin.shop",
+      "tiktok_shop_name": "HongXinRTW",
+      "fastmoss_shop_name": "HongXinRTW",
+      "fastmoss_shop_id": "7494600722810833244",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494600722810833244",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "383771904",
+      "shop_name": "8% STORE Eight Percent",
+      "tiktok_shop_name": "999 Studio",
+      "fastmoss_shop_name": "997 Studio",
+      "fastmoss_shop_id": "8649702564509812001",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/8649702564509812001",
+      "mapping_status": "MAPPED",
+      "confidence": 0.9
+    },
+    {
+      "shop_id": "25587666",
+      "shop_name": "Kily.Ph Online",
+      "tiktok_shop_name": "KILY OFFICIAL",
+      "fastmoss_shop_name": "KILY OFFICIAL",
+      "fastmoss_shop_id": "7494607482516965499",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494607482516965499",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "52679673",
+      "shop_name": "DA&ABOUT THE FIT",
+      "tiktok_shop_name": "TayTay.RTW&Best Seller",
+      "fastmoss_shop_name": "TayTay.RTW&Best Seller",
+      "fastmoss_shop_id": "7494622653053897548",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494622653053897548",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "1083822",
+      "shop_name": "Naked Clothing PH",
+      "tiktok_shop_name": "nakdclothingph",
+      "fastmoss_shop_name": "nakdclothingph",
+      "fastmoss_shop_id": "7494612095771838510",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494612095771838510",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "86411248",
+      "shop_name": "EMILY FASHION",
+      "tiktok_shop_name": "SK ONLINE PH",
+      "fastmoss_shop_name": "SK ONLINE PH",
+      "fastmoss_shop_id": "7494617387557882401",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494617387557882401",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "27311718",
+      "shop_name": "JEANS ZX",
+      "tiktok_shop_name": "ZHIXIN JEANS Philippines",
+      "fastmoss_shop_name": "ZHIXIN JEANS Philippines",
+      "fastmoss_shop_id": "7494702044647754543",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494702044647754543",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "1256935452",
+      "shop_name": "HottieDiary",
+      "tiktok_shop_name": "https://vt.tiktok.com/ZSrCdXtVU/?page=TikTokShop",
+      "fastmoss_shop_name": null,
+      "fastmoss_shop_id": null,
+      "fastmoss_shop_url": null,
+      "mapping_status": "NOT_FOUND",
+      "confidence": 0.0
+    },
+    {
+      "shop_id": "23558781",
+      "shop_name": "Rhian",
+      "tiktok_shop_name": "Rhian Lingerie",
+      "fastmoss_shop_name": "Rhian Lingerie",
+      "fastmoss_shop_id": "7494619428983310462",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494619428983310462",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "833020951",
+      "shop_name": "FunnyeS",
+      "tiktok_shop_name": "https://shop.tiktok.com/view/product/1731079417879692689?region=PH&locale=en&source=seller_center",
+      "fastmoss_shop_name": null,
+      "fastmoss_shop_id": null,
+      "fastmoss_shop_url": null,
+      "mapping_status": "NOT_FOUND",
+      "confidence": 0.0
+    },
+    {
+      "shop_id": "49772788",
+      "shop_name": "Isabelle. Q Bra",
+      "tiktok_shop_name": "Isabelle.Q shop",
+      "fastmoss_shop_name": "Isabelle.Q shop",
+      "fastmoss_shop_id": "7494825871647738066",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494825871647738066",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "115854696",
+      "shop_name": "Urstore",
+      "tiktok_shop_name": "enaqloph",
+      "fastmoss_shop_name": null,
+      "fastmoss_shop_id": null,
+      "fastmoss_shop_url": null,
+      "mapping_status": "NOT_FOUND",
+      "confidence": 0.0
+    },
+    {
+      "shop_id": "287452446",
+      "shop_name": "GBra Lingerie",
+      "tiktok_shop_name": "Wholesale Intimate Shop",
+      "fastmoss_shop_name": "Wholesale Intimate Shop",
+      "fastmoss_shop_id": "7494646875567590282",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494646875567590282",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "25811092",
+      "shop_name": "angelcity.💋",
+      "tiktok_shop_name": "anggelcity.ph",
+      "fastmoss_shop_name": "anggelcity.ph",
+      "fastmoss_shop_id": "7494614953494808587",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494614953494808587",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "67752782",
+      "shop_name": "Lucky shopping",
+      "tiktok_shop_name": "Sikat Fashion",
+      "fastmoss_shop_name": "Sikat Fashion",
+      "fastmoss_shop_id": "7495870286384892787",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495870286384892787",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "79555536",
+      "shop_name": "In Shopping",
+      "tiktok_shop_name": "In Fashioning",
+      "fastmoss_shop_name": "In Fashioning",
+      "fastmoss_shop_id": "7494660190191061934",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494660190191061934",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    },
+    {
+      "shop_id": "273805971",
+      "shop_name": "URBAN PIPE SHOP",
+      "tiktok_shop_name": "URBAN PIPE SHOP",
+      "fastmoss_shop_name": "URBAN PIPE SHOP",
+      "fastmoss_shop_id": "7494827047205112196",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494827047205112196",
+      "mapping_status": "MAPPED",
+      "confidence": 1.0
+    }
+  ]
+}

@@ -552,3 +552,64 @@
     transition: none;
   }
 }
+
+/* Business Intelligence table */
+.si-v1-table-wrap {
+  overflow: auto;
+  border: 1px solid rgba(255, 106, 0, 0.22);
+  border-radius: 6px;
+  background: #0d0d0d;
+}
+
+.si-v1-table-wrap--wide {
+  max-width: 100%;
+}
+
+.si-v1-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.si-v1-table th,
+.si-v1-table td {
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.si-v1-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #121212;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9a9a9a;
+  white-space: nowrap;
+}
+
+.si-v1-table tbody tr:hover {
+  background: rgba(255, 106, 0, 0.06);
+}
+
+.si-v1-table--business td.si-v1-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.si-v1-na {
+  color: #888;
+  font-style: italic;
+  cursor: help;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.25);
+}
+
+.si-v1-card-sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  color: #888;
+}

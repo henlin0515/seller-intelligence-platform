@@ -1,17 +1,25 @@
-"""Seller Intelligence V1 — HTTP API (mock / structure / placeholder)."""
+"""Seller Intelligence V1 — HTTP API (seller master from Google Sheet)."""
 
 from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from seller.auth.dependencies import require_auth
+from seller.google_sheets.exceptions import (
+    GoogleSheetsNotConfiguredError,
+    GoogleSheetsNotEnabledError,
+)
 from seller.intelligence import get_seller_intelligence_v1_snapshot
-from seller.intelligence.assortment import get_mock_assortment_intelligence
-from seller.intelligence.business.meta import get_mock_business_intelligence_payload
+from seller.intelligence.assortment import get_assortment_intelligence
+from seller.intelligence.business.meta import (
+    get_business_intelligence_meta,
+    get_business_intelligence_payload,
+)
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.periods import resolve_periods
+from seller.intelligence.seller_master import get_seller_master
 from seller.intelligence.voucher import build_voucher_intelligence_placeholder
 
 router = APIRouter(
@@ -21,14 +29,25 @@ router = APIRouter(
 )
 
 
+def _load_master():
+    try:
+        return get_seller_master()
+    except (GoogleSheetsNotConfiguredError, GoogleSheetsNotEnabledError) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
+
+
 def _shop_list() -> list[tuple[str, str]]:
-    business = get_mock_business_intelligence_payload()
-    return [(r["shop_id"], r["shop_name"]) for r in business]
+    master = _load_master()
+    return [(s.shop_id, s.shop_name) for s in master.sellers]
 
 
 @router.get("")
 async def intelligence_v1_snapshot():
     """Full V1 snapshot: business, assortment structure, voucher placeholder."""
+    _load_master()
     return get_seller_intelligence_v1_snapshot()
 
 
@@ -36,22 +55,30 @@ async def intelligence_v1_snapshot():
 async def intelligence_v1_dashboard():
     """V1 dashboard summary (periods + module status)."""
     today = date.today()
-    business = get_mock_business_intelligence_payload()
+    master = _load_master()
+    business = get_business_intelligence_payload(master)
+    fastmoss_meta = get_business_intelligence_meta()
+    imp = master.stats.as_dict()
     return {
         "version": "v1",
         "reference_today": today.isoformat(),
         "periods": resolve_periods(today).as_dict(),
         "usd_php_rate": USD_PHP_RATE,
+        "data_source": master.data_source,
+        "tab": master.tab,
         "seller_count": len(business),
+        "import": imp,
         "modules": {
             "business_intelligence": {
-                "status": "mock_data",
+                "status": "fastmoss_tiktok" if fastmoss_meta.get("fastmoss_connected") else "sheet_master",
                 "seller_count": len(business),
+                "fastmoss_connected": fastmoss_meta.get("fastmoss_connected", False),
+                "tiktok_collected": (fastmoss_meta.get("summary") or {}).get("success"),
             },
             "assortment_intelligence": {
-                "status": "mock",
+                "status": "sheet_master",
                 "tracker_connected": False,
-                "fastmoss_connected": False,
+                "fastmoss_connected": fastmoss_meta.get("fastmoss_connected", False),
             },
             "voucher_intelligence": {
                 "status": "placeholder",
@@ -64,18 +91,31 @@ async def intelligence_v1_dashboard():
 @router.get("/business")
 async def intelligence_v1_business():
     today = date.today()
+    master = _load_master()
+    fastmoss_meta = get_business_intelligence_meta()
+    sellers = get_business_intelligence_payload(master)
+    tiktok_available = sum(1 for s in sellers if s.get("tiktok_data_status") == "available")
     return {
         "version": "v1",
-        "data_source": "mock",
+        "data_source": master.data_source,
+        "tab": master.tab,
         "periods": resolve_periods(today).as_dict(),
         "usd_php_rate": USD_PHP_RATE,
-        "sellers": get_mock_business_intelligence_payload(),
+        "fastmoss": fastmoss_meta,
+        "summary": {
+            "seller_count": len(sellers),
+            "tiktok_available": tiktok_available,
+            "tiktok_na": len(sellers) - tiktok_available,
+        },
+        "sellers": sellers,
+        "import": master.stats.as_dict(),
     }
 
 
 @router.get("/assortment")
 async def intelligence_v1_assortment():
-    return get_mock_assortment_intelligence()
+    master = _load_master()
+    return get_assortment_intelligence(master)
 
 
 @router.get("/voucher")
