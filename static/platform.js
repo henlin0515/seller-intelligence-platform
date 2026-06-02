@@ -91,9 +91,13 @@
   const sellerContextBar = document.getElementById("sellerContextBar");
   const sellerContextName = document.getElementById("sellerContextName");
   const clearSellerContext = document.getElementById("clearSellerContext");
+  const globalRefreshSheetBtn = document.getElementById("globalRefreshSheetBtn");
+  const platformLastSync = document.getElementById("platformLastSync");
+  const platformToast = document.getElementById("platformToast");
 
   let currentView = "home";
   let lastHomeStatus = null;
+  let toastTimer = null;
 
   function i18n(key, fallback = "") {
     return window.SipI18n?.t(key, fallback) ?? fallback ?? key;
@@ -105,6 +109,103 @@
       return new Date(iso).toLocaleString();
     } catch {
       return "—";
+    }
+  }
+
+  function updatePlatformLastSync(iso, loading = false) {
+    if (!platformLastSync) return;
+    platformLastSync.textContent = loading
+      ? i18n("platform.refreshing", "Refreshing…")
+      : formatRefreshed(iso);
+    platformLastSync.dateTime = iso || "";
+  }
+
+  function showPlatformToast(message, kind = "success") {
+    if (!platformToast || !message) return;
+    platformToast.textContent = message;
+    platformToast.classList.remove("hidden", "is-error");
+    if (kind === "error") platformToast.classList.add("is-error");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      platformToast.classList.add("hidden");
+    }, 4000);
+  }
+
+  async function fetchPlatformLastSync() {
+    try {
+      const res = await (window.SipApi ? window.SipApi.fetch : fetch)(
+        "/api/intelligence/v1/seller-master/status",
+        { credentials: "same-origin" }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      updatePlatformLastSync(data.last_sync_at);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function reloadCurrentViewAfterRefresh(data) {
+    window.ShpIntelligenceV1?.clearCache?.();
+
+    const view = currentView;
+    if (view === "home") {
+      updateHomeStats({
+        loaded: true,
+        seller_count: data.ai_data_count,
+        last_loaded_at: data.refreshed_at,
+        loading: false,
+      });
+      return;
+    }
+    if (view === "intelligence" && window.ShpDashboard?.onSheetRefreshed) {
+      await window.ShpDashboard.onSheetRefreshed(data);
+      return;
+    }
+    if (view === "settings") {
+      await loadSellerMasterSyncStatus();
+      return;
+    }
+    if (
+      (view === "siDashboard" ||
+        view === "siBusiness" ||
+        view === "siAssortment" ||
+        view === "siVoucher") &&
+      window.ShpIntelligenceV1?.onShow
+    ) {
+      await window.ShpIntelligenceV1.onShow(view);
+    }
+  }
+
+  async function refreshAllSheetData() {
+    if (globalRefreshSheetBtn) {
+      globalRefreshSheetBtn.disabled = true;
+      globalRefreshSheetBtn.classList.add("is-loading");
+    }
+    updatePlatformLastSync(null, true);
+    try {
+      const res = await (window.SipApi ? window.SipApi.fetch : fetch)(
+        "/api/intelligence/v1/refresh-sheets",
+        { method: "POST", credentials: "same-origin" }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || i18n("platform.refreshFailed"));
+      updatePlatformLastSync(data.refreshed_at);
+      showPlatformToast(i18n("platform.refreshSuccess", "Sheet data updated"));
+      await reloadCurrentViewAfterRefresh(data);
+      return data;
+    } catch (err) {
+      showPlatformToast(
+        err.message || i18n("platform.refreshFailed", "Could not refresh sheet data"),
+        "error"
+      );
+      await fetchPlatformLastSync();
+      throw err;
+    } finally {
+      if (globalRefreshSheetBtn) {
+        globalRefreshSheetBtn.disabled = false;
+        globalRefreshSheetBtn.classList.remove("is-loading");
+      }
     }
   }
 
@@ -345,10 +446,17 @@
     addRecentSearch,
     setSellerContext,
     getCurrentView: () => currentView,
+    refreshAllSheetData,
+    updatePlatformLastSync,
   };
+
+  globalRefreshSheetBtn?.addEventListener("click", () => {
+    refreshAllSheetData().catch(() => {});
+  });
 
   window.SipI18n?.onChange?.((locale) => {
     if (lastHomeStatus) updateHomeStats(lastHomeStatus);
+    fetchPlatformLastSync();
     window.SipI18n?.apply?.(document);
     renderLearningCenter();
     window.ShpDashboard?.onLocaleChange?.();
@@ -426,6 +534,7 @@
   renderLearningCenter();
   initAuthUi().then(() => {
     fetchAndUpdateHomeStats();
+    fetchPlatformLastSync();
     navigate("siDashboard");
   });
 })();

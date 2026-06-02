@@ -15,8 +15,12 @@ from seller.fastmoss.recent_data import _base_url
 logger = logging.getLogger("seller.intelligence.assortment.radar")
 
 NEW_PRODUCT_DAYS = int(os.getenv("ASSORTMENT_NEW_PRODUCT_DAYS", "20"))
-RADAR_MAX_PAGES = int(os.getenv("ASSORTMENT_RADAR_MAX_PAGES", "3"))
-RADAR_PAGE_SIZE = int(os.getenv("ASSORTMENT_RADAR_PAGE_SIZE", "10"))
+RADAR_MAX_PRODUCTS = int(
+    os.getenv("ASSORTMENT_RADAR_MAX_PRODUCTS", os.getenv("FASTMOSS_MAX_PRODUCTS", "1000"))
+)
+RADAR_PAGE_SIZE = int(
+    os.getenv("ASSORTMENT_RADAR_PAGE_SIZE", os.getenv("FASTMOSS_PAGE_SIZE", "10"))
+)
 RADAR_TOP_GROWTH = int(os.getenv("ASSORTMENT_RADAR_TOP_GROWTH", "20"))
 RADAR_TOP_NEW = int(os.getenv("ASSORTMENT_RADAR_TOP_NEW", "20"))
 RADAR_TOP_OPPORTUNITIES = int(os.getenv("ASSORTMENT_RADAR_TOP_OPPORTUNITIES", "20"))
@@ -360,20 +364,35 @@ def _collect_mapped_products() -> tuple[list[dict[str, Any]], dict[str, Any]]:
 
     products: list[dict[str, Any]] = []
     shop_errors: list[str] = []
+    shop_collections: list[dict[str, Any]] = []
     endpoints_used = {f"{_base_url()}{GOODS_PATH}"}
 
     for mapping in mappings:
         fastmoss_shop_id = str(mapping["fastmoss_shop_id"]).strip()
+        shop_name = str(mapping.get("shop_name") or fastmoss_shop_id)
         try:
             payload = fetch_shop_goods_catalog(
                 fastmoss_shop_id,
-                max_pages=RADAR_MAX_PAGES,
+                max_products=RADAR_MAX_PRODUCTS,
                 page_size=RADAR_PAGE_SIZE,
             )
         except Exception as exc:
             logger.warning("FastMoss goods fetch failed for %s: %s", fastmoss_shop_id, exc)
-            shop_errors.append(f"{mapping.get('shop_name')}: {exc}")
+            shop_errors.append(f"{shop_name}: {exc}")
             continue
+
+        shop_collections.append(
+            {
+                "shop_id": str(mapping.get("shop_id") or ""),
+                "shop_name": shop_name,
+                "fastmoss_shop_id": fastmoss_shop_id,
+                "products_collected": payload.get("products_collected")
+                or payload.get("product_count")
+                or 0,
+                "product_count_total": payload.get("product_count_total"),
+                "pages_collected": payload.get("pages_collected") or 0,
+            }
+        )
 
         for product in payload.get("products") or []:
             key = product.get("product_id") or product.get("product_link")
@@ -394,6 +413,9 @@ def _collect_mapped_products() -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "shops_with_errors": len(shop_errors),
         "shop_errors": shop_errors[:10],
         "products_collected": len(products),
+        "max_products_per_shop": RADAR_MAX_PRODUCTS,
+        "page_size": RADAR_PAGE_SIZE,
+        "shop_collections": shop_collections,
     }
     return products, meta
 
@@ -467,3 +489,10 @@ def build_tiktok_product_radar(*, force_refresh: bool = False) -> dict[str, Any]
     _cache_payload = payload
     _cache_ts = time.time()
     return payload
+
+
+def clear_tiktok_radar_cache() -> None:
+    """Drop in-memory TikTok Product Radar payload (sheet/FastMoss derived)."""
+    global _cache_payload, _cache_ts
+    _cache_payload = None
+    _cache_ts = 0.0

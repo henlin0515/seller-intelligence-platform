@@ -29,6 +29,11 @@
       "lang.zh-TW": "繁體中文",
       "lang.zh-CN": "简体中文",
       "lang.fil": "Filipino",
+      "platform.refreshSheets": "Refresh Sheet Data",
+      "platform.lastSync": "Last updated",
+      "platform.refreshing": "Refreshing…",
+      "platform.refreshSuccess": "Sheet data updated",
+      "platform.refreshFailed": "Could not refresh sheet data",
       "brand.name": "Seller Intelligence",
       "brand.tagline": "Command Center",
       "nav.home": "Overview",
@@ -264,6 +269,11 @@
       "lang.zh-TW": "繁體中文",
       "lang.zh-CN": "简体中文",
       "lang.fil": "Filipino",
+      "platform.refreshSheets": "更新 Sheet 資料",
+      "platform.lastSync": "最後更新",
+      "platform.refreshing": "更新中…",
+      "platform.refreshSuccess": "Sheet 資料已更新",
+      "platform.refreshFailed": "無法更新 Sheet 資料",
       "brand.name": "賣家情報平台",
       "brand.tagline": "指揮中心",
       "nav.home": "首頁",
@@ -452,6 +462,11 @@
       "lang.zh-TW": "繁體中文",
       "lang.zh-CN": "简体中文",
       "lang.fil": "Filipino",
+      "platform.refreshSheets": "更新 Sheet 数据",
+      "platform.lastSync": "最后更新",
+      "platform.refreshing": "更新中…",
+      "platform.refreshSuccess": "Sheet 数据已更新",
+      "platform.refreshFailed": "无法更新 Sheet 数据",
       "brand.name": "卖家情报平台",
       "brand.tagline": "指挥中心",
       "nav.home": "首页",
@@ -640,6 +655,11 @@
       "lang.zh-TW": "繁體中文",
       "lang.zh-CN": "简体中文",
       "lang.fil": "Filipino",
+      "platform.refreshSheets": "I-refresh ang Sheet Data",
+      "platform.lastSync": "Huling update",
+      "platform.refreshing": "Nagre-refresh…",
+      "platform.refreshSuccess": "Na-update ang sheet data",
+      "platform.refreshFailed": "Hindi ma-refresh ang sheet data",
       "brand.name": "Seller Intelligence",
       "brand.tagline": "Command Center",
       "nav.home": "Dashboard",
@@ -908,15 +928,13 @@
   }
 
   function updateLangSwitcherUi() {
-    const label = document.getElementById("langSwitcherLabel");
     const current = document.getElementById("langSwitcherCurrent");
-    if (label) label.textContent = t("lang.label");
     if (current) {
       const map = {
-        en: "🇺🇸 " + t("lang.en"),
-        "zh-TW": "🇹🇼 " + t("lang.zh-TW"),
-        "zh-CN": "🇨🇳 " + t("lang.zh-CN"),
-        fil: "🇵🇭 " + t("lang.fil"),
+        en: "US English",
+        "zh-TW": "TW 繁體中文",
+        "zh-CN": "CN 简体中文",
+        fil: "PH Filipino",
       };
       current.textContent = map[locale] || map.en;
     }

@@ -247,6 +247,20 @@ body.cc-mode .lang-switcher-btn {
   box-shadow: 0 0 16px rgba(0, 0, 0, 0.4);
 }
 
+body.cc-mode .platform-top-bar .btn-platform-refresh {
+  background: var(--cc-glass);
+  border: 1px solid var(--cc-border);
+  color: var(--cc-text);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.4);
+}
+
+body.cc-mode .platform-toast {
+  background: var(--cc-card);
+  border: 1px solid var(--cc-border-strong);
+  color: var(--cc-text);
+}
+
 body.cc-mode .lang-switcher-menu {
   background: var(--cc-card);
   border: 1px solid var(--cc-border-strong);

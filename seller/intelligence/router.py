@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import date
+import asyncio
+import logging
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -21,8 +23,14 @@ from seller.intelligence.business.meta import (
 from seller.intelligence.business.portfolio import build_portfolio_overview
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.periods import resolve_periods
-from seller.intelligence.seller_master import get_seller_master, get_seller_master_sync_status
+from seller.intelligence.seller_master import (
+    clear_seller_master_cache,
+    get_seller_master,
+    get_seller_master_sync_status,
+)
 from seller.intelligence.voucher import build_voucher_intelligence_placeholder
+
+logger = logging.getLogger("seller.intelligence.router")
 
 router = APIRouter(
     prefix="/api/intelligence/v1",
@@ -142,3 +150,46 @@ async def intelligence_v1_seller_master_status():
         return {"version": "v1", **status}
     except (GoogleSheetsNotConfiguredError, GoogleSheetsNotEnabledError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+def _refresh_all_sheet_caches() -> dict:
+    """Clear and reload Seller Master, AI data, Shopee ADGMV, and radar caches."""
+    from seller.intelligence.assortment.radar import clear_tiktok_radar_cache
+    from seller.intelligence.business.shopee_adgmv import clear_shopee_adgmv_cache, get_shopee_adgmv
+    from seller.sheets_cache import refresh as refresh_ai_data
+
+    clear_seller_master_cache()
+    clear_shopee_adgmv_cache()
+    clear_tiktok_radar_cache()
+
+    master = get_seller_master(force_refresh=True)
+    ai_status = refresh_ai_data(force=True)
+    adgmv = get_shopee_adgmv(force_refresh=True)
+
+    sync_status = get_seller_master_sync_status()
+    refreshed_at = sync_status.get("last_sync_at") or datetime.now(timezone.utc).isoformat()
+
+    return {
+        "success": True,
+        "refreshed_at": refreshed_at,
+        "seller_count": len(master.sellers),
+        "ai_data_count": int(ai_status.get("seller_count") or 0),
+        "shopee_adgmv_count": adgmv.stats.total_loaded,
+    }
+
+
+@router.post("/refresh-sheets")
+async def intelligence_v1_refresh_sheets():
+    """Force refresh all Google Sheet-backed caches without server restart."""
+    try:
+        return await asyncio.to_thread(_refresh_all_sheet_caches)
+    except (GoogleSheetsNotConfiguredError, GoogleSheetsNotEnabledError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Sheet refresh failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Could not refresh sheet data. Try again later.",
+        ) from exc

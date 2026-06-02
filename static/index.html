@@ -126,25 +126,19 @@
       </aside>
 
       <div class="main">
-        <div id="langSwitcher" class="lang-switcher" aria-label="Language">
+        <div id="platformTopBar" class="platform-top-bar" aria-label="Sheet sync">
+          <div class="platform-top-sync">
+            <span class="platform-top-sync-label" data-i18n="platform.lastSync">Last updated</span>
+            <time id="platformLastSync" class="platform-top-sync-value" datetime="">—</time>
+          </div>
           <button
             type="button"
-            id="langSwitcherBtn"
-            class="lang-switcher-btn"
-            aria-haspopup="listbox"
-            aria-expanded="false"
+            id="globalRefreshSheetBtn"
+            class="btn btn-platform-refresh"
+            data-i18n="platform.refreshSheets"
           >
-            <span class="lang-switcher-globe" aria-hidden="true">🌐</span>
-            <span id="langSwitcherLabel" data-i18n="lang.label">Language</span>
-            <span id="langSwitcherCurrent" class="lang-switcher-current"></span>
-            <span class="lang-switcher-chevron" aria-hidden="true">▾</span>
+            Refresh Sheet Data
           </button>
-          <div id="langSwitcherMenu" class="lang-switcher-menu hidden" role="listbox">
-            <button type="button" role="option" data-lang-option="en">🇺🇸 <span data-i18n="lang.en">English</span></button>
-            <button type="button" role="option" data-lang-option="zh-TW">🇹🇼 <span data-i18n="lang.zh-TW">繁體中文</span></button>
-            <button type="button" role="option" data-lang-option="zh-CN">🇨🇳 <span data-i18n="lang.zh-CN">简体中文</span></button>
-            <button type="button" role="option" data-lang-option="fil">🇵🇭 <span data-i18n="lang.fil">Filipino</span></button>
-          </div>
         </div>
 
         <!-- Home -->
@@ -252,13 +246,6 @@
                 <span class="dash-header-stat-label" data-i18n="intel.sellers">Sellers</span>
                 <span id="sellerCountLabel" class="dash-header-stat-value">—</span>
               </div>
-              <div class="dash-header-stat">
-                <span class="dash-header-stat-label" data-i18n="intel.refreshed">Refreshed</span>
-                <span id="sheetLoadMeta" class="dash-header-stat-value">—</span>
-              </div>
-              <button type="button" id="refreshSheetBtn" class="btn btn-dash-refresh" data-i18n="intel.refresh">
-                Refresh
-              </button>
             </div>
           </header>
 
@@ -523,6 +510,28 @@
         </div>
       </div>
     </div>
+
+    <div id="langSwitcher" class="lang-switcher" aria-label="Language">
+      <button
+        type="button"
+        id="langSwitcherBtn"
+        class="lang-switcher-btn"
+        aria-haspopup="listbox"
+        aria-expanded="false"
+      >
+        <span class="lang-switcher-globe" aria-hidden="true">🌐</span>
+        <span id="langSwitcherCurrent" class="lang-switcher-current"></span>
+        <span class="lang-switcher-chevron" aria-hidden="true">▾</span>
+      </button>
+      <div id="langSwitcherMenu" class="lang-switcher-menu hidden" role="listbox">
+        <button type="button" role="option" data-lang-option="en">🇺🇸 <span data-i18n="lang.en">English</span></button>
+        <button type="button" role="option" data-lang-option="zh-TW">🇹🇼 <span data-i18n="lang.zh-TW">繁體中文</span></button>
+        <button type="button" role="option" data-lang-option="zh-CN">🇨🇳 <span data-i18n="lang.zh-CN">简体中文</span></button>
+        <button type="button" role="option" data-lang-option="fil">🇵🇭 <span data-i18n="lang.fil">Filipino</span></button>
+      </div>
+    </div>
+
+    <div id="platformToast" class="platform-toast hidden" role="status" aria-live="polite"></div>
 
     <div id="settingsModal" class="modal hidden" role="dialog" aria-labelledby="settingsTitle">
       <div class="modal-backdrop" data-close-modal></div>

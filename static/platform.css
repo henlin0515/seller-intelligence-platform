@@ -824,26 +824,137 @@ body {
   transition: all var(--sip-transition);
 }
 
-.recent-chip:hover {
-  border-color: var(--sip-text);
-  color: var(--sip-text);
+.si-v1-scroll,
+.dashboard-scroll,
+.home-scroll,
+.settings-scroll,
+.learning-scroll,
+.cai-scroll {
+  padding-bottom: 4.5rem;
 }
 
-/* Global language switcher — top-right */
-.lang-switcher {
+/* Global sheet refresh — top-right */
+.platform-top-bar {
   position: fixed;
   top: 0.75rem;
   right: 1rem;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  max-width: min(100vw - 2rem, 28rem);
+}
+
+.platform-top-sync {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.platform-top-sync-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sip-text-muted);
+}
+
+.platform-top-sync-value {
+  font-size: 0.75rem;
+  color: var(--sip-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 11rem;
+}
+
+.btn-platform-refresh {
+  flex-shrink: 0;
+  padding: 0.45rem 0.85rem;
+  font-family: var(--sip-font);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--sip-text);
+  background: var(--sip-surface-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--sip-border);
+  border-radius: var(--sip-radius-pill);
+  box-shadow: var(--sip-shadow-sm);
+  cursor: pointer;
+  transition: border-color var(--sip-transition), opacity var(--sip-transition);
+}
+
+.btn-platform-refresh:hover:not(:disabled) {
+  border-color: var(--sip-text);
+}
+
+.btn-platform-refresh:disabled,
+.btn-platform-refresh.is-loading {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.si-v1-header,
+.dash-top-header,
+.main-header.glass-header {
+  padding-right: min(18rem, 42vw);
+}
+
+@media (max-width: 640px) {
+  .platform-top-bar {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+  }
+
+  .platform-top-sync {
+    display: none;
+  }
+}
+
+.platform-toast {
+  position: fixed;
+  top: 3.75rem;
+  right: 1rem;
+  z-index: 60;
+  max-width: min(22rem, calc(100vw - 2rem));
+  padding: 0.65rem 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--sip-text);
+  background: var(--sip-surface);
+  border: 1px solid var(--sip-border);
+  border-radius: var(--sip-radius-sm);
+  box-shadow: var(--sip-shadow-lg);
+}
+
+.platform-toast.is-error {
+  border-color: #e57373;
+  color: #ffcdd2;
+}
+
+.platform-toast.hidden {
+  display: none;
+}
+
+/* Global language switcher — bottom-right floating pill */
+.lang-switcher {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  top: auto;
   z-index: 50;
 }
 
 .lang-switcher-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.75rem;
+  gap: 0.35rem;
+  padding: 0.4rem 0.7rem;
   font-family: var(--sip-font);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--sip-text);
   background: var(--sip-surface-glass);
@@ -880,7 +991,8 @@ body {
 
 .lang-switcher-menu {
   position: absolute;
-  top: calc(100% + 0.35rem);
+  top: auto;
+  bottom: calc(100% + 0.35rem);
   right: 0;
   min-width: 11rem;
   padding: 0.35rem;

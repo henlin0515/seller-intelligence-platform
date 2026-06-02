@@ -18,8 +18,6 @@
   const insightsSection = document.getElementById("insightsSection");
   const recommendationsSection = document.getElementById("recommendationsSection");
   const sellerCountLabel = document.getElementById("sellerCountLabel");
-  const sheetLoadMeta = document.getElementById("sheetLoadMeta");
-  const refreshSheetBtn = document.getElementById("refreshSheetBtn");
   const dashboardEmptyText = document.getElementById("dashboardEmptyText");
   const dashHeaderMeta = document.getElementById("dashHeaderMeta");
   const dashTopHeader = document.querySelector(".dash-top-header");
@@ -149,14 +147,12 @@
 
     if (status.loading) {
       sellerCountLabel.textContent = "…";
-      sheetLoadMeta.textContent = i18n("home.statChecking", "Checking…");
       setSearchEnabled(false);
       return;
     }
 
     if (!status.loaded) {
       sellerCountLabel.textContent = "—";
-      sheetLoadMeta.textContent = i18n("home.statUnavailable", "Unavailable");
       if (dashHeaderMeta) {
         dashHeaderMeta.textContent = i18n("intel.meta", "Performance command center");
       }
@@ -165,7 +161,6 @@
     }
 
     sellerCountLabel.textContent = String(status.seller_count ?? 0);
-    sheetLoadMeta.textContent = formatRefreshed(status.last_loaded_at);
     if (dashHeaderMeta) {
       dashHeaderMeta.textContent = i18n(
         "intel.metaLoading",
@@ -194,13 +189,25 @@
   }
 
   async function refreshSheetData() {
+    if (window.ShpPlatform?.refreshAllSheetData) {
+      return window.ShpPlatform.refreshAllSheetData();
+    }
     setSearchEnabled(false);
     renderHeaderStatus({ loading: true, loaded: false });
     try {
-      const res = await apiFetch("/api/seller/refresh", { method: "POST" });
+      const res = await apiFetch("/api/intelligence/v1/refresh-sheets", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "refresh failed");
-      renderHeaderStatus(data);
+      const status = {
+        loaded: true,
+        loading: false,
+        seller_count: data.ai_data_count,
+        last_loaded_at: data.refreshed_at,
+      };
+      renderHeaderStatus(status);
+      if (window.ShpPlatform?.updatePlatformLastSync) {
+        window.ShpPlatform.updatePlatformLastSync(data.refreshed_at);
+      }
       return data;
     } catch (err) {
       renderHeaderStatus({ loaded: false, loading: false });
@@ -558,16 +565,6 @@
     if (e.key === "Enter") searchShops();
   });
 
-  refreshSheetBtn.addEventListener("click", async () => {
-    refreshSheetBtn.disabled = true;
-    try {
-      await refreshSheetData();
-      if (selectedShopId) await loadShop(selectedShopId);
-    } finally {
-      refreshSheetBtn.disabled = false;
-    }
-  });
-
   if (dashSearchSticky) {
     const scrollEl = document.querySelector(".dashboard-scroll");
     scrollEl?.addEventListener("scroll", () => {
@@ -585,6 +582,15 @@
         dashboardEmpty.classList.remove("hidden");
         dashboardContent.classList.add("hidden");
       }
+    },
+    async onSheetRefreshed(data) {
+      renderHeaderStatus({
+        loaded: true,
+        loading: false,
+        seller_count: data.ai_data_count,
+        last_loaded_at: data.refreshed_at,
+      });
+      if (selectedShopId) await loadShop(selectedShopId);
     },
     loadShop,
     refreshSheetData,
