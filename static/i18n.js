@@ -107,6 +107,8 @@
       "historicalSob.retry": "Retry",
       "historicalSob.categoryAll": "All",
       "si.assortmentTitle": "TikTok Product Radar",
+      "si.radarEmptyFiltered": "No matching records after filters.",
+      "si.radarEmptyCatalog": "No shop catalog data available.",
       "si.voucherTitle": "Voucher Intelligence",
       "si.refreshSheets": "Refresh Sheet Data",
       "si.refreshData": "Refresh Data",

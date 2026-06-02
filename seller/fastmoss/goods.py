@@ -22,8 +22,15 @@ from seller.fastmoss.recent_data import (
 logger = logging.getLogger("seller.fastmoss.goods")
 
 GOODS_PATH = "/api/shop/v3/goods"
-DEFAULT_PAGE_SIZE = 5
+DEFAULT_PAGE_SIZE = 10
+DEFAULT_MAX_PRODUCTS = 1000
 DEFAULT_MAX_PAGES = 20
+# FastMoss /api/shop/v3/goods returns HTTP 400 when pagesize > 10.
+MAX_PAGE_SIZE = 10
+
+
+def _clamp_page_size(page_size: int) -> int:
+    return max(1, min(int(page_size), MAX_PAGE_SIZE))
 
 
 def _parse_price_php(value: Any) -> float | None:
@@ -126,7 +133,7 @@ def fetch_shop_goods_page(
         "id": shop_id,
         "region": _region(),
         "page": int(page),
-        "pagesize": int(page_size),
+        "pagesize": _clamp_page_size(page_size),
         "date_type": int(date_type),
         "order": order,
         "_time": str(int(time.time())),
@@ -163,20 +170,25 @@ def fetch_shop_goods_page(
 def fetch_shop_goods_catalog(
     fastmoss_shop_id: str,
     *,
-    max_pages: int = DEFAULT_MAX_PAGES,
+    max_products: int = DEFAULT_MAX_PRODUCTS,
     page_size: int = DEFAULT_PAGE_SIZE,
     date_type: int = -1,
     session: requests.Session | None = None,
 ) -> dict[str, Any]:
-    """Paginate FastMoss shop goods catalog."""
+    """Paginate FastMoss shop goods until empty page or product cap."""
     shop_id = str(fastmoss_shop_id or "").strip()
+    page_size = _clamp_page_size(page_size)
     client = prefetch_shop_detail(shop_id, session)
     all_products: list[dict[str, Any]] = []
     seen: set[str] = set()
-    total_cnt = None
+    product_count_total: int | None = None
     last_url = None
+    pages_collected = 0
+    page = 0
+    cap = max(1, int(max_products))
 
-    for page in range(1, max(1, max_pages) + 1):
+    while len(all_products) < cap:
+        page += 1
         rows, meta, client = fetch_shop_goods_page(
             shop_id,
             page=page,
@@ -184,17 +196,34 @@ def fetch_shop_goods_catalog(
             date_type=date_type,
             session=client,
         )
-        total_cnt = meta.get("total_cnt") if meta.get("total_cnt") is not None else total_cnt
+        pages_collected = page
+        if meta.get("total_cnt") is not None:
+            try:
+                product_count_total = int(meta["total_cnt"])
+            except (TypeError, ValueError):
+                pass
         last_url = meta.get("request_url") or last_url
         if not rows:
             break
+
+        added = 0
         for row in rows:
             key = row.get("product_id") or row.get("product_link") or row.get("product_name")
-            if not key or key in seen:
+            if not key or str(key) in seen:
                 continue
             seen.add(str(key))
             all_products.append(row)
-        if total_cnt is not None and len(all_products) >= int(total_cnt):
+            added += 1
+            if len(all_products) >= cap:
+                break
+
+        if len(all_products) >= cap:
+            break
+        if not added:
+            break
+        if len(rows) < page_size:
+            break
+        if product_count_total is not None and len(all_products) >= product_count_total:
             break
         time.sleep(REQUEST_DELAY_SEC)
 
@@ -202,8 +231,13 @@ def fetch_shop_goods_catalog(
         "status": "ok" if all_products else "empty",
         "products": all_products,
         "product_count": len(all_products),
-        "total_cnt": total_cnt,
-        "pages_fetched": page if all_products else 0,
+        "products_collected": len(all_products),
+        "product_count_total": product_count_total,
+        "pages_collected": pages_collected,
+        "pages_fetched": pages_collected,
+        "page_size": page_size,
+        "max_products": cap,
+        "total_cnt": product_count_total,
         "request_url": last_url,
         "source": "fastmoss_goods",
     }

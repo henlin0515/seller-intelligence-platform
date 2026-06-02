@@ -131,7 +131,10 @@ async def intelligence_v1_business():
 @router.get("/assortment")
 async def intelligence_v1_assortment():
     master = _load_master()
-    return get_assortment_intelligence(master)
+    from seller.intelligence.assortment.radar import clear_tiktok_radar_cache
+
+    clear_tiktok_radar_cache()
+    return get_assortment_intelligence(master, force_refresh=True)
 
 
 @router.get("/voucher")
@@ -191,6 +194,11 @@ def _refresh_all_sheet_caches() -> dict:
     ai_status = refresh_ai_data(force=True)
     adgmv = get_shopee_adgmv(force_refresh=True)
 
+    from seller.intelligence.assortment.service import get_assortment_intelligence
+
+    radar_payload = get_assortment_intelligence(master, force_refresh=True)
+    radar_validation = radar_payload.get("validation") or {}
+
     sync_status = get_seller_master_sync_status()
     refreshed_at = sync_status.get("last_sync_at") or datetime.now(timezone.utc).isoformat()
 
@@ -200,6 +208,13 @@ def _refresh_all_sheet_caches() -> dict:
         "seller_count": len(master.sellers),
         "ai_data_count": int(ai_status.get("seller_count") or 0),
         "shopee_adgmv_count": adgmv.stats.total_loaded,
+        "tiktok_product_radar": {
+            "raw_record_count": radar_validation.get("raw_record_count"),
+            "mapped_product_count": radar_validation.get("mapped_product_count"),
+            "shop_count": radar_validation.get("shop_count"),
+            "category_count": radar_validation.get("category_count"),
+            "data_status": radar_validation.get("data_status"),
+        },
     }
 
 

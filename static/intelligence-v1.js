@@ -53,6 +53,33 @@
     };
   }
 
+  function assortmentFiltersActive(f) {
+    const d = defaultAssortmentFilters();
+    return (
+      Boolean((f.q || "").trim()) ||
+      (f.dateRange && f.dateRange !== d.dateRange) ||
+      (f.tab === "shop" && f.shop && f.shop !== "all" && f.shop !== d.shop) ||
+      (f.tab === "dashboard" && f.category && f.category !== "all" && f.category !== d.category)
+    );
+  }
+
+  function radarEmptyMessage(raw, { filteredEmpty = false } = {}) {
+    if (filteredEmpty) {
+      return i18n(
+        "si.radarEmptyFiltered",
+        "No matching records after filters."
+      );
+    }
+    const v = raw?.validation || {};
+    if (v.data_status === "mapping_error") {
+      return escapeHtml(v.message || "Mapping error: sheet rows could not be mapped to products.");
+    }
+    if (v.data_status === "source_error") {
+      return escapeHtml(v.message || "Data source error: no TikTok product catalog available.");
+    }
+    return i18n("si.radarEmptyCatalog", "No shop catalog data available.");
+  }
+
   function fetchApi(path, options = {}) {
     const fn = window.SipApi?.fetch || fetch;
     return fn(path, { credentials: "same-origin", ...options });
@@ -1134,7 +1161,7 @@
       shops[0] ||
       null;
     if (!shop) {
-      body.innerHTML = '<p class="si-v1-empty">No shop catalog data available.</p>';
+      body.innerHTML = `<p class="si-v1-empty">${radarEmptyMessage(st.raw)}</p>`;
       return;
     }
     if (String(f.shop) !== String(shop.shop_id)) {
@@ -1146,6 +1173,15 @@
     const opportunityProducts = filterRadarProducts(shop.opportunity_products, f, {
       skipShop: true,
     });
+    const hasVisible =
+      topProducts.length ||
+      newProducts.length ||
+      growthProducts.length ||
+      opportunityProducts.length;
+    if (!hasVisible && assortmentFiltersActive(f)) {
+      body.innerHTML = `<p class="si-v1-empty">${radarEmptyMessage(st.raw, { filteredEmpty: true })}</p>`;
+      return;
+    }
     const countEl = el.querySelector("[data-result-count]");
     if (countEl) {
       countEl.textContent = `${shop.shop_name} · ${topProducts.length} top · ${newProducts.length} new · ${growthProducts.length} growth · ${opportunityProducts.length} opp`;
@@ -1187,6 +1223,16 @@
       skipCategory: true,
     });
     const topShops = detail?.top_shops || [];
+    const hasVisible =
+      topProducts.length || newProducts.length || growthProducts.length || topShops.length;
+    if (!activeCategory && categories.length === 0) {
+      body.innerHTML = `<p class="si-v1-empty">${radarEmptyMessage(st.raw)}</p>`;
+      return;
+    }
+    if (activeCategory && !hasVisible && assortmentFiltersActive(f)) {
+      body.innerHTML = `<p class="si-v1-empty">${radarEmptyMessage(st.raw, { filteredEmpty: true })}</p>`;
+      return;
+    }
     const countEl = el.querySelector("[data-result-count]");
     if (countEl) {
       countEl.textContent = `${activeCategory || "—"} · ${topProducts.length} top · ${newProducts.length} new · ${growthProducts.length} growth · ${topShops.length} shops`;
@@ -1265,10 +1311,19 @@
     }
     const fm = data.fastmoss || {};
     const p = data.portfolio || {};
+    const v = data.validation || {};
+    const ds = data.data_source || {};
     const shopCount = (data.shop_view?.shops || []).length;
     const catCount = (data.category_dashboard?.categories || []).length;
     if (metas.siAssortment) {
-      metas.siAssortment.textContent = `TikTok Product Radar · ${fmtNum(p.total_products)} products · ${fmtNum(shopCount)} shops · ${fmtNum(catCount)} categories · FastMoss only`;
+      const tab = ds.seller_master_tab || data.tab || "shpoee link";
+      metas.siAssortment.textContent = [
+        `TikTok Product Radar · ${fmtNum(p.total_products)} products · ${fmtNum(shopCount)} shops · ${fmtNum(catCount)} categories`,
+        tab ? `Sheet: ${tab}` : "",
+        v.data_status && v.data_status !== "ok" ? v.data_status : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
     }
 
     function refreshToolbar() {

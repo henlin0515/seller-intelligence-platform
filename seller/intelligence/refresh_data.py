@@ -165,8 +165,11 @@ def refresh_all_intelligence_data() -> dict[str, Any]:
     bi_result = refresh_approved_tiktok_bi()
 
     from seller.intelligence.historical_sob import refresh_historical_sob
+    from seller.intelligence.seller_master import get_seller_master
+    from seller.intelligence.assortment.service import get_assortment_intelligence
 
     historical_sob_result = refresh_historical_sob(force=True)
+    radar_payload = get_assortment_intelligence(get_seller_master(), force_refresh=True)
 
     summary = review_summary()
     pending = [r for r in list_review_rows() if r.get("review_status") == "PENDING_REVIEW"][:10]
@@ -180,6 +183,7 @@ def refresh_all_intelligence_data() -> dict[str, Any]:
         "review": summary,
         "tiktok_bi": bi_result,
         "historical_sob": historical_sob_result,
+        "tiktok_product_radar": radar_payload.get("validation") or {},
         "pending_preview": pending,
         "rejected_preview": rejected,
     }

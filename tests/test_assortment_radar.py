@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+from seller.fastmoss.goods import _clamp_page_size
+from seller.intelligence.assortment.config import FASTMOSS_GOODS_MAX_PAGE_SIZE, radar_page_size
 from seller.intelligence.assortment.radar import (
     NEW_PRODUCT_DAYS,
     _build_category_dashboard,
     _build_shop_view,
+    _validation_block,
     compute_growth_raw,
     days_since_launch,
     enrich_product_metrics,
@@ -150,3 +153,39 @@ def test_build_category_dashboard_groups_and_summaries():
     assert detail["top_products"][0]["product_name"] == "Fresh Item"
     assert detail["new_products"][0]["days_since_launch"] == 2
     assert detail["top_shops"][0]["shop_name"] == "Glow Shop"
+
+
+def test_radar_page_size_capped_at_fastmoss_max():
+    assert FASTMOSS_GOODS_MAX_PAGE_SIZE == 10
+    assert _clamp_page_size(30) == 10
+    assert _clamp_page_size(10) == 10
+    assert radar_page_size() <= FASTMOSS_GOODS_MAX_PAGE_SIZE
+
+
+def test_validation_block_statuses():
+    ok = _validation_block(
+        raw_api_rows=100,
+        mapped_count=95,
+        shop_count=5,
+        category_count=3,
+        fetch_meta={"shops_scanned": 5},
+    )
+    assert ok["data_status"] == "ok"
+
+    mapping_err = _validation_block(
+        raw_api_rows=50,
+        mapped_count=0,
+        shop_count=0,
+        category_count=0,
+        fetch_meta={"shops_scanned": 2},
+    )
+    assert mapping_err["data_status"] == "mapping_error"
+
+    source_err = _validation_block(
+        raw_api_rows=0,
+        mapped_count=0,
+        shop_count=0,
+        category_count=0,
+        fetch_meta={"shops_scanned": 0, "shop_errors": []},
+    )
+    assert source_err["data_status"] == "source_error"

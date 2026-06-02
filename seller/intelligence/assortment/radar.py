@@ -1,9 +1,8 @@
-"""TikTok Product Radar — FastMoss-only assortment intelligence."""
+"""TikTok Product Radar — seller master (Google Sheet) + FastMoss product catalog."""
 
 from __future__ import annotations
 
 import logging
-import os
 import time
 from datetime import UTC, date, datetime
 from typing import Any
@@ -12,20 +11,21 @@ from seller.fastmoss.goods import GOODS_PATH, fetch_shop_goods_catalog
 from seller.fastmoss.mapping import load_fastmoss_mapping
 from seller.fastmoss.review import approved_mapping_rows
 from seller.fastmoss.recent_data import _base_url
+from seller.intelligence.assortment.config import (
+    FASTMOSS_GOODS_PATH,
+    NEW_PRODUCT_DAYS,
+    RADAR_CACHE_SEC,
+    RADAR_MAX_PRODUCTS,
+    RADAR_TOP_GROWTH,
+    RADAR_TOP_NEW,
+    RADAR_TOP_OPPORTUNITIES,
+    radar_page_size,
+)
+from seller.intelligence.seller_master import SellerMasterLoadResult, seller_master_tab_name
 
 logger = logging.getLogger("seller.intelligence.assortment.radar")
 
-NEW_PRODUCT_DAYS = int(os.getenv("ASSORTMENT_NEW_PRODUCT_DAYS", "20"))
-RADAR_MAX_PRODUCTS = int(
-    os.getenv("ASSORTMENT_RADAR_MAX_PRODUCTS", os.getenv("FASTMOSS_MAX_PRODUCTS", "1000"))
-)
-RADAR_PAGE_SIZE = int(
-    os.getenv("ASSORTMENT_RADAR_PAGE_SIZE", os.getenv("FASTMOSS_PAGE_SIZE", "10"))
-)
-RADAR_TOP_GROWTH = int(os.getenv("ASSORTMENT_RADAR_TOP_GROWTH", "20"))
-RADAR_TOP_NEW = int(os.getenv("ASSORTMENT_RADAR_TOP_NEW", "20"))
-RADAR_TOP_OPPORTUNITIES = int(os.getenv("ASSORTMENT_RADAR_TOP_OPPORTUNITIES", "20"))
-RADAR_CACHE_SEC = int(os.getenv("ASSORTMENT_RADAR_CACHE_SEC", "900"))
+RADAR_PAGE_SIZE = radar_page_size()
 
 _cache_payload: dict[str, Any] | None = None
 _cache_ts: float = 0.0
@@ -354,15 +354,20 @@ def _public_product(row: dict[str, Any], *, rank: int | None = None) -> dict[str
     return out
 
 
-def _collect_mapped_products() -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def _collect_mapped_products(
+    master_shop_ids: set[str] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     load_fastmoss_mapping()
     mappings = [
         row
         for row in approved_mapping_rows()
         if str(row.get("fastmoss_shop_id") or "").strip()
     ]
+    if master_shop_ids is not None:
+        mappings = [row for row in mappings if str(row.get("shop_id") or "") in master_shop_ids]
 
     products: list[dict[str, Any]] = []
+    raw_api_rows = 0
     shop_errors: list[str] = []
     shop_collections: list[dict[str, Any]] = []
     endpoints_used = {f"{_base_url()}{GOODS_PATH}"}
@@ -381,6 +386,8 @@ def _collect_mapped_products() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             shop_errors.append(f"{shop_name}: {exc}")
             continue
 
+        shop_products = payload.get("products") or []
+        raw_api_rows += len(shop_products)
         shop_collections.append(
             {
                 "shop_id": str(mapping.get("shop_id") or ""),
@@ -394,7 +401,7 @@ def _collect_mapped_products() -> tuple[list[dict[str, Any]], dict[str, Any]]:
             }
         )
 
-        for product in payload.get("products") or []:
+        for product in shop_products:
             key = product.get("product_id") or product.get("product_link")
             if not key:
                 continue
@@ -409,9 +416,11 @@ def _collect_mapped_products() -> tuple[list[dict[str, Any]], dict[str, Any]]:
 
     meta = {
         "endpoints": sorted(endpoints_used),
+        "goods_path": FASTMOSS_GOODS_PATH,
         "shops_scanned": len(mappings),
         "shops_with_errors": len(shop_errors),
         "shop_errors": shop_errors[:10],
+        "raw_api_rows": raw_api_rows,
         "products_collected": len(products),
         "max_products_per_shop": RADAR_MAX_PRODUCTS,
         "page_size": RADAR_PAGE_SIZE,
@@ -420,7 +429,50 @@ def _collect_mapped_products() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     return products, meta
 
 
-def build_tiktok_product_radar(*, force_refresh: bool = False) -> dict[str, Any]:
+def _validation_block(
+    *,
+    raw_api_rows: int,
+    mapped_count: int,
+    shop_count: int,
+    category_count: int,
+    fetch_meta: dict[str, Any],
+) -> dict[str, Any]:
+    if mapped_count > 0:
+        status = "ok"
+        message = None
+    elif raw_api_rows > 0:
+        status = "mapping_error"
+        message = (
+            "FastMoss returned product rows but none could be mapped — "
+            "check product_id / product_link fields."
+        )
+    elif fetch_meta.get("shops_scanned", 0) == 0:
+        status = "source_error"
+        message = (
+            "No approved FastMoss shop mappings for sellers in the Google Sheet master list. "
+            "Approve mappings in Mapping Center, then click Update Data."
+        )
+    else:
+        status = "source_error"
+        errors = fetch_meta.get("shop_errors") or []
+        hint = errors[0] if errors else "FastMoss product catalog returned no rows."
+        message = f"TikTok product catalog unavailable: {hint}"
+
+    return {
+        "raw_record_count": raw_api_rows,
+        "mapped_product_count": mapped_count,
+        "shop_count": shop_count,
+        "category_count": category_count,
+        "data_status": status,
+        "message": message,
+    }
+
+
+def build_tiktok_product_radar(
+    *,
+    master: SellerMasterLoadResult | None = None,
+    force_refresh: bool = False,
+) -> dict[str, Any]:
     global _cache_payload, _cache_ts
 
     if (
@@ -430,7 +482,13 @@ def build_tiktok_product_radar(*, force_refresh: bool = False) -> dict[str, Any]
     ):
         return _cache_payload
 
-    raw_products, fetch_meta = _collect_mapped_products()
+    master_shop_ids = None
+    master_tab = seller_master_tab_name()
+    if master is not None:
+        master_shop_ids = {str(s.shop_id) for s in master.sellers}
+        master_tab = master.tab
+
+    raw_products, fetch_meta = _collect_mapped_products(master_shop_ids)
     enriched = enrich_product_metrics(raw_products)
 
     top_100 = sorted(enriched, key=_sort_key_sales, reverse=True)[:100]
@@ -460,12 +518,53 @@ def build_tiktok_product_radar(*, force_refresh: bool = False) -> dict[str, Any]
     shop_view = _build_shop_view(enriched)
     category_dashboard = _build_category_dashboard(enriched)
 
+    validation = _validation_block(
+        raw_api_rows=int(fetch_meta.get("raw_api_rows") or 0),
+        mapped_count=len(enriched),
+        shop_count=len(shop_view.get("shops") or []),
+        category_count=len(category_dashboard.get("categories") or []),
+        fetch_meta=fetch_meta,
+    )
+
+    try:
+        from seller.google_sheets.config import get_settings, is_configured
+
+        spreadsheet_id = get_settings().spreadsheet_id if is_configured() else None
+    except Exception:
+        spreadsheet_id = None
+
     payload = {
         "module": "assortment_intelligence",
         "version": "v1",
         "status": "tiktok_product_radar",
-        "strategy": "fastmoss_only",
+        "strategy": "sheet_master_fastmoss_goods",
         "generated_at": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "data_source": {
+            "spreadsheet_id": spreadsheet_id,
+            "seller_master_tab": master_tab,
+            "seller_master_columns": {
+                "shop_id": "A",
+                "shop_name": "B",
+                "shopee_link": "C",
+                "tiktok_shop_name": "D",
+            },
+            "mapping_file": "fastmoss_mapping.json",
+            "product_catalog": "fastmoss_goods_api",
+            "product_catalog_path": FASTMOSS_GOODS_PATH,
+        },
+        "column_mapping": {
+            "product_id": "product_id",
+            "product_name": "title / product_name",
+            "product_image": "img",
+            "category": "category_name_l3 (fallback l2/l1)",
+            "product_price_php": "price",
+            "sold_count": "sold_count",
+            "sales_amount": "sale_amount",
+            "upload_date": "ctime / listed_date",
+            "product_link": "detail_url",
+            "shop_name": "seller_shop_name (from sheet master via mapping)",
+        },
+        "validation": validation,
         "fastmoss": fetch_meta,
         "portfolio": {
             "total_products": len(enriched),
