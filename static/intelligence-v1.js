@@ -246,16 +246,28 @@
     const tkW = animate ? tk : 0;
     return `
       <div class="si-sob-wrap">
+        <div class="si-sob-period si-sob-period--title">${escapeHtml(periodLabelText)}</div>
         <div class="si-sob-label">
-          <span class="shp">SHP ${fmtPct(shp)}</span>
-          <span class="tk">TK ${fmtPct(tk)}</span>
+          <span class="shp">Shopee ${fmtPct(shp)}</span>
+          <span class="si-sob-sep">|</span>
+          <span class="tk">TikTok ${fmtPct(tk)}</span>
         </div>
         <div class="si-sob-bar" data-sob-animate="${animate ? "1" : "0"}">
           <div class="si-sob-seg si-sob-seg--shp" style="width:${shpW}%"></div>
           <div class="si-sob-seg si-sob-seg--tk" style="width:${tkW}%"></div>
         </div>
-        <div class="si-sob-period">${escapeHtml(periodLabelText)}</div>
       </div>`;
+  }
+
+  function renderBusinessSobBlock(shpPct, tkPct, title, naReason) {
+    if (shpPct == null || tkPct == null || Number.isNaN(shpPct) || Number.isNaN(tkPct)) {
+      return `
+        <div class="si-biz-sob-block">
+          <div class="si-sob-period si-sob-period--title">${escapeHtml(title)}</div>
+          ${fmtNa(naReason || "SOB requires Shopee and TikTok ADGMV")}
+        </div>`;
+    }
+    return `<div class="si-biz-sob-block">${renderSobBar(shpPct, tkPct, title, true)}</div>`;
   }
 
   function animateSobBars(root) {
@@ -424,34 +436,28 @@
 
   function renderBusinessDetailPanel(s) {
     const tkReason = s.tiktok_na_reason || "TikTok data unavailable";
-    const confidence = s.fastmoss_match_confidence ?? s.fastmoss_confidence ?? s.confidence;
-    const mappingReason = s.mapping_reason || (s.fastmoss_match_status !== "MAPPED" ? s.tiktok_na_reason : null);
-    const confidenceText =
-      confidence == null || Number.isNaN(confidence)
-        ? "—"
-        : confidence <= 1
-          ? fmtPct(confidence * 100)
-          : fmtPct(confidence);
+    const sobReason = s.sob_na_reason || "SOB requires Shopee and TikTok ADGMV";
     return `
       <div class="si-biz-detail-panel">
-        <h3 class="si-section-title">FastMoss mapping details</h3>
-        <dl class="si-detail-grid">
+        <h3 class="si-section-title">Mapping</h3>
+        <dl class="si-detail-grid si-detail-grid--compact">
           <div class="si-detail-cell"><dt>TikTok Shop Name</dt><dd>${fmtDetail(s.tiktok_shop_name)}</dd></div>
           <div class="si-detail-cell"><dt>FastMoss Matched Shop</dt><dd>${fmtDetail(s.fastmoss_matched_shop)}</dd></div>
           <div class="si-detail-cell"><dt>FastMoss Match Status</dt><dd>${fastmossStatusBadge(s.fastmoss_match_status)}</dd></div>
-          <div class="si-detail-cell"><dt>FastMoss Shop URL</dt><dd>${fmtDetailLink(s.fastmoss_shop_url, "Open shop detail")}</dd></div>
-          <div class="si-detail-cell"><dt>Match confidence</dt><dd>${confidenceText}</dd></div>
-          <div class="si-detail-cell"><dt>Mapping reason</dt><dd>${fmtDetail(mappingReason)}</dd></div>
           <div class="si-detail-cell"><dt>TikTok raw MTD GMV PHP</dt><dd>${fmtDetailPhp(s.tiktok_mtd_gmv_php, tkReason)}</dd></div>
           <div class="si-detail-cell"><dt>TikTok raw M-1 GMV PHP</dt><dd>${fmtDetailPhp(s.tiktok_m1_gmv_php, tkReason)}</dd></div>
         </dl>
+        <h3 class="si-section-title">SOB Analysis</h3>
+        <div class="si-biz-sob-analysis">
+          ${renderBusinessSobBlock(s.mtd_shopee_sob_percent, s.mtd_tiktok_sob_percent, "MTD SOB", sobReason)}
+          ${renderBusinessSobBlock(s.m1_shopee_sob_percent, s.m1_tiktok_sob_percent, "M-1 SOB", sobReason)}
+        </div>
       </div>`;
   }
 
   function renderBusinessTableRow(s, expanded) {
     const tkReason = s.tiktok_na_reason || "TikTok data unavailable";
     const shReason = s.shopee_na_reason || "Shopee ADGMV not found in Tracker";
-    const sobReason = s.sob_na_reason || "SOB requires Shopee and TikTok ADGMV";
     const tkMom =
       s.tiktok_data_status === "available"
         ? renderMom(s.tiktok_mom_percent, tkReason)
@@ -469,13 +475,9 @@
           <td class="si-v1-num">${tkMom}</td>
           <td class="si-v1-num">${fmtShopeeUsd(s.shopee_mtd_adgmv_usd, shReason)}</td>
           <td class="si-v1-num">${fmtShopeeUsd(s.shopee_m1_adgmv_usd, shReason)}</td>
-          <td class="si-v1-num si-v1-sob-shp">${fmtSobPct(s.mtd_shopee_sob_percent, sobReason)}</td>
-          <td class="si-v1-num si-v1-sob-tk">${fmtSobPct(s.mtd_tiktok_sob_percent, sobReason)}</td>
-          <td class="si-v1-num si-v1-sob-shp">${fmtSobPct(s.m1_shopee_sob_percent, sobReason)}</td>
-          <td class="si-v1-num si-v1-sob-tk">${fmtSobPct(s.m1_tiktok_sob_percent, sobReason)}</td>
         </tr>
         <tr class="si-biz-row-detail">
-          <td colspan="13">${renderBusinessDetailPanel(s)}</td>
+          <td colspan="9">${renderBusinessDetailPanel(s)}</td>
         </tr>
       </tbody>`;
   }
@@ -495,10 +497,6 @@
               <th>TikTok MoM %</th>
               <th>Shopee MTD ADGMV</th>
               <th>Shopee M-1 ADGMV</th>
-              <th>MTD SOB Shopee</th>
-              <th>MTD SOB TikTok</th>
-              <th>M-1 SOB Shopee</th>
-              <th>M-1 SOB TikTok</th>
             </tr>
           </thead>
           ${sellers.map((s) => renderBusinessTableRow(s, expandedSet.has(s.shop_id))).join("")}
@@ -523,6 +521,7 @@
     }
     listEl.innerHTML = renderBusinessTable(filtered, st.expanded);
     bindRowToggles(listEl, st.expanded);
+    animateSobBars(listEl);
   }
 
   function setupBusiness(data) {
@@ -686,6 +685,9 @@
         if (expandedSet.has(id)) expandedSet.delete(id);
         else expandedSet.add(id);
         row.classList.toggle("is-expanded");
+        if (row.classList.contains("is-expanded")) {
+          animateSobBars(row);
+        }
       });
     });
   }
