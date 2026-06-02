@@ -89,6 +89,11 @@
     return `${fmtNum(n, 1)}%`;
   }
 
+  function fmtNa(reason) {
+    const title = reason ? ` title="${escapeHtml(reason)}"` : "";
+    return `<span class="si-v1-na"${title}>NA</span>`;
+  }
+
   function fmtShopeeUsd(value, reason) {
     if (value == null || Number.isNaN(value)) {
       return fmtNa(reason || "Shopee ADGMV not found in Tracker");
@@ -101,9 +106,6 @@
       return fmtNa(reason || "SOB requires Shopee and TikTok ADGMV");
     }
     return `${fmtNum(value, 1)}%`;
-  }
-    const title = reason ? ` title="${escapeHtml(reason)}"` : "";
-    return `<span class="si-v1-na"${title}>NA</span>`;
   }
 
   function fastmossStatusBadge(status) {
