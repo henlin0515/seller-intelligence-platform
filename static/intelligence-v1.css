@@ -1960,3 +1960,22 @@
 .hs-table td {
   font-size: 0.78rem;
 }
+
+.hs-warnings {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 180, 0, 0.35);
+  background: rgba(255, 180, 0, 0.08);
+  color: #f5d78e;
+  font-size: 0.82rem;
+}
+
+.hs-warnings ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.hs-warnings li + li {
+  margin-top: 0.25rem;
+}

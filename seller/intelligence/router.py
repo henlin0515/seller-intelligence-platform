@@ -142,10 +142,23 @@ async def intelligence_v1_voucher():
 @router.get("/historical-sob")
 async def intelligence_v1_historical_sob():
     """Historical April/May SOB — seller master + YTD sheet + cached FastMoss TikTok GMV."""
+    import asyncio
+
     from seller.intelligence.historical_sob import get_historical_sob_payload
 
-    master = _load_master()
-    return get_historical_sob_payload(master)
+    try:
+        master = _load_master()
+        payload = await asyncio.to_thread(get_historical_sob_payload, master, ensure_tiktok_cache=False)
+        if payload.get("status") == "degraded":
+            logger.error("Historical SOB degraded response: %s", payload.get("warnings"))
+        return payload
+    except (GoogleSheetsNotConfiguredError, GoogleSheetsNotEnabledError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Historical SOB endpoint failure")
+        from seller.intelligence.historical_sob.service import _empty_payload
+
+        return _empty_payload(master=None, error=str(exc))
 
 
 @router.get("/seller-master/status")

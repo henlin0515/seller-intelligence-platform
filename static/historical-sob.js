@@ -245,6 +245,13 @@
       </div>`;
   }
 
+  function renderWarnings() {
+    const warnings = payload?.warnings || [];
+    if (!warnings.length) return "";
+    const items = warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join("");
+    return `<div class="hs-warnings" role="status"><strong>${escapeHtml(i18n("historicalSob.warningsTitle", "Data warnings"))}</strong><ul>${items}</ul></div>`;
+  }
+
   function renderPage() {
     if (!contentEl || !payload) return;
     const kpis = payload.kpis || {};
@@ -258,27 +265,20 @@
     );
 
     contentEl.innerHTML = `
+      ${renderWarnings()}
       ${renderToolbar()}
       <section class="hs-kpi-grid">
         ${renderKpi(i18n("historicalSob.kpiTotalShops", "Total Shops"), fmtNum(kpis.total_shops), payload.master_tab, "neutral")}
-        ${renderKpi(i18n("historicalSob.kpiAprShopee", "April Shopee GMV"), fmtGmv(kpis.april_shopee_gmv), "YTD × 30", "shopee")}
-        ${renderKpi(i18n("historicalSob.kpiAprTiktok", "April TikTok GMV"), fmtGmv(kpis.april_tiktok_gmv), "FastMoss full month", "tiktok")}
-        ${renderKpi(i18n("historicalSob.kpiMayShopee", "May Shopee GMV"), fmtGmv(kpis.may_shopee_gmv), "YTD × 31", "shopee")}
-        ${renderKpi(i18n("historicalSob.kpiMayTiktok", "May TikTok GMV"), fmtGmv(kpis.may_tiktok_gmv), "FastMoss full month", "tiktok")}
-        ${renderKpi(i18n("historicalSob.kpiAprSob", "April Portfolio SOB"), `${fmtPct(kpis.april_portfolio_shopee_sob_percent)} / ${fmtPct(kpis.april_portfolio_tiktok_sob_percent)}`, "Shopee / TikTok", "hero")}
-        ${renderKpi(i18n("historicalSob.kpiMaySob", "May Portfolio SOB"), `${fmtPct(kpis.may_portfolio_shopee_sob_percent)} / ${fmtPct(kpis.may_portfolio_tiktok_sob_percent)}`, "Shopee / TikTok", "hero")}
+        ${renderKpi(i18n("historicalSob.kpiAprShopee", "April Shopee GMV"), fmtGmv(kpis.april_shopee_gmv), "ytd_ap_adgmv × 30", "shopee")}
+        ${renderKpi(i18n("historicalSob.kpiAprTiktok", "April TikTok GMV"), fmtGmv(kpis.april_tiktok_gmv), "FastMoss sale_amount", "tiktok")}
+        ${renderKpi(i18n("historicalSob.kpiMayShopee", "May Shopee GMV"), fmtGmv(kpis.may_shopee_gmv), "ytd_may_adgmv × 31", "shopee")}
+        ${renderKpi(i18n("historicalSob.kpiMayTiktok", "May TikTok GMV"), fmtGmv(kpis.may_tiktok_gmv), "FastMoss sale_amount", "tiktok")}
       </section>
-      <div class="hs-panels">
-        <section class="hs-panel">
-          <h2 class="hs-panel-title">${escapeHtml(i18n("historicalSob.chartSob", "Portfolio Historical SOB"))}</h2>
-          ${renderSobBar("April", portfolio.april_shopee_sob_percent, portfolio.april_tiktok_sob_percent)}
-          ${renderSobBar("May", portfolio.may_shopee_sob_percent, portfolio.may_tiktok_sob_percent)}
-        </section>
-        <section class="hs-panel">
-          <h2 class="hs-panel-title">${escapeHtml(i18n("historicalSob.chartGmv", "Portfolio GMV Comparison"))}</h2>
-          ${renderGmvBars(portfolio)}
-        </section>
-      </div>
+      <section class="hs-panel">
+        <h2 class="hs-panel-title">${escapeHtml(i18n("historicalSob.chartSob", "Portfolio Historical SOB"))}</h2>
+        ${renderSobBar("April", portfolio.april_shopee_sob_percent, portfolio.april_tiktok_sob_percent)}
+        ${renderSobBar("May", portfolio.may_shopee_sob_percent, portfolio.may_tiktok_sob_percent)}
+      </section>
       <section class="hs-panel">
         <h2 class="hs-panel-title">${escapeHtml(i18n("historicalSob.tableMovers", "Top SOB Movers"))}</h2>
         ${renderMoversTable(movers)}

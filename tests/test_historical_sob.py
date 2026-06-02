@@ -8,43 +8,65 @@ from pathlib import Path
 from unittest.mock import patch
 
 from seller.intelligence.historical_sob.portfolio import build_portfolio_historical_sob
-from seller.intelligence.historical_sob.service import build_historical_sob_rows
+from seller.intelligence.historical_sob.service import build_historical_sob_rows, get_historical_sob_payload
 from seller.intelligence.historical_sob.store import save_historical_sob_cache
 from seller.intelligence.historical_sob.ytd_monthly import (
+    YtdMonthlyLoadResult,
     YtdMonthlyRecord,
     parse_ytd_monthly_rows,
 )
-from seller.intelligence.seller_master import SellerMasterLoadResult, SellerMasterRecord
+from seller.intelligence.seller_master import (
+    SellerMasterImportStats,
+    SellerMasterLoadResult,
+    SellerMasterRecord,
+)
 
 
 class YtdMonthlyParseTests(unittest.TestCase):
-    def test_parse_columns(self):
+    def test_parse_ytd_ap_adgmv_column(self):
         rows = [
-            ["shop_name", "shop_id", "ytd_apr_adgmv", "ytd_may_adgmv"],
+            ["shop_name", "shop_id", "ytd_ap_adgmv", "ytd_may_adgmv"],
             ["Shop A", "1001", "100", "200"],
-            ["Shop B", "1002", "50.5", "75.25"],
+            ["Shop B", "1002", "", "75.25"],
         ]
         result = parse_ytd_monthly_rows(rows)
         self.assertEqual(result.stats.total_loaded, 2)
         rec = result.by_shop_id["1001"]
         self.assertEqual(rec.april_shopee_gmv, 3000.0)
         self.assertEqual(rec.may_shopee_gmv, 6200.0)
+        partial = result.by_shop_id["1002"]
+        self.assertIsNone(partial.april_shopee_gmv)
+        self.assertEqual(partial.may_shopee_gmv, 2332.75)
+
+    def test_parse_ytd_apr_alias(self):
+        rows = [
+            ["shop_name", "shop_id", "ytd_apr_adgmv", "ytd_may_adgmv"],
+            ["Shop A", "1001", "10", "20"],
+        ]
+        result = parse_ytd_monthly_rows(rows)
+        self.assertEqual(result.by_shop_id["1001"].april_shopee_gmv, 300.0)
 
 
 class HistoricalSobRowTests(unittest.TestCase):
-    def test_sob_requires_both_platforms(self):
-        master = SellerMasterLoadResult(
+    def _master(self) -> SellerMasterLoadResult:
+        return SellerMasterLoadResult(
             sellers=[
                 SellerMasterRecord("1", "Shop A", "", "TikTok A"),
                 SellerMasterRecord("2", "Shop B", "", "TikTok B"),
             ],
             tab="shpoee link",
             data_source="test",
-            stats=type("S", (), {"as_dict": lambda self: {}})(),
+            stats=SellerMasterImportStats(),
         )
-        ytd = {
-            "1": YtdMonthlyRecord("1", "Shop A", 100.0, 100.0),
-        }
+
+    def test_sob_requires_both_platforms(self):
+        master = self._master()
+        ytd = YtdMonthlyLoadResult(
+            by_shop_id={"1": YtdMonthlyRecord("1", "Shop A", 100.0, 100.0)},
+            stats=type("S", (), {"total_loaded": 1})(),
+            tab="ytd monthly data",
+            data_source="test",
+        )
         cache = {
             "shops": {
                 "1": {
@@ -56,16 +78,11 @@ class HistoricalSobRowTests(unittest.TestCase):
         }
 
         with (
-            patch("seller.intelligence.historical_sob.service.get_ytd_monthly") as mock_ytd,
+            patch("seller.intelligence.historical_sob.service.get_ytd_monthly", return_value=ytd),
             patch("seller.intelligence.historical_sob.service.load_historical_sob_cache", return_value=cache),
             patch("seller.intelligence.historical_sob.service._mapping_by_shop_id") as mock_map,
             patch("seller.intelligence.historical_sob.service._review_status_for_shop", return_value="APPROVED"),
         ):
-            mock_ytd.return_value = type(
-                "Y",
-                (),
-                {"by_shop_id": ytd, "tab": "ytd monthly data", "stats": type("S", (), {"total_loaded": 1})()},
-            )()
             mock_map.return_value = {
                 "1": {
                     "shop_id": "1",
@@ -74,14 +91,14 @@ class HistoricalSobRowTests(unittest.TestCase):
                     "mapping_status": "MAPPED",
                 }
             }
-            rows = build_historical_sob_rows(master)
+            rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache=cache)
 
         shop_a = next(r for r in rows if r["shop_id"] == "1")
         shop_b = next(r for r in rows if r["shop_id"] == "2")
         self.assertEqual(shop_a["april_shopee_sob_percent"], 75.0)
         self.assertEqual(shop_a["april_tiktok_sob_percent"], 25.0)
         self.assertIsNone(shop_b["april_shopee_sob_percent"])
-        self.assertIsNone(shop_b["april_tiktok_sob_percent"])
+        self.assertIsNotNone(shop_b["shopee_na_reason"])
 
     def test_portfolio_aggregate(self):
         rows = [
@@ -103,6 +120,27 @@ class HistoricalSobRowTests(unittest.TestCase):
         self.assertEqual(portfolio["april_tiktok_gmv"], 3000.0)
         self.assertEqual(portfolio["april_shopee_sob_percent"], 75.0)
         self.assertEqual(portfolio["april_tiktok_sob_percent"], 25.0)
+
+    def test_payload_never_raises_on_ytd_error(self):
+        master = self._master()
+        ytd = YtdMonthlyLoadResult(
+            by_shop_id={},
+            stats=type("S", (), {"total_loaded": 0})(),
+            tab="ytd monthly data",
+            data_source="unavailable",
+            load_error="Worksheet not found",
+        )
+        with (
+            patch("seller.intelligence.historical_sob.service.get_seller_master", return_value=master),
+            patch("seller.intelligence.historical_sob.service.get_ytd_monthly", return_value=ytd),
+            patch("seller.intelligence.historical_sob.service.load_historical_sob_cache", return_value={"shops": {}}),
+            patch("seller.intelligence.historical_sob.service._mapping_by_shop_id", return_value={}),
+            patch("seller.intelligence.historical_sob.service._review_status_for_shop", return_value="NOT_MAPPED"),
+        ):
+            payload = get_historical_sob_payload(master, ensure_tiktok_cache=False)
+        self.assertEqual(payload["status"], "ok")
+        self.assertTrue(payload["warnings"])
+        self.assertEqual(len(payload["sellers"]), 2)
 
 
 class HistoricalSobCacheTests(unittest.TestCase):

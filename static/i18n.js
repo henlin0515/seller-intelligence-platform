@@ -78,6 +78,7 @@
       "historicalSob.resultCount": "{n} shops",
       "historicalSob.emptyMovers": "No SOB movers match filters.",
       "historicalSob.emptyThreats": "No TikTok threat sellers match filters.",
+      "historicalSob.warningsTitle": "Data warnings",
       "si.assortmentTitle": "TikTok Product Radar",
       "si.voucherTitle": "Voucher Intelligence",
       "si.refreshSheets": "Refresh Sheet Data",
