@@ -139,6 +139,15 @@ async def intelligence_v1_voucher():
     return build_voucher_intelligence_placeholder(_shop_list())
 
 
+@router.get("/historical-sob")
+async def intelligence_v1_historical_sob():
+    """Historical April/May SOB — seller master + YTD sheet + cached FastMoss TikTok GMV."""
+    from seller.intelligence.historical_sob import get_historical_sob_payload
+
+    master = _load_master()
+    return get_historical_sob_payload(master)
+
+
 @router.get("/seller-master/status")
 async def intelligence_v1_seller_master_status():
     """Seller Master cache sync metadata for Settings."""
@@ -161,6 +170,9 @@ def _refresh_all_sheet_caches() -> dict:
     clear_seller_master_cache()
     clear_shopee_adgmv_cache()
     clear_tiktok_radar_cache()
+    from seller.intelligence.historical_sob.ytd_monthly import clear_ytd_monthly_cache
+
+    clear_ytd_monthly_cache()
 
     master = get_seller_master(force_refresh=True)
     ai_status = refresh_ai_data(force=True)

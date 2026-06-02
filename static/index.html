@@ -48,6 +48,12 @@
             </span>
             <span data-i18n="nav.siBusiness">Seller Level Analysis</span>
           </button>
+          <button type="button" class="nav-item nav-main nav-si-v1" data-view="siHistoricalSob">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 20V4h4v16H4zm6 0V10h4v10h-4zm6 0V6h4v14h-4z"/></svg>
+            </span>
+            <span data-i18n="nav.siHistoricalSob">Historical SOB</span>
+          </button>
           <button type="button" class="nav-item nav-main nav-si-v1" data-view="siMapping">
             <span class="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4zM8 10h8M8 14h5M6 4h12"/></svg>
@@ -235,6 +241,14 @@
             <p class="si-v1-meta si-v1-action-summary hidden" id="siBusinessActionSummary" role="status"></p>
           </header>
           <div id="siBusinessContent" class="si-v1-scroll"></div>
+        </div>
+
+        <div id="viewSiHistoricalSob" class="app-view hidden si-v1-view">
+          <header class="si-v1-header">
+            <h1 data-i18n="historicalSob.title">Historical SOB</h1>
+            <p class="si-v1-meta" id="siHistoricalSobMeta">—</p>
+          </header>
+          <div id="siHistoricalSobContent" class="si-v1-scroll"></div>
         </div>
 
         <div id="viewSiMapping" class="app-view hidden si-v1-view">
@@ -609,6 +623,7 @@
     <script src="/static/competitor-tracker.js"></script>
     <script src="/static/assortment.js"></script>
     <script src="/static/mapping-center.js"></script>
+    <script src="/static/historical-sob.js"></script>
     <script src="/static/intelligence-v1.js"></script>
     <script type="module" src="/static/dashboard-charts.js"></script>
   </body>

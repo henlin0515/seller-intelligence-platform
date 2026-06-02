@@ -71,6 +71,7 @@
     home: document.getElementById("viewHome"),
     siDashboard: document.getElementById("viewSiDashboard"),
     siBusiness: document.getElementById("viewSiBusiness"),
+    siHistoricalSob: document.getElementById("viewSiHistoricalSob"),
     siMapping: document.getElementById("viewSiMapping"),
     siAssortment: document.getElementById("viewSiAssortment"),
     siVoucher: document.getElementById("viewSiVoucher"),
@@ -171,6 +172,10 @@
       await window.ShpMappingCenter.init();
       return;
     }
+    if (view === "siHistoricalSob" && window.ShpHistoricalSob?.load) {
+      await window.ShpHistoricalSob.load(true);
+      return;
+    }
     if (
       (view === "siDashboard" ||
         view === "siBusiness" ||
@@ -197,6 +202,7 @@
       if (!res.ok) throw new Error(data.detail || i18n("platform.refreshFailed"));
       updatePlatformLastSync(data.refreshed_at || data.sheets?.refreshed_at);
       showPlatformToast(i18n("platform.refreshSuccess", "Data updated"));
+      window.ShpHistoricalSob?.clearCache?.();
       await reloadCurrentViewAfterRefresh(data);
       window.ShpMappingCenter?.load?.();
       return data;
@@ -415,6 +421,9 @@
     }
     if (viewKey === "siMapping" && window.ShpMappingCenter?.init) {
       window.ShpMappingCenter.init();
+    }
+    if (viewKey === "siHistoricalSob" && window.ShpHistoricalSob?.init) {
+      window.ShpHistoricalSob.init();
     }
 
     if (options.focusSearch) {

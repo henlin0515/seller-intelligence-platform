@@ -47,4 +47,5 @@ _debug_shopee_shop_*.png
 _shopee_extract_*.png
 _tmp_shopee_*.json
 mapping_review_status.json
+historical_sob_cache.json
 *.log

@@ -164,6 +164,10 @@ def refresh_all_intelligence_data() -> dict[str, Any]:
     sync_reviews_from_mappings(mappings)
     bi_result = refresh_approved_tiktok_bi()
 
+    from seller.intelligence.historical_sob import refresh_historical_sob
+
+    historical_sob_result = refresh_historical_sob(force=True)
+
     summary = review_summary()
     pending = [r for r in list_review_rows() if r.get("review_status") == "PENDING_REVIEW"][:10]
     rejected = [r for r in list_review_rows() if r.get("review_status") == "REJECTED"][:10]
@@ -175,6 +179,7 @@ def refresh_all_intelligence_data() -> dict[str, Any]:
         "mapping": mapping_result,
         "review": summary,
         "tiktok_bi": bi_result,
+        "historical_sob": historical_sob_result,
         "pending_preview": pending,
         "rejected_preview": rejected,
     }
