@@ -239,49 +239,136 @@
     return `<span class="si-mom ${cls}" title="${escapeHtml(label)}"><span class="si-mom-arrow">${arrow}</span>${fmtPct(pct)}</span>`;
   }
 
-  function renderSobBar(shpPct, tkPct, periodLabelText, animate) {
-    const shp = shpPct != null ? Math.max(0, Math.min(100, shpPct)) : 0;
-    const tk = tkPct != null ? Math.max(0, Math.min(100, tkPct)) : 0;
-    const shpW = animate ? shp : 0;
-    const tkW = animate ? tk : 0;
+  function clampSobPct(value) {
+    if (value == null || Number.isNaN(value)) return null;
+    return Math.max(0, Math.min(100, value));
+  }
+
+  function fmtSobAdgmv(value) {
+    if (value == null || Number.isNaN(value)) return "—";
+    return fmtUsd(value);
+  }
+
+  const SOB_INBAR_MIN = 14;
+
+  function renderSobStackedSeg(platform, pct, adgmv, compact, animate) {
+    const label = platform === "shp" ? "Shopee" : "TikTok";
+    const width = animate ? 0 : pct;
+    const compactCls = compact ? " is-compact" : "";
+    const platCls = platform === "shp" ? "si-sob-stack-seg--shp" : "si-sob-stack-seg--tk";
     return `
-      <div class="si-sob-wrap">
-        <div class="si-sob-period si-sob-period--title">${escapeHtml(periodLabelText)}</div>
-        <div class="si-sob-label">
-          <span class="shp">Shopee ${fmtPct(shp)}</span>
-          <span class="si-sob-sep">|</span>
-          <span class="tk">TikTok ${fmtPct(tk)}</span>
+      <div class="si-sob-stack-seg ${platCls}${compactCls}" style="width:${width}%" tabindex="0">
+        <span class="si-sob-seg-label">${label} ${fmtPct(pct)}</span>
+        <span class="si-sob-tip" role="tooltip">
+          <span class="si-sob-tip-title">${label}</span>
+          <span class="si-sob-tip-row">ADGMV ${escapeHtml(fmtSobAdgmv(adgmv))}</span>
+          <span class="si-sob-tip-row">SOB ${fmtPct(pct)}</span>
+        </span>
+      </div>`;
+  }
+
+  function renderSobPeriodBlock(periodLabel, shpPct, tkPct, shpAdgmv, tkAdgmv, animate) {
+    const shp = clampSobPct(shpPct);
+    const tk = clampSobPct(tkPct);
+    if (shp == null || tk == null) return "";
+    const shpCompact = shp < SOB_INBAR_MIN;
+    const tkCompact = tk < SOB_INBAR_MIN;
+    const showBarAnnotations = shpCompact || tkCompact;
+    return `
+      <section class="si-sob-period-block">
+        <div class="si-sob-period-label">${escapeHtml(periodLabel)}</div>
+        <div class="si-sob-metrics">
+          <div class="si-sob-metric si-sob-metric--shp">
+            <span class="si-sob-metric-dot" aria-hidden="true"></span>
+            <span class="si-sob-metric-name">Shopee</span>
+            <strong class="si-sob-metric-pct">${fmtPct(shp)}</strong>
+          </div>
+          <div class="si-sob-metric si-sob-metric--tk">
+            <span class="si-sob-metric-dot" aria-hidden="true"></span>
+            <span class="si-sob-metric-name">TikTok</span>
+            <strong class="si-sob-metric-pct">${fmtPct(tk)}</strong>
+          </div>
         </div>
-        <div class="si-sob-bar" data-sob-animate="${animate ? "1" : "0"}">
-          <div class="si-sob-seg si-sob-seg--shp" style="width:${shpW}%"></div>
-          <div class="si-sob-seg si-sob-seg--tk" style="width:${tkW}%"></div>
+        ${
+          showBarAnnotations
+            ? `<div class="si-sob-bar-annotations">
+          <span class="si-sob-bar-annotation si-sob-bar-annotation--shp" style="width:${shp}%">${shpCompact ? `Shopee ${fmtPct(shp)}` : ""}</span>
+          <span class="si-sob-bar-annotation si-sob-bar-annotation--tk" style="width:${tk}%">${tkCompact ? `TikTok ${fmtPct(tk)}` : ""}</span>
+        </div>`
+            : ""
+        }
+        <div class="si-sob-stack-bar" data-sob-animate="${animate ? "1" : "0"}" data-shp="${shp}" data-tk="${tk}">
+          ${renderSobStackedSeg("shp", shp, shpAdgmv, shpCompact, animate)}
+          ${renderSobStackedSeg("tk", tk, tkAdgmv, tkCompact, animate)}
+        </div>
+      </section>`;
+  }
+
+  function renderBusinessSobAnalysis(s) {
+    const sobReason = s.sob_na_reason || "SOB requires Shopee and TikTok ADGMV";
+    const hasMtd =
+      s.mtd_shopee_sob_percent != null &&
+      s.mtd_tiktok_sob_percent != null &&
+      !Number.isNaN(s.mtd_shopee_sob_percent) &&
+      !Number.isNaN(s.mtd_tiktok_sob_percent);
+    const hasM1 =
+      s.m1_shopee_sob_percent != null &&
+      s.m1_tiktok_sob_percent != null &&
+      !Number.isNaN(s.m1_shopee_sob_percent) &&
+      !Number.isNaN(s.m1_tiktok_sob_percent);
+    if (!hasMtd && !hasM1) {
+      return `
+        <div class="si-biz-sob-card">
+          <div class="si-biz-sob-card-head">
+            <h4 class="si-biz-sob-card-title">SOB Analysis</h4>
+          </div>
+          <div class="si-biz-sob-card-body">${fmtNa(sobReason)}</div>
+        </div>`;
+    }
+    const mtdBlock = hasMtd
+      ? renderSobPeriodBlock(
+          "MTD",
+          s.mtd_shopee_sob_percent,
+          s.mtd_tiktok_sob_percent,
+          s.shopee_mtd_adgmv_usd,
+          s.tiktok_mtd_adgmv_usd,
+          true
+        )
+      : "";
+    const m1Block = hasM1
+      ? renderSobPeriodBlock(
+          "M-1",
+          s.m1_shopee_sob_percent,
+          s.m1_tiktok_sob_percent,
+          s.shopee_m1_adgmv_usd,
+          s.tiktok_m1_adgmv_usd,
+          true
+        )
+      : "";
+    const divider = mtdBlock && m1Block ? `<div class="si-biz-sob-card-divider" role="presentation"></div>` : "";
+    return `
+      <div class="si-biz-sob-card">
+        <div class="si-biz-sob-card-head">
+          <h4 class="si-biz-sob-card-title">SOB Analysis</h4>
+        </div>
+        <div class="si-biz-sob-card-body">
+          ${mtdBlock}
+          ${divider}
+          ${m1Block}
         </div>
       </div>`;
   }
 
-  function renderBusinessSobBlock(shpPct, tkPct, title, naReason) {
-    if (shpPct == null || tkPct == null || Number.isNaN(shpPct) || Number.isNaN(tkPct)) {
-      return `
-        <div class="si-biz-sob-block">
-          <div class="si-sob-period si-sob-period--title">${escapeHtml(title)}</div>
-          ${fmtNa(naReason || "SOB requires Shopee and TikTok ADGMV")}
-        </div>`;
-    }
-    return `<div class="si-biz-sob-block">${renderSobBar(shpPct, tkPct, title, true)}</div>`;
-  }
-
   function animateSobBars(root) {
     requestAnimationFrame(() => {
-      root.querySelectorAll('.si-sob-bar[data-sob-animate="1"]').forEach((bar) => {
-        const segs = bar.querySelectorAll(".si-sob-seg");
+      root.querySelectorAll('.si-sob-stack-bar[data-sob-animate="1"]').forEach((bar) => {
+        const shp = parseFloat(bar.dataset.shp) || 0;
+        const tk = parseFloat(bar.dataset.tk) || 0;
+        const segs = bar.querySelectorAll(".si-sob-stack-seg");
         if (segs.length < 2) return;
-        const parent = bar.closest(".si-sob-wrap");
-        const labels = parent?.querySelectorAll(".si-sob-label span");
-        if (!labels?.length) return;
-        const shpText = labels[0]?.textContent?.match(/([\d.]+)%/);
-        const tkText = labels[1]?.textContent?.match(/([\d.]+)%/);
-        const shp = shpText ? parseFloat(shpText[1]) : 0;
-        const tk = tkText ? parseFloat(tkText[1]) : 0;
+        segs[0].style.width = "0%";
+        segs[1].style.width = "0%";
+        bar.offsetHeight;
         segs[0].style.width = `${shp}%`;
         segs[1].style.width = `${tk}%`;
       });
@@ -436,7 +523,6 @@
 
   function renderBusinessDetailPanel(s) {
     const tkReason = s.tiktok_na_reason || "TikTok data unavailable";
-    const sobReason = s.sob_na_reason || "SOB requires Shopee and TikTok ADGMV";
     return `
       <div class="si-biz-detail-panel">
         <h3 class="si-section-title">Mapping</h3>
@@ -447,11 +533,7 @@
           <div class="si-detail-cell"><dt>TikTok raw MTD GMV PHP</dt><dd>${fmtDetailPhp(s.tiktok_mtd_gmv_php, tkReason)}</dd></div>
           <div class="si-detail-cell"><dt>TikTok raw M-1 GMV PHP</dt><dd>${fmtDetailPhp(s.tiktok_m1_gmv_php, tkReason)}</dd></div>
         </dl>
-        <h3 class="si-section-title">SOB Analysis</h3>
-        <div class="si-biz-sob-analysis">
-          ${renderBusinessSobBlock(s.mtd_shopee_sob_percent, s.mtd_tiktok_sob_percent, "MTD SOB", sobReason)}
-          ${renderBusinessSobBlock(s.m1_shopee_sob_percent, s.m1_tiktok_sob_percent, "M-1 SOB", sobReason)}
-        </div>
+        ${renderBusinessSobAnalysis(s)}
       </div>`;
   }
 

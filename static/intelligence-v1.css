@@ -202,48 +202,258 @@
   display: block;
 }
 
-/* SOB bars */
-.si-sob-wrap {
-  min-width: 140px;
+/* SOB stacked bars */
+.si-sob-period-block + .si-sob-period-block,
+.si-biz-sob-card-divider + .si-sob-period-block {
+  margin-top: 0;
 }
 
-.si-sob-label {
+.si-biz-sob-card {
+  margin-top: 0.25rem;
+  padding: 1rem 1.05rem 1.05rem;
+  background: linear-gradient(155deg, rgba(18, 18, 18, 0.98) 0%, rgba(8, 8, 8, 0.98) 100%);
+  border: 1px solid rgba(255, 138, 0, 0.2);
+  border-radius: 10px;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  max-width: 520px;
+}
+
+.si-biz-sob-card-head {
+  padding-bottom: 0.65rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.si-biz-sob-card-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e8e8e8;
+}
+
+.si-biz-sob-card-body {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 0;
+}
+
+.si-biz-sob-card-divider {
+  height: 1px;
+  margin: 0.95rem 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+.si-sob-period-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.si-sob-period-label {
   font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #aaa;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8f8f8f;
+}
+
+.si-sob-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.si-sob-metric {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: #bdbdbd;
+}
+
+.si-sob-metric-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.si-sob-metric--shp .si-sob-metric-dot {
+  background: #ff8a00;
+  box-shadow: 0 0 8px rgba(255, 138, 0, 0.65);
+}
+
+.si-sob-metric--tk .si-sob-metric-dot {
+  background: #8b5cf6;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.65);
+}
+
+.si-sob-metric--shp .si-sob-metric-pct {
+  color: #ff8a00;
+}
+
+.si-sob-metric--tk .si-sob-metric-pct {
+  color: #8b5cf6;
+}
+
+.si-sob-metric-name {
+  min-width: 3.5rem;
+}
+
+.si-sob-metric-pct {
+  margin-left: auto;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.si-sob-bar-annotations {
+  display: flex;
+  width: 100%;
+  min-height: 1rem;
+  margin-bottom: -0.15rem;
+}
+
+.si-sob-bar-annotation {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 0.15rem;
+}
+
+.si-sob-bar-annotation--shp {
+  color: #ff8a00;
+}
+
+.si-sob-bar-annotation--tk {
+  color: #8b5cf6;
+}
+
+.si-sob-stack-bar {
+  display: flex;
+  width: 100%;
+  height: 34px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.si-sob-stack-seg {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+  transition: width 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: default;
+}
+
+.si-sob-stack-seg--shp {
+  background: #ff8a00;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 14px rgba(255, 138, 0, 0.35);
+}
+
+.si-sob-stack-seg--tk {
+  background: #8b5cf6;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 14px rgba(139, 92, 246, 0.35);
+}
+
+.si-sob-stack-seg:first-child {
+  border-radius: 9px 0 0 9px;
+}
+
+.si-sob-stack-seg:last-child {
+  border-radius: 0 9px 9px 0;
+}
+
+.si-sob-stack-seg:only-child {
+  border-radius: 9px;
+}
+
+.si-sob-seg-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(0, 0, 0, 0.82);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 0.45rem;
+  pointer-events: none;
+}
+
+.si-sob-stack-seg.is-compact .si-sob-seg-label {
+  visibility: hidden;
+}
+
+.si-sob-stack-seg:hover,
+.si-sob-stack-seg:focus-visible {
+  filter: brightness(1.08);
+  z-index: 1;
+}
+
+.si-sob-tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%) translateY(4px);
+  min-width: 118px;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  background: rgba(12, 12, 12, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0.18s ease;
+  z-index: 5;
+}
+
+.si-sob-tip-title {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
   margin-bottom: 0.2rem;
 }
 
-.si-sob-label .shp {
-  color: #ff8c33;
+.si-sob-tip-row {
+  display: block;
+  font-size: 0.68rem;
+  color: #b8b8b8;
+  line-height: 1.35;
 }
 
-.si-sob-label .tk {
-  color: #b57aff;
+.si-sob-stack-seg:hover .si-sob-tip,
+.si-sob-stack-seg:focus-visible .si-sob-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 
-.si-sob-bar {
-  display: flex;
-  height: 10px;
-  border-radius: 5px;
-  overflow: hidden;
-  background: #1e1e1e;
-}
-
-.si-sob-seg {
-  height: 100%;
-  transition: width 0.65s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.si-sob-seg--shp {
-  background: linear-gradient(90deg, #ff6a00, #ff9a4d);
-}
-
-.si-sob-seg--tk {
-  background: linear-gradient(90deg, #7c3aed, #b57aff);
+.si-sob-wrap {
+  min-width: 140px;
 }
 
 .si-sob-period {
@@ -548,7 +758,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .si-sob-seg {
+  .si-sob-stack-seg {
+    transition: none;
+  }
+
+  .si-sob-tip {
     transition: none;
   }
 }
@@ -663,38 +877,6 @@
 
 .si-detail-grid--compact {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-}
-
-.si-biz-sob-analysis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1rem;
-  max-width: 720px;
-}
-
-.si-biz-sob-block {
-  padding: 0.65rem 0.75rem;
-  background: #0d0d0d;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 6px;
-}
-
-.si-biz-sob-block .si-sob-wrap {
-  min-width: 0;
-}
-
-.si-sob-period--title {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #aaa;
-  margin-bottom: 0.35rem;
-}
-
-.si-sob-label .si-sob-sep {
-  color: #555;
-  margin: 0 0.35rem;
 }
 
 .si-biz-link {
