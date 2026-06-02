@@ -1643,3 +1643,142 @@
 .si-radar-category-focus {
   margin-top: 18px;
 }
+
+/* Mapping Center */
+.mc-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-bottom: 2rem;
+}
+
+.mc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 1100px) {
+  .mc-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mc-kpi--ok {
+  border-color: rgba(76, 217, 100, 0.35);
+}
+
+.mc-kpi--warn {
+  border-color: rgba(255, 193, 7, 0.35);
+}
+
+.mc-kpi--risk {
+  border-color: rgba(255, 61, 87, 0.35);
+}
+
+.mc-kpi--accent {
+  border-color: rgba(255, 106, 0, 0.45);
+}
+
+.mc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(255, 106, 0, 0.2);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.mc-toolbar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 140px;
+}
+
+.mc-toolbar-field--search {
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+
+.mc-toolbar-field label {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mc-toolbar-field input,
+.mc-toolbar-field select {
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 106, 0, 0.25);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+
+.mc-result-count {
+  margin: 0;
+  margin-left: auto;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.mc-section {
+  border: 1px solid rgba(255, 106, 0, 0.2);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.mc-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 106, 0, 0.06);
+}
+
+.mc-section-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mc-section-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 106, 0, 0.95);
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 106, 0, 0.35);
+}
+
+.mc-section .mapping-review-table-wrap {
+  border: none;
+  border-radius: 0;
+}
+
+.mc-state {
+  margin: 1.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  color: #cfcfcf;
+}
+
+.mc-state--error {
+  border: 1px solid rgba(255, 61, 87, 0.45);
+  border-radius: 12px;
+  background: rgba(255, 61, 87, 0.08);
+}
+
+.mc-state-title {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+  color: #fff;
+}

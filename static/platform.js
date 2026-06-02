@@ -71,6 +71,7 @@
     home: document.getElementById("viewHome"),
     siDashboard: document.getElementById("viewSiDashboard"),
     siBusiness: document.getElementById("viewSiBusiness"),
+    siMapping: document.getElementById("viewSiMapping"),
     siAssortment: document.getElementById("viewSiAssortment"),
     siVoucher: document.getElementById("viewSiVoucher"),
     intelligence: document.getElementById("viewDashboard"),
@@ -166,6 +167,10 @@
       await loadSellerMasterSyncStatus();
       return;
     }
+    if (view === "siMapping" && window.ShpMappingCenter?.init) {
+      await window.ShpMappingCenter.init();
+      return;
+    }
     if (
       (view === "siDashboard" ||
         view === "siBusiness" ||
@@ -193,7 +198,7 @@
       updatePlatformLastSync(data.refreshed_at || data.sheets?.refreshed_at);
       showPlatformToast(i18n("platform.refreshSuccess", "Data updated"));
       await reloadCurrentViewAfterRefresh(data);
-      window.ShpMappingReview?.load?.();
+      window.ShpMappingCenter?.load?.();
       return data;
     } catch (err) {
       showPlatformToast(
@@ -395,7 +400,6 @@
     }
     if (viewKey === "settings") {
       loadSellerMasterSyncStatus();
-      window.ShpMappingReview?.init?.();
     }
     if (viewKey === "assortment" && window.ShpAssortment?.onShow) {
       window.ShpAssortment.onShow(caiTab || "dashboard");
@@ -408,6 +412,9 @@
       window.ShpIntelligenceV1?.onShow
     ) {
       window.ShpIntelligenceV1.onShow(viewKey);
+    }
+    if (viewKey === "siMapping" && window.ShpMappingCenter?.init) {
+      window.ShpMappingCenter.init();
     }
 
     if (options.focusSearch) {

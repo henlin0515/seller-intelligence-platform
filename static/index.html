@@ -48,6 +48,12 @@
             </span>
             <span data-i18n="nav.siBusiness">Seller Level Analysis</span>
           </button>
+          <button type="button" class="nav-item nav-main nav-si-v1" data-view="siMapping">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4zM8 10h8M8 14h5M6 4h12"/></svg>
+            </span>
+            <span data-i18n="nav.siMapping">Mapping Center</span>
+          </button>
           <button type="button" class="nav-item nav-main nav-si-v1" data-view="siAssortment">
             <span class="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 8L2 5v3l10 5 10-5V5l-10 5z"/></svg>
@@ -229,6 +235,14 @@
             <p class="si-v1-meta si-v1-action-summary hidden" id="siBusinessActionSummary" role="status"></p>
           </header>
           <div id="siBusinessContent" class="si-v1-scroll"></div>
+        </div>
+
+        <div id="viewSiMapping" class="app-view hidden si-v1-view">
+          <header class="si-v1-header">
+            <h1 data-i18n="mappingCenter.title">Mapping Center</h1>
+            <p class="si-v1-meta" id="siMappingMeta">—</p>
+          </header>
+          <div id="siMappingContent" class="si-v1-scroll"></div>
         </div>
 
         <div id="viewSiAssortment" class="app-view hidden si-v1-view">
@@ -511,42 +525,27 @@
                 <div class="settings-sync-meta" id="settingsSellerMasterMeta"></div>
               </div>
 
-              <section class="mapping-review-section" id="mappingReviewSection">
-                <div class="mapping-review-header">
-                  <h2 data-i18n="mappingReview.title">Mapping Review</h2>
-                  <p class="subtitle" data-i18n="mappingReview.subtitle">
-                    Approve FastMoss shop matches before TikTok BI uses them.
-                  </p>
-                  <p class="mapping-review-status" id="mappingReviewStatus" role="status"></p>
-                </div>
-                <div id="mappingReviewSummary" class="mapping-review-summary"></div>
-                <div class="mapping-review-table-wrap">
-                  <table class="mapping-review-table">
-                    <thead>
-                      <tr>
-                        <th data-i18n="mappingReview.colShopId">Shop ID</th>
-                        <th data-i18n="mappingReview.colShopee">Shopee Shop Name</th>
-                        <th data-i18n="mappingReview.colTiktok">TikTok Shop Name</th>
-                        <th data-i18n="mappingReview.colFastmoss">FastMoss Matched Shop</th>
-                        <th data-i18n="mappingReview.colConfidence">Confidence</th>
-                        <th data-i18n="mappingReview.colAudit">Audit Status</th>
-                        <th data-i18n="mappingReview.colReview">Review Status</th>
-                        <th data-i18n="mappingReview.colUpdated">Last Updated</th>
-                        <th data-i18n="mappingReview.colActions">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="mappingReviewTableBody"></tbody>
-                  </table>
-                </div>
+              <section class="settings-block">
+                <h2 class="settings-block-title" data-i18n="settings.userSection">User</h2>
+                <button type="button" id="logoutBtn" class="btn btn-secondary btn-sm" data-i18n="settings.signOut">Sign out</button>
               </section>
-              <button type="button" id="logoutBtn" class="btn btn-secondary btn-sm">Sign out</button>
-              <ul class="settings-list">
-                <li data-i18n="settings.li1">AI Assistant uses your Anthropic API key from server environment (not exposed to browser)</li>
-                <li data-i18n="settings.li2">Replies match the language of your question</li>
-                <li data-i18n="settings.li3">Sources are fetched from seller.shopee.ph/edu</li>
-                <li data-i18n="settings.li4">Seller Intelligence loads seller master from Google Sheets (shpoee link tab)</li>
-                <li data-i18n="settings.li5">Seller Master auto-refreshes every 5 minutes from Google Sheets</li>
-              </ul>
+
+              <section class="settings-block">
+                <h2 class="settings-block-title" data-i18n="settings.dataSection">Data sources</h2>
+                <ul class="settings-list settings-list--compact">
+                  <li data-i18n="settings.li4">Seller Intelligence loads seller master from Google Sheets (shpoee link tab)</li>
+                  <li data-i18n="settings.li5">Seller Master auto-refreshes every 5 minutes from Google Sheets</li>
+                </ul>
+              </section>
+
+              <section class="settings-block">
+                <h2 class="settings-block-title" data-i18n="settings.systemSection">System</h2>
+                <ul class="settings-list settings-list--compact">
+                  <li data-i18n="settings.li1">AI Assistant uses your Anthropic API key from server environment (not exposed to browser)</li>
+                  <li data-i18n="settings.li2">Replies match the language of your question</li>
+                  <li data-i18n="settings.li3">Sources are fetched from seller.shopee.ph/edu</li>
+                </ul>
+              </section>
             </div>
           </div>
         </div>
@@ -609,7 +608,7 @@
     <script src="/static/dashboard.js"></script>
     <script src="/static/competitor-tracker.js"></script>
     <script src="/static/assortment.js"></script>
-    <script src="/static/mapping-review.js"></script>
+    <script src="/static/mapping-center.js"></script>
     <script src="/static/intelligence-v1.js"></script>
     <script type="module" src="/static/dashboard-charts.js"></script>
   </body>

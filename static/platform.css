@@ -732,6 +732,23 @@ body {
   line-height: 1.7;
 }
 
+.settings-block {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 106, 0, 0.18);
+}
+
+.settings-block-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.settings-list--compact {
+  margin-top: 0;
+}
+
 .mapping-review-section {
   margin-top: 2rem;
   padding-top: 1.5rem;
