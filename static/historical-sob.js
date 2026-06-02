@@ -49,9 +49,9 @@
     });
   }
 
-  function fmtGmv(value) {
+  function fmtUsd(value) {
     if (value == null || Number.isNaN(Number(value))) return null;
-    return `₱${fmtNum(value)}`;
+    return `$${fmtNum(value, 2)}`;
   }
 
   function fmtPct(value) {
@@ -189,7 +189,7 @@
 
   function renderKpiGrid() {
     const k = payload?.kpis || {};
-    const gmv = (v) => escapeHtml(fmtGmv(v) || "N/A");
+    const gmv = (v) => escapeHtml(fmtUsd(v) || "N/A");
     const pct = (v) => escapeHtml(fmtPct(v));
     const change = escapeHtml(fmtChange(k.portfolio_sob_change_pp));
 
@@ -287,8 +287,8 @@
             : ""
         }
         <div class="si-sob-stack-bar" data-sob-animate="${animate ? "1" : "0"}" data-shp="${shp}" data-tk="${tk}">
-          ${renderSobStackedSeg("shp", shp, fmtGmv(shpGmv), shpCompact, animate)}
-          ${renderSobStackedSeg("tk", tk, fmtGmv(tkGmv), tkCompact, animate)}
+          ${renderSobStackedSeg("shp", shp, fmtUsd(shpGmv), shpCompact, animate)}
+          ${renderSobStackedSeg("tk", tk, fmtUsd(tkGmv), tkCompact, animate)}
         </div>
       </section>`;
   }
@@ -322,19 +322,19 @@
       <div class="hs-detail-kpi-grid">
         <article class="si-port-kpi si-port-kpi--shopee">
           <div class="si-port-kpi-label">April Shopee GMV</div>
-          <div class="si-port-kpi-value">${escapeHtml(fmtGmv(row.april_shopee_gmv) || "N/A")}</div>
+          <div class="si-port-kpi-value">${escapeHtml(fmtUsd(row.april_shopee_gmv) || "N/A")}</div>
         </article>
         <article class="si-port-kpi si-port-kpi--tiktok">
           <div class="si-port-kpi-label">April TikTok GMV</div>
-          <div class="si-port-kpi-value">${escapeHtml(fmtGmv(row.april_tiktok_gmv) || "N/A")}</div>
+          <div class="si-port-kpi-value">${escapeHtml(fmtUsd(row.april_tiktok_gmv) || "N/A")}</div>
         </article>
         <article class="si-port-kpi si-port-kpi--shopee">
           <div class="si-port-kpi-label">May Shopee GMV</div>
-          <div class="si-port-kpi-value">${escapeHtml(fmtGmv(row.may_shopee_gmv) || "N/A")}</div>
+          <div class="si-port-kpi-value">${escapeHtml(fmtUsd(row.may_shopee_gmv) || "N/A")}</div>
         </article>
         <article class="si-port-kpi si-port-kpi--tiktok">
           <div class="si-port-kpi-label">May TikTok GMV</div>
-          <div class="si-port-kpi-value">${escapeHtml(fmtGmv(row.may_tiktok_gmv) || "N/A")}</div>
+          <div class="si-port-kpi-value">${escapeHtml(fmtUsd(row.may_tiktok_gmv) || "N/A")}</div>
         </article>
         <article class="si-port-kpi si-port-kpi--accent">
           <div class="si-port-kpi-label">SOB Change</div>
@@ -389,7 +389,7 @@
   }
 
   function cellGmv(value, reason) {
-    const g = fmtGmv(value);
+    const g = fmtUsd(value);
     if (g == null) return fmtNa(reason);
     return escapeHtml(g);
   }
@@ -613,6 +613,7 @@
       i18n("historicalSob.metaPeriod", "April 2026 · May 2026"),
       formatLastUpdated(payload.cache_updated_at || payload.refreshed_at),
       payload.ytd_tab ? `YTD: ${payload.ytd_tab}` : "",
+      payload.usd_php_rate != null ? `USD/PHP ${payload.usd_php_rate}` : "",
     ]
       .filter(Boolean)
       .join(" · ");

@@ -9,7 +9,8 @@ from typing import Any
 
 from seller.fastmoss.mapping import MAPPING_MAPPED, load_fastmoss_mapping
 from seller.fastmoss.review import REVIEW_APPROVED, allows_tiktok_data, get_review_by_shop_id
-from seller.intelligence.business.calculations import sob_pair
+from seller.intelligence.business.calculations import sob_pair, tiktok_php_to_usd
+from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.historical_sob.collector import fetch_shop_historical_tiktok_gmv
 from seller.intelligence.historical_sob.portfolio import build_portfolio_historical_sob
 from seller.intelligence.historical_sob.store import (
@@ -31,6 +32,13 @@ def _round_gmv(value: float | None) -> float | None:
     if value is None:
         return None
     return round(value, 2)
+
+
+def _tiktok_gmv_usd(php: float | None) -> float | None:
+    """FastMoss historical GMV is PHP; convert to USD before totals and SOB."""
+    if php is None:
+        return None
+    return _round_gmv(tiktok_php_to_usd(float(php)))
 
 
 def _round_sob(value: float | None) -> float | None:
@@ -99,8 +107,8 @@ def _shop_sob_row(
     if allows_tiktok_data(review_status) and mapping_row:
         fastmoss_id = str(mapping_row.get("fastmoss_shop_id") or "").strip()
         if fastmoss_id and tiktok_cache and tiktok_cache.get("status") == "success":
-            april_tiktok = _round_gmv(tiktok_cache.get("april_gmv_php"))
-            may_tiktok = _round_gmv(tiktok_cache.get("may_gmv_php"))
+            april_tiktok = _tiktok_gmv_usd(tiktok_cache.get("april_gmv_php"))
+            may_tiktok = _tiktok_gmv_usd(tiktok_cache.get("may_gmv_php"))
             if april_tiktok is None and may_tiktok is None:
                 tiktok_na_reason = "FastMoss sale_amount missing for April and May"
             elif april_tiktok is None:
@@ -401,6 +409,10 @@ def _build_payload(
         "version": "v1",
         "module": "historical_sob",
         "status": "ok",
+        "master_currency": "USD",
+        "shopee_currency": "USD",
+        "tiktok_source_currency": "PHP",
+        "usd_php_rate": USD_PHP_RATE,
         "master_tab": master.tab,
         "ytd_tab": ytd.tab,
         "periods": {
@@ -441,6 +453,10 @@ def _empty_payload(*, master: SellerMasterLoadResult | None, error: str) -> dict
         "version": "v1",
         "module": "historical_sob",
         "status": "degraded",
+        "master_currency": "USD",
+        "shopee_currency": "USD",
+        "tiktok_source_currency": "PHP",
+        "usd_php_rate": USD_PHP_RATE,
         "master_tab": getattr(master, "tab", "shpoee link"),
         "ytd_tab": get_ytd_monthly().tab,
         "warnings": [error],

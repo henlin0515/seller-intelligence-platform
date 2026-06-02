@@ -7,6 +7,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from seller.intelligence.business.calculations import sob_pair, tiktok_php_to_usd
+from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.historical_sob.portfolio import build_portfolio_historical_sob
 from seller.intelligence.historical_sob.service import build_historical_sob_rows, get_historical_sob_payload
 from seller.intelligence.historical_sob.store import save_historical_sob_cache
@@ -130,10 +132,51 @@ class HistoricalSobRowTests(unittest.TestCase):
 
         shop_a = next(r for r in rows if r["shop_id"] == "1")
         shop_b = next(r for r in rows if r["shop_id"] == "2")
-        self.assertEqual(shop_a["april_sob_percent"], 25.0)
-        self.assertEqual(shop_a["may_sob_percent"], 39.2)
+        april_shopee = 3000.0
+        may_shopee = 3100.0
+        april_tiktok_usd = round(tiktok_php_to_usd(1000.0), 2)
+        may_tiktok_usd = round(tiktok_php_to_usd(2000.0), 2)
+        _, expected_april_tiktok_sob = sob_pair(april_shopee, april_tiktok_usd)
+        _, expected_may_tiktok_sob = sob_pair(may_shopee, may_tiktok_usd)
+        self.assertEqual(shop_a["april_shopee_gmv"], april_shopee)
+        self.assertEqual(shop_a["april_tiktok_gmv"], april_tiktok_usd)
+        self.assertEqual(shop_a["may_tiktok_gmv"], may_tiktok_usd)
+        self.assertEqual(shop_a["april_sob_percent"], round(expected_april_tiktok_sob, 1))
+        self.assertEqual(shop_a["may_sob_percent"], round(expected_may_tiktok_sob, 1))
         self.assertIsNone(shop_b["april_sob_percent"])
         self.assertIsNotNone(shop_b["shopee_na_reason"])
+
+    def test_tiktok_php_converted_to_usd_for_display_and_sob(self):
+        php = 1_314_253.0
+        expected_usd = round(php / USD_PHP_RATE, 2)
+        self.assertEqual(expected_usd, 21352.61)
+        master = self._master()
+        ytd = _ytd_result([YtdMonthlyRecord("1", "Shop A", 10.0, 10.0)])
+        cache = {
+            "shops": {
+                "1": {
+                    "status": "success",
+                    "april_gmv_php": php,
+                    "may_gmv_php": php,
+                }
+            }
+        }
+        with (
+            patch("seller.intelligence.historical_sob.service.get_ytd_monthly", return_value=ytd),
+            patch("seller.intelligence.historical_sob.service.load_historical_sob_cache", return_value=cache),
+            patch("seller.intelligence.historical_sob.service._mapping_by_shop_id") as mock_map,
+            patch("seller.intelligence.historical_sob.service._review_status_for_shop", return_value="APPROVED"),
+        ):
+            mock_map.return_value = {
+                "1": {
+                    "shop_id": "1",
+                    "fastmoss_shop_id": "fm1",
+                    "mapping_status": "MAPPED",
+                }
+            }
+            rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache=cache)
+        shop_a = next(r for r in rows if r["shop_id"] == "1")
+        self.assertEqual(shop_a["april_tiktok_gmv"], expected_usd)
 
     def test_portfolio_aggregate(self):
         rows = [
@@ -177,6 +220,10 @@ class HistoricalSobRowTests(unittest.TestCase):
         self.assertEqual(payload["status"], "ok")
         self.assertTrue(payload["warnings"])
         self.assertEqual(len(payload["sellers"]), 2)
+        self.assertEqual(payload["master_currency"], "USD")
+        self.assertEqual(payload["shopee_currency"], "USD")
+        self.assertEqual(payload["tiktok_source_currency"], "PHP")
+        self.assertEqual(payload["usd_php_rate"], USD_PHP_RATE)
 
 
 class HistoricalSobCacheTests(unittest.TestCase):
