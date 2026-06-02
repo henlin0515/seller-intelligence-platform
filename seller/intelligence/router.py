@@ -18,6 +18,7 @@ from seller.intelligence.business.meta import (
     get_business_intelligence_payload,
     get_shopee_adgmv_match_summary,
 )
+from seller.intelligence.business.portfolio import build_portfolio_overview
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.periods import resolve_periods
 from seller.intelligence.seller_master import get_seller_master
@@ -97,6 +98,7 @@ async def intelligence_v1_business():
     sellers = get_business_intelligence_payload(master)
     tiktok_available = sum(1 for s in sellers if s.get("tiktok_data_status") == "available")
     shopee_available = sum(1 for s in sellers if s.get("shopee_data_status") == "available")
+    portfolio = build_portfolio_overview(sellers, total_sellers=len(sellers))
     return {
         "version": "v1",
         "data_source": master.data_source,
@@ -104,6 +106,7 @@ async def intelligence_v1_business():
         "periods": resolve_periods(today).as_dict(),
         "usd_php_rate": USD_PHP_RATE,
         "fastmoss": fastmoss_meta,
+        "portfolio": portfolio,
         "summary": {
             "seller_count": len(sellers),
             "tiktok_available": tiktok_available,

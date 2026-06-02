@@ -141,6 +141,11 @@ def _apply_shopee_data(
             "tracker_shop_name": shopee_row.tracker_shop_name,
             "shopee_mtd_adgmv_usd": round(shopee_row.mtd_adgmv_usd, 4),
             "shopee_m1_adgmv_usd": round(shopee_row.m1_adgmv_usd, 4),
+            "shopee_mom_percent": (
+                round(mom, 4)
+                if (mom := mom_percent(shopee_row.mtd_adgmv_usd, shopee_row.m1_adgmv_usd)) is not None
+                else None
+            ),
             "shopee_data_status": "available",
             "shopee_na_reason": None,
         }

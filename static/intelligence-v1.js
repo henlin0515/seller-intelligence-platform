@@ -30,6 +30,7 @@
       filters: defaultBusinessFilters(),
       expanded: new Set(),
       shellReady: false,
+      viewMode: "portfolio",
     },
     assortment: {
       raw: null,
@@ -505,6 +506,231 @@
 
   /* ---------- Business render ---------- */
 
+  function businessViewToggleHtml(mode) {
+    const portfolioActive = mode === "portfolio" ? " is-active" : "";
+    const sellerActive = mode === "seller" ? " is-active" : "";
+    return `
+      <div class="si-biz-view-toggle" role="tablist" aria-label="Business Intelligence view">
+        <button type="button" class="si-biz-view-btn${portfolioActive}" data-biz-view="portfolio" role="tab" aria-selected="${mode === "portfolio"}">Portfolio View</button>
+        <button type="button" class="si-biz-view-btn${sellerActive}" data-biz-view="seller" role="tab" aria-selected="${mode === "seller"}">Seller View</button>
+      </div>`;
+  }
+
+  function renderPortfolioKpi(label, value, sub, accent) {
+    const accentCls = accent ? ` si-port-kpi--${accent}` : "";
+    return `
+      <article class="si-port-kpi${accentCls}">
+        <div class="si-port-kpi-label">${escapeHtml(label)}</div>
+        <div class="si-port-kpi-value">${value}</div>
+        ${sub ? `<div class="si-port-kpi-sub">${sub}</div>` : ""}
+      </article>`;
+  }
+
+  function renderPortfolioMomCard(label, pct) {
+    const mom = renderMom(pct, "Portfolio MoM");
+    return `
+      <article class="si-port-trend-card">
+        <div class="si-port-trend-label">${escapeHtml(label)}</div>
+        <div class="si-port-trend-value">${mom}</div>
+      </article>`;
+  }
+
+  function renderPortfolioSobHero(portfolio) {
+    const shp = portfolio.portfolio_sob_mtd_shopee_percent;
+    const tk = portfolio.portfolio_sob_mtd_tiktok_percent;
+    if (shp == null || tk == null) {
+      return `<div class="si-port-sob-hero">${fmtNa("SOB requires Shopee and TikTok ADGMV")}</div>`;
+    }
+    const mtdBlock = renderSobPeriodBlock(
+      "Portfolio SOB MTD",
+      shp,
+      tk,
+      portfolio.shopee_mtd_adgmv_usd,
+      portfolio.tiktok_mtd_adgmv_usd,
+      true
+    );
+    const m1Block =
+      portfolio.portfolio_sob_m1_shopee_percent != null &&
+      portfolio.portfolio_sob_m1_tiktok_percent != null
+        ? renderSobPeriodBlock(
+            "Portfolio SOB M-1",
+            portfolio.portfolio_sob_m1_shopee_percent,
+            portfolio.portfolio_sob_m1_tiktok_percent,
+            portfolio.shopee_m1_adgmv_usd,
+            portfolio.tiktok_m1_adgmv_usd,
+            true
+          )
+        : "";
+    return `<div class="si-port-sob-hero">${mtdBlock}${m1Block ? `<div class="si-biz-sob-card-divider"></div>${m1Block}` : ""}</div>`;
+  }
+
+  function renderPortfolioSegmentCards(portfolio) {
+    return `
+      <div class="si-port-segments">
+        <article class="si-port-segment si-port-segment--grow">
+          <span class="si-port-segment-label">Growing</span>
+          <strong>${fmtNum(portfolio.growing_seller_count ?? 0)}</strong>
+          <span class="si-port-segment-hint">&gt; +5% total ADGMV</span>
+        </article>
+        <article class="si-port-segment si-port-segment--flat">
+          <span class="si-port-segment-label">Flat</span>
+          <strong>${fmtNum(portfolio.flat_seller_count ?? 0)}</strong>
+          <span class="si-port-segment-hint">±5% band</span>
+        </article>
+        <article class="si-port-segment si-port-segment--down">
+          <span class="si-port-segment-label">Declining</span>
+          <strong>${fmtNum(portfolio.declining_seller_count ?? 0)}</strong>
+          <span class="si-port-segment-hint">&lt; −5% total ADGMV</span>
+        </article>
+      </div>`;
+  }
+
+  function renderPortfolioTop5Table(rows, portfolioTotal) {
+    if (!rows?.length) {
+      return '<p class="si-v1-empty">No mapped sellers with MTD ADGMV yet.</p>';
+    }
+    const body = rows
+      .map(
+        (r, idx) => `<tr>
+          <td class="si-port-rank">${idx + 1}</td>
+          <td>${escapeHtml(r.shop_name)}</td>
+          <td class="si-v1-num">${fmtShopeeUsd(r.shopee_mtd_adgmv_usd)}</td>
+          <td class="si-v1-num">${fmtTikTokUsd(r.tiktok_mtd_adgmv_usd, null, "TikTok data unavailable")}</td>
+          <td class="si-v1-num">${fmtShopeeUsd(r.total_mtd_adgmv_usd)}</td>
+          <td class="si-v1-num">${fmtPct(r.contribution_percent)}</td>
+        </tr>`
+      )
+      .join("");
+    return `
+      <div class="si-v1-table-wrap">
+        <table class="si-v1-table si-v1-table--portfolio">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Seller</th>
+              <th>Shopee MTD</th>
+              <th>TikTok MTD</th>
+              <th>Total MTD</th>
+              <th>Contribution</th>
+            </tr>
+          </thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function renderPortfolioThreatTable(rows) {
+    if (!rows?.length) {
+      return '<p class="si-v1-empty">No TikTok SOB data for mapped sellers yet.</p>';
+    }
+    const body = rows
+      .map(
+        (r, idx) => `<tr>
+          <td class="si-port-rank">${idx + 1}</td>
+          <td>${escapeHtml(r.shop_name)}</td>
+          <td class="si-v1-num"><span class="si-v1-badge si-v1-badge--warn">${fmtPct(r.tiktok_mtd_sob_percent)}</span></td>
+          <td class="si-v1-num">${fmtTikTokUsd(r.tiktok_mtd_adgmv_usd, null, "TikTok data unavailable")}</td>
+          <td class="si-v1-num">${fmtShopeeUsd(r.shopee_mtd_adgmv_usd)}</td>
+          <td class="si-v1-num">${renderMom(r.tiktok_mom_percent, "TikTok MoM")}</td>
+        </tr>`
+      )
+      .join("");
+    return `
+      <div class="si-v1-table-wrap">
+        <table class="si-v1-table si-v1-table--portfolio">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Seller</th>
+              <th>TikTok MTD SOB</th>
+              <th>TikTok MTD</th>
+              <th>Shopee MTD</th>
+              <th>TikTok MoM</th>
+            </tr>
+          </thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function renderPortfolioOverview(data) {
+    const p = data.portfolio || {};
+    const mapped = p.mapped_sellers ?? 0;
+    const total = p.total_sellers ?? 0;
+    return `
+      <div class="si-port-overview">
+        <div class="si-port-kpi-grid">
+          ${renderPortfolioKpi("Total Sellers", fmtNum(total), `${fmtNum(mapped)} mapped`, "neutral")}
+          ${renderPortfolioKpi("Mapping Rate", fmtPct(p.mapping_rate_percent), "FastMoss mapped / total", "accent")}
+          ${renderPortfolioKpi("Portfolio Total MTD", fmtShopeeUsd(p.portfolio_total_mtd_adgmv_usd), "Shopee + TikTok", "hero")}
+          ${renderPortfolioKpi("Shopee MTD ADGMV", fmtShopeeUsd(p.shopee_mtd_adgmv_usd), `M-1 ${fmtUsd(p.shopee_m1_adgmv_usd) || "—"}`, "shopee")}
+          ${renderPortfolioKpi("TikTok MTD ADGMV", fmtTikTokUsd(p.tiktok_mtd_adgmv_usd, null, "TikTok data unavailable"), `M-1 ${fmtUsd(p.tiktok_m1_adgmv_usd) || "—"}`, "tiktok")}
+          ${renderPortfolioKpi("Shopee M-1 ADGMV", fmtShopeeUsd(p.shopee_m1_adgmv_usd), "Prior month", "shopee")}
+          ${renderPortfolioKpi("TikTok M-1 ADGMV", fmtTikTokUsd(p.tiktok_m1_adgmv_usd, null, "TikTok data unavailable"), "Prior month", "tiktok")}
+        </div>
+        <div class="si-port-mid-grid">
+          <section class="si-port-panel si-port-panel--sob">
+            <h3 class="si-port-panel-title">Portfolio SOB</h3>
+            ${renderPortfolioSobHero(p)}
+          </section>
+          <section class="si-port-panel si-port-panel--trends">
+            <h3 class="si-port-panel-title">Portfolio MoM</h3>
+            <div class="si-port-trend-grid">
+              ${renderPortfolioMomCard("Shopee MoM", p.shopee_mom_percent)}
+              ${renderPortfolioMomCard("TikTok MoM", p.tiktok_mom_percent)}
+            </div>
+            <h3 class="si-port-panel-title si-port-panel-title--sub">Seller Segmentation</h3>
+            ${renderPortfolioSegmentCards(p)}
+          </section>
+        </div>
+        <div class="si-port-tables-grid">
+          <section class="si-port-panel">
+            <h3 class="si-port-panel-title">Top 5 Seller Contribution</h3>
+            ${renderPortfolioTop5Table(p.top5_seller_contribution, p.portfolio_total_mtd_adgmv_usd)}
+          </section>
+          <section class="si-port-panel">
+            <h3 class="si-port-panel-title">Top TikTok Threat Sellers</h3>
+            ${renderPortfolioThreatTable(p.top_tiktok_threat_sellers)}
+          </section>
+        </div>
+      </div>`;
+  }
+
+  function bindBusinessViewToggle(el) {
+    el.querySelectorAll("[data-biz-view]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mode = btn.dataset.bizView;
+        if (!mode || state.business.viewMode === mode) return;
+        state.business.viewMode = mode;
+        paintBusinessShell();
+      });
+    });
+  }
+
+  function paintBusinessShell() {
+    const el = containers.siBusiness;
+    const st = state.business;
+    if (!el || !st.raw) return;
+    const toggle = el.querySelector("[data-biz-view-toggle]");
+    if (toggle) {
+      toggle.outerHTML = businessViewToggleHtml(st.viewMode);
+      bindBusinessViewToggle(el);
+    }
+    const portfolioEl = el.querySelector("[data-portfolio-root]");
+    const sellerEl = el.querySelector("[data-seller-root]");
+    if (portfolioEl) {
+      portfolioEl.hidden = st.viewMode !== "portfolio";
+      if (st.viewMode === "portfolio") {
+        portfolioEl.innerHTML = renderPortfolioOverview(st.raw);
+        animateSobBars(portfolioEl);
+      }
+    }
+    if (sellerEl) {
+      sellerEl.hidden = st.viewMode !== "seller";
+      if (st.viewMode === "seller") paintBusinessList();
+    }
+  }
+
   function fmtDetail(value, fallback) {
     if (value == null || value === "") return fallback || "—";
     return escapeHtml(String(value));
@@ -618,7 +844,17 @@
       metas.siBusiness.textContent = `${periodLabel(data.periods)} · ${src}${collected} · USD/PHP ${data.usd_php_rate}`;
     }
     if (!state.business.shellReady) {
-      el.innerHTML = `${businessToolbarHtml(state.business.filters)}<div class="si-v1-list" data-si-list></div>`;
+      const showPortfolio = state.business.viewMode === "portfolio";
+      el.innerHTML = `
+        <div class="si-biz-shell">
+          <div data-biz-view-toggle>${businessViewToggleHtml(state.business.viewMode)}</div>
+          <div class="si-biz-view-panel" data-portfolio-root${showPortfolio ? "" : " hidden"}></div>
+          <div class="si-biz-view-panel" data-seller-root${showPortfolio ? " hidden" : ""}>
+            ${businessToolbarHtml(state.business.filters)}
+            <div class="si-v1-list" data-si-list></div>
+          </div>
+        </div>`;
+      bindBusinessViewToggle(el);
       const onToolbar = (ev) => {
         if (ev?.reset) state.business.filters = defaultBusinessFilters();
         else {
@@ -634,45 +870,55 @@
       bindToolbar(el.querySelector("[data-toolbar]"), onToolbar);
       state.business.shellReady = true;
     }
-    paintBusinessList();
+    paintBusinessShell();
   }
 
   /* ---------- Assortment render ---------- */
 
   function renderMissingCard(p) {
+    const sold =
+      p.sold_count != null ? `<p>Sold: ${escapeHtml(String(p.sold_count))}</p>` : "";
+    const sales =
+      p.sales_amount != null ? `<p>Sales: ₱${fmtNum(p.sales_amount)}</p>` : "";
     return `
       <article class="si-product-card">
-        <img src="${escapeHtml(p.image_url)}" alt="" loading="lazy" width="72" height="72" />
+        <img src="${escapeHtml(p.image_url || "")}" alt="" loading="lazy" width="72" height="72" />
         <div class="si-product-card-body">
           <h4>${escapeHtml(p.product_name)}</h4>
           <p>TikTok price: ₱${fmtNum(p.price_php)}</p>
-          <p>${escapeHtml(p.reason)}</p>
-          <p>Confidence: ${p.confidence_score != null ? fmtPct(p.confidence_score * 100) : "—"}</p>
-          <a href="${escapeHtml(p.tiktok_link)}" target="_blank" rel="noopener noreferrer">TikTok product link</a>
+          ${sold}
+          ${sales}
+          <p>${escapeHtml(p.reason || "Not found on Shopee")}</p>
+          <a href="${escapeHtml(p.tiktok_link || "#")}" target="_blank" rel="noopener noreferrer">TikTok product link</a>
         </div>
       </article>`;
   }
 
   function renderReviewPair(r) {
+    const shopee = r.shopee || {};
+    const tiktok = r.tiktok || {};
     return `
       <article class="si-review-pair">
         <div class="si-review-pair-header">
           <span>Similarity</span>
           <strong>${r.similarity_score != null ? fmtPct(r.similarity_score * 100) : "—"}</strong>
         </div>
+        <p class="si-review-reason">${escapeHtml(r.reason || "")}</p>
         <div class="si-review-columns">
           <div class="si-review-col">
             <span class="tag">Shopee</span>
-            <img src="${escapeHtml(r.shopee.image_url)}" alt="" loading="lazy" />
-            <h5>${escapeHtml(r.shopee.product_name)}</h5>
-            <a href="${escapeHtml(r.shopee.product_link)}" target="_blank" rel="noopener noreferrer">Shopee link</a>
+            <img src="${escapeHtml(shopee.image_url || "")}" alt="" loading="lazy" />
+            <h5>${escapeHtml(shopee.product_name || "—")}</h5>
+            <p class="si-review-price">₱${fmtNum(shopee.price_php)}</p>
+            <a href="${escapeHtml(shopee.product_link || "#")}" target="_blank" rel="noopener noreferrer">Shopee link</a>
           </div>
           <div class="si-review-vs">VS</div>
           <div class="si-review-col">
             <span class="tag tag--tt">TikTok</span>
-            <img src="${escapeHtml(r.tiktok.image_url)}" alt="" loading="lazy" />
-            <h5>${escapeHtml(r.tiktok.product_name)}</h5>
-            <a href="${escapeHtml(r.tiktok.product_link)}" target="_blank" rel="noopener noreferrer">TikTok link</a>
+            <img src="${escapeHtml(tiktok.image_url || "")}" alt="" loading="lazy" />
+            <h5>${escapeHtml(tiktok.product_name || "—")}</h5>
+            <p class="si-review-price">₱${fmtNum(tiktok.price_php)}</p>
+            <a href="${escapeHtml(tiktok.product_link || "#")}" target="_blank" rel="noopener noreferrer">TikTok link</a>
           </div>
         </div>
       </article>`;
@@ -736,7 +982,10 @@
     if (!el) return;
     state.assortment.raw = data;
     if (metas.siAssortment) {
-      metas.siAssortment.textContent = `Mock assortment data · Tracker off · FastMoss off`;
+      const phase1 = data.phase1_shop_id;
+      metas.siAssortment.textContent = phase1
+        ? `Phase 1 live · ${phase1} · FastMoss + Shopee catalog compare`
+        : `Sheet master · Phase 1 pending`;
     }
     if (!state.assortment.shellReady) {
       el.innerHTML = `${assortmentToolbarHtml(state.assortment.filters)}<div class="si-v1-list" data-si-list></div>`;
