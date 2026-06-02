@@ -831,6 +831,86 @@
   text-align: center;
 }
 
+.si-port-state {
+  margin: 1.5rem;
+  padding: 1.5rem 1.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 106, 0, 0.25);
+  background: rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.si-port-state--loading {
+  color: #cfcfcf;
+}
+
+.si-port-state--error {
+  border-color: rgba(255, 61, 87, 0.45);
+  background: rgba(255, 61, 87, 0.08);
+  text-align: left;
+}
+
+.si-port-state--empty {
+  border-color: rgba(255, 193, 7, 0.35);
+  background: rgba(255, 193, 7, 0.06);
+}
+
+.si-port-state--info {
+  margin: 0 0 1rem;
+  text-align: left;
+  border-color: rgba(255, 106, 0, 0.35);
+  background: rgba(255, 106, 0, 0.08);
+}
+
+.si-port-state--info p {
+  margin: 0.35rem 0 0;
+  color: #cfcfcf;
+  font-size: 0.85rem;
+}
+
+.si-port-state-title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.si-port-state-message {
+  margin: 0 0 1rem;
+  color: #cfcfcf;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.si-port-state-detail {
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  overflow: auto;
+  max-height: 180px;
+  font-size: 0.75rem;
+  color: #ffb4bc;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.si-port-state-spinner {
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 0.75rem;
+  border: 2px solid rgba(255, 106, 0, 0.25);
+  border-top-color: #ff6a00;
+  border-radius: 50%;
+  animation: si-port-spin 0.8s linear infinite;
+}
+
+@keyframes si-port-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 900px) {
   .si-v1-row-head {
     grid-template-columns: auto 1fr;

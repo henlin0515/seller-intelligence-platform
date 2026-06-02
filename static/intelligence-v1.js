@@ -756,14 +756,22 @@
   }
 
   function renderPortfolioOverview(data) {
-    const p = data.portfolio || {};
-    const mapped = p.mapped_sellers ?? 0;
-    const total = p.total_sellers ?? 0;
+    const p = data?.portfolio && typeof data.portfolio === "object" ? data.portfolio : {};
+    const mapped = Number(p.mapped_sellers) || 0;
+    const total = Number(p.total_sellers) || Number(data?.seller_count) || 0;
+    const noApprovedBanner =
+      total > 0 && mapped === 0
+        ? `<div class="si-port-state si-port-state--info" role="status">
+            <strong>No approved FastMoss mappings yet</strong>
+            <p>Portfolio TikTok totals stay N/A until mappings are approved under Settings → Mapping Review.</p>
+          </div>`
+        : "";
     return `
+      ${noApprovedBanner}
       <div class="si-port-overview">
         <div class="si-port-kpi-grid">
-          ${renderPortfolioKpi("Total Sellers", fmtNum(total), `${fmtNum(mapped)} mapped`, "neutral")}
-          ${renderPortfolioKpi("Mapping Rate", fmtPct(p.mapping_rate_percent), "FastMoss mapped / total", "accent")}
+          ${renderPortfolioKpi("Total Sellers", fmtNum(total), `${fmtNum(mapped)} approved mapped`, "neutral")}
+          ${renderPortfolioKpi("Mapping Rate", fmtPct(p.mapping_rate_percent), "Approved mapped / total", "accent")}
           ${renderPortfolioKpi("Portfolio Total MTD", fmtShopeeUsd(p.portfolio_total_mtd_adgmv_usd), "Shopee + TikTok", "hero")}
           ${renderPortfolioKpi("Shopee MTD ADGMV", fmtShopeeUsd(p.shopee_mtd_adgmv_usd), `M-1 ${fmtUsd(p.shopee_m1_adgmv_usd) || "—"}`, "shopee")}
           ${renderPortfolioKpi("TikTok MTD ADGMV", fmtTikTokUsd(p.tiktok_mtd_adgmv_usd, null, "TikTok data unavailable"), `M-1 ${fmtUsd(p.tiktok_m1_adgmv_usd) || "—"}`, "tiktok")}
@@ -1313,15 +1321,126 @@
 
   /* ---------- Dashboard & voucher (simple) ---------- */
 
+  function showDashboardLoading() {
+    const el = containers.siDashboard;
+    if (!el) return;
+    el.innerHTML = `
+      <div class="si-port-state si-port-state--loading" role="status" aria-live="polite">
+        <div class="si-port-state-spinner" aria-hidden="true"></div>
+        <p class="si-port-state-title">${escapeHtml(i18n("si.dashboardLoading", "Loading portfolio overview…"))}</p>
+      </div>`;
+    if (metas.siDashboard) {
+      metas.siDashboard.textContent = i18n("si.dashboardLoadingMeta", "Loading…");
+    }
+  }
+
+  function showDashboardError(message, detail) {
+    const el = containers.siDashboard;
+    if (!el) return;
+    console.error("[Portfolio Overview] API/render error:", message, detail || "");
+    el.innerHTML = `
+      <div class="si-port-state si-port-state--error" role="alert">
+        <p class="si-port-state-title">${escapeHtml(i18n("si.dashboardErrorTitle", "Could not load Portfolio Overview"))}</p>
+        <p class="si-port-state-message">${escapeHtml(message || "Unknown error")}</p>
+        ${detail ? `<pre class="si-port-state-detail">${escapeHtml(String(detail))}</pre>` : ""}
+        <button type="button" class="btn si-v1-action-btn" data-dashboard-retry>${escapeHtml(i18n("si.dashboardRetry", "Retry"))}</button>
+      </div>`;
+    el.querySelector("[data-dashboard-retry]")?.addEventListener("click", () => {
+      delete cache.siDashboard;
+      loadDashboardView().catch(() => {});
+    });
+    if (metas.siDashboard) {
+      metas.siDashboard.textContent = i18n("si.dashboardErrorMeta", "Load failed");
+    }
+  }
+
+  function showDashboardEmpty(message) {
+    const el = containers.siDashboard;
+    if (!el) return;
+    el.innerHTML = `
+      <div class="si-port-state si-port-state--empty" role="status">
+        <p class="si-port-state-title">${escapeHtml(i18n("si.dashboardEmptyTitle", "No portfolio data yet"))}</p>
+        <p class="si-port-state-message">${escapeHtml(message || i18n("si.dashboardEmptyHint", "Refresh data after Seller Master sync."))}</p>
+        <button type="button" class="btn si-v1-action-btn" data-dashboard-retry>${escapeHtml(i18n("si.dashboardRetry", "Retry"))}</button>
+      </div>`;
+    el.querySelector("[data-dashboard-retry]")?.addEventListener("click", () => {
+      delete cache.siDashboard;
+      loadDashboardView().catch(() => {});
+    });
+    if (metas.siDashboard) {
+      metas.siDashboard.textContent = i18n("si.dashboardEmptyMeta", "No data");
+    }
+  }
+
+  function isDashboardPayloadEmpty(data) {
+    if (!data || typeof data !== "object") return true;
+    const sellerCount = Number(data.seller_count ?? data.portfolio?.total_sellers);
+    if (!Number.isFinite(sellerCount) || sellerCount <= 0) return true;
+    return false;
+  }
+
+  function safeRenderDashboard(data) {
+    const el = containers.siDashboard;
+    if (!el) return;
+    try {
+      if (isDashboardPayloadEmpty(data)) {
+        showDashboardEmpty(
+          i18n(
+            "si.dashboardEmptyHint",
+            "No sellers loaded yet. Click Refresh Data after Seller Master sync."
+          )
+        );
+        return;
+      }
+      renderDashboard(data);
+    } catch (err) {
+      console.error("[Portfolio Overview] render failed:", err);
+      showDashboardError(err.message || "Could not render portfolio overview", err.stack);
+    }
+  }
+
+  async function loadDashboardView() {
+    const el = containers.siDashboard;
+    if (!el) return;
+
+    if (cache.siDashboard) {
+      safeRenderDashboard(cache.siDashboard);
+      return;
+    }
+
+    showDashboardLoading();
+    try {
+      const res = await fetchApi(API.dashboard);
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        console.error("[Portfolio Overview] invalid JSON response:", parseErr);
+        showDashboardError("Portfolio API returned invalid JSON.", parseErr.message);
+        return;
+      }
+      if (!res.ok) {
+        const detail = data.detail || data.message || `HTTP ${res.status}`;
+        showDashboardError(String(detail), JSON.stringify(data, null, 2));
+        return;
+      }
+      cache.siDashboard = data;
+      safeRenderDashboard(data);
+    } catch (err) {
+      showDashboardError(err.message || "Failed to load portfolio overview", err.stack);
+    }
+  }
+
   function renderDashboard(data) {
     const el = containers.siDashboard;
     if (!el) return;
-    const fm = data.modules?.business_intelligence || {};
+    const payload = data && typeof data === "object" ? data : {};
+    const fm = payload.modules?.business_intelligence || {};
     const src = fm.fastmoss_connected ? "FastMoss TikTok" : "Seller master";
     if (metas.siDashboard) {
-      metas.siDashboard.textContent = `${periodLabel(data.periods)} · ${src} · USD/PHP ${data.usd_php_rate}`;
+      metas.siDashboard.textContent = `${periodLabel(payload.periods)} · ${src} · USD/PHP ${payload.usd_php_rate ?? "—"}`;
     }
-    el.innerHTML = renderPortfolioOverview(data);
+    el.innerHTML = renderPortfolioOverview(payload);
     animateSobBars(el);
   }
 
@@ -1359,6 +1478,11 @@
   }
 
   async function onShow(view) {
+    if (view === "siDashboard") {
+      await loadDashboardView();
+      return;
+    }
+
     const paths = {
       siDashboard: API.dashboard,
       siBusiness: API.business,
@@ -1368,10 +1492,9 @@
     const path = paths[view];
     if (!path) return;
 
-    const useCache = cache[view] && view !== "siBusiness" && view !== "siAssortment" && view !== "siDashboard";
+    const useCache = cache[view] && view !== "siBusiness" && view !== "siAssortment";
     if (useCache) {
-      if (view === "siDashboard") renderDashboard(cache[view]);
-      else if (view === "siVoucher") renderVoucher(cache[view]);
+      if (view === "siVoucher") renderVoucher(cache[view]);
       return;
     }
 
@@ -1382,8 +1505,7 @@
         cache[view] = await load(path);
       }
       const data = cache[view];
-      if (view === "siDashboard") renderDashboard(data);
-      else if (view === "siBusiness") setupBusiness(data);
+      if (view === "siBusiness") setupBusiness(data);
       else if (view === "siAssortment") setupAssortment(data);
       else if (view === "siVoucher") renderVoucher(data);
     } catch (err) {
@@ -1448,6 +1570,7 @@
 
   window.ShpIntelligenceV1 = {
     onShow,
+    loadDashboardView,
     clearCache: () => {
       Object.keys(cache).forEach((k) => delete cache[k]);
       state.business.shellReady = false;
@@ -1455,6 +1578,6 @@
       state.business.expanded.clear();
       state.assortment.expanded.clear();
     },
-    refreshBusinessFastmossMapping,
+    refreshBusinessData,
   };
 })();
