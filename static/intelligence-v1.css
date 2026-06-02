@@ -2155,3 +2155,75 @@
 .hs-section--sellers .si-v1-toolbar {
   margin-bottom: 0.75rem;
 }
+
+/* Historical SOB page (SLA visual parity) */
+.hs-page-kpis-wrap {
+  margin-bottom: 1rem;
+}
+
+.hs-page-kpis {
+  margin-bottom: 0;
+}
+
+.hs-detail-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.hs-detail-subtitle {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #ccc;
+}
+
+.hs-trend-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2rem;
+  min-height: 120px;
+  padding: 0.75rem 1rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.hs-trend-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 56px;
+  height: 100px;
+  justify-content: flex-end;
+}
+
+.hs-trend-bar {
+  width: 36px;
+  min-height: 4px;
+  border-radius: 6px 6px 2px 2px;
+  transition: height 0.45s ease;
+}
+
+.hs-trend-bar--apr {
+  background: linear-gradient(180deg, #b57bff 0%, #7a4fd4 100%);
+}
+
+.hs-trend-bar--may {
+  background: linear-gradient(180deg, #ff8a3d 0%, #c96520 100%);
+}
+
+.hs-trend-label {
+  font-size: 0.72rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.hs-trend-value {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #ddd;
+}

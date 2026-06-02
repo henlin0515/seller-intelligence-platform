@@ -244,9 +244,22 @@
         </div>
 
         <div id="viewSiHistoricalSob" class="app-view hidden si-v1-view">
-          <header class="si-v1-header">
-            <h1 data-i18n="historicalSob.title">Historical SOB</h1>
+          <header class="si-v1-header si-v1-header--actions">
+            <div class="si-v1-header-row">
+              <h1 data-i18n="historicalSob.title">Historical SOB</h1>
+              <div class="si-v1-header-actions">
+                <button
+                  type="button"
+                  id="siHistoricalSobRefreshDataBtn"
+                  class="btn si-v1-action-btn"
+                  data-i18n="si.refreshData"
+                >
+                  Refresh Data
+                </button>
+              </div>
+            </div>
             <p class="si-v1-meta" id="siHistoricalSobMeta">—</p>
+            <p class="si-v1-meta si-v1-action-summary hidden" id="siHistoricalSobActionSummary" role="status"></p>
           </header>
           <div id="siHistoricalSobContent" class="si-v1-scroll"></div>
         </div>

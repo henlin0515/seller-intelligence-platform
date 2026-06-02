@@ -392,6 +392,10 @@ def _build_payload(
     rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache=cache)
     portfolio = build_portfolio_historical_sob(rows)
     summary = _summary_counts(rows, master, ytd=ytd, cache=cache, portfolio=portfolio)
+    categories = sorted(
+        {str(r.get("category") or "Uncategorized").strip() for r in rows},
+        key=str.lower,
+    )
 
     return {
         "version": "v1",
@@ -408,11 +412,17 @@ def _build_payload(
         "summary": summary,
         "kpis": {
             "total_shops": len(master.sellers),
+            "april_portfolio_gmv": portfolio.get("april_total_gmv"),
+            "may_portfolio_gmv": portfolio.get("may_total_gmv"),
             "april_shopee_gmv": portfolio.get("april_shopee_gmv"),
             "april_tiktok_gmv": portfolio.get("april_tiktok_gmv"),
+            "april_shopee_sob_percent": portfolio.get("april_shopee_sob_percent"),
+            "april_tiktok_sob_percent": portfolio.get("april_tiktok_sob_percent"),
             "april_portfolio_sob_percent": portfolio.get("april_portfolio_sob_percent"),
             "may_shopee_gmv": portfolio.get("may_shopee_gmv"),
             "may_tiktok_gmv": portfolio.get("may_tiktok_gmv"),
+            "may_shopee_sob_percent": portfolio.get("may_shopee_sob_percent"),
+            "may_tiktok_sob_percent": portfolio.get("may_tiktok_sob_percent"),
             "may_portfolio_sob_percent": portfolio.get("may_portfolio_sob_percent"),
             "portfolio_sob_change_pp": portfolio.get("portfolio_sob_change_pp"),
         },
@@ -421,6 +431,7 @@ def _build_payload(
         "na_preview": _na_preview(rows),
         "filters": {
             "mapping_statuses": sorted({str(r.get("mapping_status")) for r in rows}),
+            "categories": categories,
         },
     }
 

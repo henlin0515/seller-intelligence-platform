@@ -387,7 +387,10 @@
 
     const platformTopBar = document.getElementById("platformTopBar");
     if (platformTopBar) {
-      platformTopBar.classList.toggle("hidden", viewKey === "siBusiness");
+      platformTopBar.classList.toggle(
+        "hidden",
+        viewKey === "siBusiness" || viewKey === "siHistoricalSob"
+      );
     }
 
     if (assistantSidebarTools) {
