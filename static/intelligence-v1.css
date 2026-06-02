@@ -280,7 +280,36 @@
 .si-biz-sob-card-body {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 0.85rem;
+}
+
+.si-biz-mom-badges {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.si-biz-mom-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.si-biz-mom-badge-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8f8f8f;
+}
+
+.si-biz-mom-badge-value .si-mom {
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .si-biz-sob-card-divider {
@@ -524,6 +553,13 @@
 
 .si-mom--flat {
   color: #888;
+}
+
+.si-mom--na {
+  color: #888;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .si-mom-arrow {

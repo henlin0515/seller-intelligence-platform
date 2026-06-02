@@ -102,6 +102,12 @@
     return `${fmtNum(n, 1)}%`;
   }
 
+  function fmtMomPct(n) {
+    if (n == null || Number.isNaN(n)) return null;
+    const sign = n > 0 ? "+" : "";
+    return `${sign}${fmtNum(n, 1)}%`;
+  }
+
   function fmtNa(reason) {
     const title = reason ? ` title="${escapeHtml(reason)}"` : "";
     return `<span class="si-v1-na"${title}>NA</span>`;
@@ -209,6 +215,8 @@
           return cmp(b.tiktok_mtd_adgmv_usd ?? 0, a.tiktok_mtd_adgmv_usd ?? 0);
         case "shopee_mom":
           return cmp(b.shopee_mom_percent ?? -999, a.shopee_mom_percent ?? -999);
+        case "shopee_mom_asc":
+          return cmp(a.shopee_mom_percent ?? -999, b.shopee_mom_percent ?? -999);
         case "tiktok_mom":
           return cmp(b.tiktok_mom_percent ?? -999, a.tiktok_mom_percent ?? -999);
         case "fastmoss":
@@ -267,15 +275,39 @@
 
   /* ---------- UI components ---------- */
 
-  function renderMom(pct, label) {
+  function renderMom(pct, label, naText = "N/A") {
     if (pct == null || Number.isNaN(pct)) {
-      return `<span class="si-mom si-mom--flat" title="${escapeHtml(label)}">—</span>`;
+      return `<span class="si-mom si-mom--na" title="${escapeHtml(label)}">${escapeHtml(naText)}</span>`;
     }
     const up = pct > 0.05;
     const down = pct < -0.05;
     const cls = up ? "si-mom--up" : down ? "si-mom--down" : "si-mom--flat";
     const arrow = up ? "▲" : down ? "▼" : "●";
-    return `<span class="si-mom ${cls}" title="${escapeHtml(label)}"><span class="si-mom-arrow">${arrow}</span>${fmtPct(pct)}</span>`;
+    return `<span class="si-mom ${cls}" title="${escapeHtml(label)}"><span class="si-mom-arrow">${arrow}</span>${fmtMomPct(pct)}</span>`;
+  }
+
+  function renderBusinessMomBadges(s) {
+    const shReason = s.shopee_na_reason || "Shopee ADGMV not found in Tracker";
+    const tkReason = s.tiktok_na_reason || "TikTok data unavailable";
+    const shMom =
+      s.shopee_data_status === "available"
+        ? renderMom(s.shopee_mom_percent, "Shopee MoM")
+        : fmtNa(shReason);
+    const tkMom =
+      s.tiktok_data_status === "available"
+        ? renderMom(s.tiktok_mom_percent, "TikTok MoM")
+        : fmtNa(tkReason);
+    return `
+      <div class="si-biz-mom-badges">
+        <article class="si-biz-mom-badge">
+          <span class="si-biz-mom-badge-label">Shopee MoM</span>
+          <span class="si-biz-mom-badge-value">${shMom}</span>
+        </article>
+        <article class="si-biz-mom-badge">
+          <span class="si-biz-mom-badge-label">TikTok MoM</span>
+          <span class="si-biz-mom-badge-value">${tkMom}</span>
+        </article>
+      </div>`;
   }
 
   function clampSobPct(value) {
@@ -361,7 +393,10 @@
           <div class="si-biz-sob-card-head">
             <h4 class="si-biz-sob-card-title">SOB Analysis</h4>
           </div>
-          <div class="si-biz-sob-card-body">${fmtNa(sobReason)}</div>
+          <div class="si-biz-sob-card-body">
+            ${renderBusinessMomBadges(s)}
+            ${fmtNa(sobReason)}
+          </div>
         </div>`;
     }
     const mtdBlock = hasMtd
@@ -391,6 +426,7 @@
           <h4 class="si-biz-sob-card-title">SOB Analysis</h4>
         </div>
         <div class="si-biz-sob-card-body">
+          ${renderBusinessMomBadges(s)}
           ${mtdBlock}
           ${divider}
           ${m1Block}
@@ -467,7 +503,8 @@
             <option value="shop_name"${f.sort === "shop_name" ? " selected" : ""}>Shop name</option>
             <option value="shopee_mtd"${f.sort === "shopee_mtd" ? " selected" : ""}>Shopee MTD ADGMV</option>
             <option value="tiktok_mtd"${f.sort === "tiktok_mtd" ? " selected" : ""}>TikTok MTD ADGMV</option>
-            <option value="shopee_mom"${f.sort === "shopee_mom" ? " selected" : ""}>Shopee MoM</option>
+            <option value="shopee_mom"${f.sort === "shopee_mom" ? " selected" : ""}>Shopee MoM % (high → low)</option>
+            <option value="shopee_mom_asc"${f.sort === "shopee_mom_asc" ? " selected" : ""}>Shopee MoM % (low → high)</option>
             <option value="tiktok_mom"${f.sort === "tiktok_mom" ? " selected" : ""}>TikTok MoM</option>
             <option value="fastmoss"${f.sort === "fastmoss" ? " selected" : ""}>FastMoss status</option>
           </select>
@@ -783,6 +820,10 @@
       s.tiktok_data_status === "available"
         ? renderMom(s.tiktok_mom_percent, tkReason)
         : fmtNa(tkReason);
+    const shMom =
+      s.shopee_data_status === "available"
+        ? renderMom(s.shopee_mom_percent, shReason)
+        : fmtNa(shReason);
     const expCls = expanded ? " is-expanded" : "";
     return `
       <tbody class="si-biz-group${expCls}" data-shop-id="${escapeHtml(s.shop_id)}">
@@ -796,9 +837,10 @@
           <td class="si-v1-num">${tkMom}</td>
           <td class="si-v1-num">${fmtShopeeUsd(s.shopee_mtd_adgmv_usd, shReason)}</td>
           <td class="si-v1-num">${fmtShopeeUsd(s.shopee_m1_adgmv_usd, shReason)}</td>
+          <td class="si-v1-num">${shMom}</td>
         </tr>
         <tr class="si-biz-row-detail">
-          <td colspan="9">${renderBusinessDetailPanel(s)}</td>
+          <td colspan="10">${renderBusinessDetailPanel(s)}</td>
         </tr>
       </tbody>`;
   }
@@ -818,6 +860,7 @@
               <th>TikTok MoM %</th>
               <th>Shopee MTD ADGMV</th>
               <th>Shopee M-1 ADGMV</th>
+              <th>Shopee MoM %</th>
             </tr>
           </thead>
           ${sellers.map((s) => renderBusinessTableRow(s, expandedSet.has(s.shop_id))).join("")}

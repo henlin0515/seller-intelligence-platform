@@ -39,6 +39,16 @@ def test_mom_formula():
     assert mom_percent(110.0, 100.0) == 10.0
 
 
+def test_shopee_mom_example():
+    result = mom_percent(4742.30, 4196.97)
+    assert result is not None
+    assert round(result, 1) == 13.0
+
+
+def test_mom_zero_m1_returns_none():
+    assert mom_percent(100.0, 0.0) is None
+
+
 def test_sob_totals_100():
     for record in get_mock_business_intelligence():
         for sk, tk in (
