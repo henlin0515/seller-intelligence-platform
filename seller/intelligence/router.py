@@ -178,37 +178,155 @@ def _refresh_all_sheet_caches() -> dict:
     }
 
 
-@router.post("/refresh-sheets")
-async def intelligence_v1_refresh_sheets():
-    """Force refresh all Google Sheet-backed caches without server restart."""
-    try:
-        return await asyncio.to_thread(_refresh_all_sheet_caches)
-    except (GoogleSheetsNotConfiguredError, GoogleSheetsNotEnabledError) as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except Exception as exc:
-        logger.exception("Sheet refresh failed")
-        raise HTTPException(
-            status_code=500,
-            detail="Could not refresh sheet data. Try again later.",
-        ) from exc
-
-
-@router.post("/refresh-fastmoss-mapping")
-async def intelligence_v1_refresh_fastmoss_mapping(force_all: bool = False):
-    """Retry FastMoss shop search for unmapped sellers; collect TikTok BI for new matches."""
-    from seller.fastmoss.mapping import refresh_fastmoss_mapping
+@router.post("/refresh-data")
+async def intelligence_v1_refresh_data():
+    """Refresh sheets, FastMoss mapping, review audit, approved TikTok BI, and Shopee ADGMV."""
+    from seller.intelligence.refresh_data import refresh_all_intelligence_data
 
     try:
-        return await asyncio.to_thread(refresh_fastmoss_mapping, force_refresh_all=force_all)
+        return await asyncio.to_thread(refresh_all_intelligence_data)
     except (GoogleSheetsNotConfiguredError, GoogleSheetsNotEnabledError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except OSError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
-        logger.exception("FastMoss mapping refresh failed")
+        logger.exception("Intelligence data refresh failed")
         raise HTTPException(
             status_code=500,
-            detail="Could not refresh FastMoss mapping. Try again later.",
+            detail="Could not refresh intelligence data. Try again later.",
         ) from exc
+
+
+@router.post("/refresh-sheets")
+async def intelligence_v1_refresh_sheets():
+    """Legacy alias — runs full intelligence refresh pipeline."""
+    return await intelligence_v1_refresh_data()
+
+
+@router.post("/refresh-fastmoss-mapping")
+async def intelligence_v1_refresh_fastmoss_mapping(force_all: bool = False):
+    """Legacy alias — runs full intelligence refresh pipeline."""
+    _ = force_all
+    return await intelligence_v1_refresh_data()
+
+
+@router.get("/mapping-review")
+async def intelligence_v1_mapping_review_list():
+    """List FastMoss mapping review rows and summary counts."""
+    from seller.fastmoss.review import list_review_rows, review_summary
+
+    rows = list_review_rows()
+    summary = review_summary()
+    pending = [r for r in rows if r.get("review_status") == "PENDING_REVIEW"][:10]
+    rejected = [r for r in rows if r.get("review_status") == "REJECTED"][:10]
+    return {
+        "summary": summary,
+        "rows": rows,
+        "pending_preview": pending,
+        "rejected_preview": rejected,
+    }
+
+
+@router.get("/mapping-review/{shop_id}/search")
+async def intelligence_v1_mapping_review_search(shop_id: str):
+    """Search FastMoss for alternative shop matches."""
+    from seller.fastmoss.mapping import load_fastmoss_mapping
+    from seller.fastmoss.search import search_shop_candidates
+
+    payload = load_fastmoss_mapping()
+    mapping_row = None
+    for row in payload.get("mappings") or []:
+        if str(row.get("shop_id")) == str(shop_id):
+            mapping_row = row
+            break
+    if mapping_row is None:
+        raise HTTPException(status_code=404, detail=f"Shop {shop_id} not found")
+
+    tiktok_name = str(mapping_row.get("tiktok_shop_name") or "").strip()
+    if not tiktok_name:
+        raise HTTPException(status_code=400, detail="TikTok shop name is empty")
+
+    candidates = await asyncio.to_thread(
+        search_shop_candidates,
+        tiktok_name,
+        tiktok_shop_name=tiktok_name,
+        page_size=5,
+    )
+    return {
+        "shop_id": shop_id,
+        "tiktok_shop_name": tiktok_name,
+        "candidates": candidates,
+    }
+
+
+@router.post("/mapping-review/{shop_id}/approve")
+async def intelligence_v1_mapping_review_approve(
+    shop_id: str,
+    username: str = Depends(require_auth),
+    notes: str | None = None,
+):
+    from seller.fastmoss.review import REVIEW_APPROVED, set_review_decision
+
+    try:
+        record = await asyncio.to_thread(
+            set_review_decision,
+            shop_id,
+            review_status=REVIEW_APPROVED,
+            reviewed_by=username,
+            notes=notes,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {"success": True, "review": record}
+
+
+@router.post("/mapping-review/{shop_id}/reject")
+async def intelligence_v1_mapping_review_reject(
+    shop_id: str,
+    username: str = Depends(require_auth),
+    notes: str | None = None,
+):
+    from seller.fastmoss.review import REVIEW_REJECTED, set_review_decision
+
+    try:
+        record = await asyncio.to_thread(
+            set_review_decision,
+            shop_id,
+            review_status=REVIEW_REJECTED,
+            reviewed_by=username,
+            notes=notes,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {"success": True, "review": record}
+
+
+@router.post("/mapping-review/{shop_id}/select")
+async def intelligence_v1_mapping_review_select(
+    shop_id: str,
+    username: str = Depends(require_auth),
+    fastmoss_shop_id: str = "",
+    fastmoss_shop_name: str = "",
+    fastmoss_shop_url: str | None = None,
+    confidence: float | None = None,
+    notes: str | None = None,
+):
+    from seller.fastmoss.review import REVIEW_APPROVED, set_review_decision
+
+    if not fastmoss_shop_id or not fastmoss_shop_name:
+        raise HTTPException(status_code=400, detail="fastmoss_shop_id and fastmoss_shop_name required")
+    try:
+        record = await asyncio.to_thread(
+            set_review_decision,
+            shop_id,
+            review_status=REVIEW_APPROVED,
+            reviewed_by=username,
+            notes=notes or "Manual candidate selection",
+            fastmoss_shop_id=fastmoss_shop_id,
+            fastmoss_shop_name=fastmoss_shop_name,
+            fastmoss_shop_url=fastmoss_shop_url,
+            confidence=confidence,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {"success": True, "review": record}

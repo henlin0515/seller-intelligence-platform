@@ -5,6 +5,13 @@ from __future__ import annotations
 from typing import Any
 
 from seller.fastmoss.mapping import load_fastmoss_mapping
+from seller.fastmoss.review import (
+    REVIEW_APPROVED,
+    REVIEW_PENDING,
+    REVIEW_REJECTED,
+    allows_tiktok_data,
+    get_review_by_shop_id,
+)
 from seller.intelligence.business.calculations import mom_percent, sob_pair, tiktok_php_to_usd
 from seller.intelligence.business.store import (
     fastmoss_collection_by_shop_id,
@@ -80,9 +87,17 @@ def _mapping_by_shop_id() -> dict[str, dict[str, Any]]:
 def _tiktok_na_reason(
     mapping_status: str | None,
     collection_row: dict[str, Any] | None,
+    review_status: str | None = None,
 ) -> str:
     if mapping_status != "MAPPED":
         return "FastMoss shop not mapped"
+    rs = str(review_status or "").upper()
+    if rs == REVIEW_PENDING:
+        return "FastMoss mapping pending review"
+    if rs == REVIEW_REJECTED:
+        return "FastMoss mapping rejected"
+    if rs and rs != REVIEW_APPROVED:
+        return "FastMoss mapping not approved"
     if collection_row is None:
         return "TikTok data not collected"
     if collection_row.get("status") != "success":
@@ -95,7 +110,17 @@ def _apply_tiktok_data(
     *,
     mapping_status: str,
     collection_row: dict[str, Any] | None,
+    review_status: str | None = None,
 ) -> None:
+    if not allows_tiktok_data(review_status):
+        record["tiktok_data_status"] = "na"
+        record["tiktok_na_reason"] = _tiktok_na_reason(
+            mapping_status,
+            collection_row,
+            review_status,
+        )
+        return
+
     if collection_row and collection_row.get("status") == "success":
         mtd_gmv = float(collection_row.get("mtd_gmv_php") or 0)
         m1_gmv = float(collection_row.get("m1_gmv_php") or 0)
@@ -122,7 +147,11 @@ def _apply_tiktok_data(
         )
         return
 
-    record["tiktok_na_reason"] = _tiktok_na_reason(mapping_status, collection_row)
+    record["tiktok_na_reason"] = _tiktok_na_reason(
+        mapping_status,
+        collection_row,
+        review_status,
+    )
 
 
 def _apply_shopee_data(
@@ -163,6 +192,13 @@ def build_business_seller_record(
 ) -> dict[str, Any]:
     mapping_status = str((mapping_row or {}).get("mapping_status") or "NOT_FOUND")
     fastmoss_matched_shop = (mapping_row or {}).get("fastmoss_shop_name")
+    review_row = get_review_by_shop_id(shop_id)
+    review_status = str((review_row or {}).get("review_status") or "")
+    effective_collection = (
+        collection_row
+        if allows_tiktok_data(review_status)
+        else None
+    )
 
     record: dict[str, Any] = {
         "shop_id": shop_id,
@@ -170,6 +206,9 @@ def build_business_seller_record(
         "tiktok_shop_name": tiktok_shop_name,
         "fastmoss_match_status": mapping_status,
         "fastmoss_matched_shop": fastmoss_matched_shop,
+        "fastmoss_review_status": review_status or None,
+        "fastmoss_audit_status": (review_row or {}).get("audit_status"),
+        "fastmoss_mapping_confidence": (mapping_row or {}).get("confidence"),
         "tracker_shop_name": None,
         "tiktok_mtd_gmv_php": None,
         "tiktok_m1_gmv_php": None,
@@ -193,7 +232,12 @@ def build_business_seller_record(
         "sob_na_reason": SOB_NA_REASON,
     }
 
-    _apply_tiktok_data(record, mapping_status=mapping_status, collection_row=collection_row)
+    _apply_tiktok_data(
+        record,
+        mapping_status=mapping_status,
+        collection_row=effective_collection,
+        review_status=review_status,
+    )
     _apply_shopee_data(record, shopee_row=shopee_row)
     _apply_sob_data(record)
     return record

@@ -29,7 +29,11 @@ def _round_pct(value: float | None) -> float | None:
 
 
 def _mapped_sellers(sellers: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [s for s in sellers if str(s.get("fastmoss_match_status") or "") == "MAPPED"]
+    return [
+        s
+        for s in sellers
+        if str(s.get("fastmoss_review_status") or "").upper() == "APPROVED"
+    ]
 
 
 def _seller_total_mtd(s: dict[str, Any]) -> float:

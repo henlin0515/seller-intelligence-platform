@@ -192,20 +192,11 @@ def refresh_fastmoss_mapping(
     delay_sec: float = REQUEST_DELAY_SEC,
 ) -> dict[str, Any]:
     """
-    Retry FastMoss search for unmapped sellers and collect TikTok BI for newly mapped shops.
+    Retry FastMoss search for unmapped sellers.
 
-    Existing MAPPED rows are preserved unless ``force_refresh_all`` is True.
+    Review sync and TikTok BI collection happen in ``refresh_all_intelligence_data``.
     """
-    from datetime import date
-
-    from seller.intelligence.business.collector import collect_mapped_shop_tiktok
-    from seller.intelligence.business.store import (
-        fastmoss_collection_by_shop_id,
-        load_business_intelligence_data,
-        save_business_intelligence_data,
-    )
-    from seller.intelligence.config import USD_PHP_RATE
-    from seller.intelligence.periods import resolve_periods
+    from seller.fastmoss.review import sync_reviews_from_mappings
     from seller.intelligence.seller_master import get_seller_master
 
     master = get_seller_master()
@@ -264,55 +255,13 @@ def refresh_fastmoss_mapping(
     }
     save_fastmoss_mapping(mapping_payload, target)
 
-    tiktok_data_refreshed_count = 0
-    if newly_mapped_shop_ids:
-        today = date.today()
-        periods = resolve_periods(today)
-        mapping_by_shop = {str(row["shop_id"]): row for row in mappings}
-        bi_data = load_business_intelligence_data() or {
-            "reference_today": today.isoformat(),
-            "periods": periods.as_dict(),
-            "usd_php_rate": USD_PHP_RATE,
-            "source": "fastmoss_recentData",
-            "sellers": [],
-        }
-        collection_by_shop = fastmoss_collection_by_shop_id(bi_data)
-
-        for shop_index, shop_id in enumerate(newly_mapped_shop_ids):
-            mapping_row = mapping_by_shop.get(shop_id)
-            if not mapping_row or mapping_row.get("mapping_status") != MAPPING_MAPPED:
-                continue
-            if shop_index > 0 and delay_sec > 0:
-                time.sleep(delay_sec)
-            collected = collect_mapped_shop_tiktok(mapping_row, periods, delay_sec=0)
-            collection_by_shop[shop_id] = collected
-            if collected.get("status") == "success":
-                tiktok_data_refreshed_count += 1
-
-        sellers_list = list(collection_by_shop.values())
-        success = sum(1 for row in sellers_list if row.get("status") == "success")
-        bi_data.update(
-            {
-                "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "reference_today": today.isoformat(),
-                "periods": periods.as_dict(),
-                "usd_php_rate": USD_PHP_RATE,
-                "source": "fastmoss_recentData",
-                "summary": {
-                    "processed": len(sellers_list),
-                    "success": success,
-                    "failed": len(sellers_list) - success,
-                },
-                "sellers": sellers_list,
-            }
-        )
-        save_business_intelligence_data(bi_data)
+    sync_reviews_from_mappings(mappings)
 
     return {
         "success": True,
         "processed_count": processed_count,
         "newly_mapped_count": len(newly_mapped_shop_ids),
         "still_not_found_count": counts["not_found"],
-        "tiktok_data_refreshed_count": tiktok_data_refreshed_count,
+        "tiktok_data_refreshed_count": 0,
         "refreshed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

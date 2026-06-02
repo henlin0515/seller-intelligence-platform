@@ -195,7 +195,7 @@
     setSearchEnabled(false);
     renderHeaderStatus({ loading: true, loaded: false });
     try {
-      const res = await apiFetch("/api/intelligence/v1/refresh-sheets", { method: "POST" });
+      const res = await apiFetch("/api/intelligence/v1/refresh-data", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "refresh failed");
       const status = {

@@ -135,9 +135,9 @@
             type="button"
             id="globalRefreshSheetBtn"
             class="btn btn-platform-refresh"
-            data-i18n="platform.refreshSheets"
+            data-i18n="platform.refreshData"
           >
-            Refresh Sheet Data
+            Refresh Data
           </button>
         </div>
 
@@ -217,19 +217,11 @@
               <div class="si-v1-header-actions">
                 <button
                   type="button"
-                  id="siBusinessRefreshSheetsBtn"
+                  id="siBusinessRefreshDataBtn"
                   class="btn si-v1-action-btn"
-                  data-i18n="si.refreshSheets"
+                  data-i18n="si.refreshData"
                 >
-                  Refresh Sheet Data
-                </button>
-                <button
-                  type="button"
-                  id="siBusinessRefreshMappingBtn"
-                  class="btn si-v1-action-btn"
-                  data-i18n="si.refreshFastmossMapping"
-                >
-                  Refresh FastMoss Mapping
+                  Refresh Data
                 </button>
               </div>
             </div>
@@ -518,6 +510,35 @@
                 <div class="settings-sync-value" id="settingsSellerMasterSync">—</div>
                 <div class="settings-sync-meta" id="settingsSellerMasterMeta"></div>
               </div>
+
+              <section class="mapping-review-section" id="mappingReviewSection">
+                <div class="mapping-review-header">
+                  <h2 data-i18n="mappingReview.title">Mapping Review</h2>
+                  <p class="subtitle" data-i18n="mappingReview.subtitle">
+                    Approve FastMoss shop matches before TikTok BI uses them.
+                  </p>
+                  <p class="mapping-review-status" id="mappingReviewStatus" role="status"></p>
+                </div>
+                <div id="mappingReviewSummary" class="mapping-review-summary"></div>
+                <div class="mapping-review-table-wrap">
+                  <table class="mapping-review-table">
+                    <thead>
+                      <tr>
+                        <th data-i18n="mappingReview.colShopId">Shop ID</th>
+                        <th data-i18n="mappingReview.colShopee">Shopee Shop Name</th>
+                        <th data-i18n="mappingReview.colTiktok">TikTok Shop Name</th>
+                        <th data-i18n="mappingReview.colFastmoss">FastMoss Matched Shop</th>
+                        <th data-i18n="mappingReview.colConfidence">Confidence</th>
+                        <th data-i18n="mappingReview.colAudit">Audit Status</th>
+                        <th data-i18n="mappingReview.colReview">Review Status</th>
+                        <th data-i18n="mappingReview.colUpdated">Last Updated</th>
+                        <th data-i18n="mappingReview.colActions">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="mappingReviewTableBody"></tbody>
+                  </table>
+                </div>
+              </section>
               <button type="button" id="logoutBtn" class="btn btn-secondary btn-sm">Sign out</button>
               <ul class="settings-list">
                 <li data-i18n="settings.li1">AI Assistant uses your Anthropic API key from server environment (not exposed to browser)</li>
@@ -554,6 +575,15 @@
 
     <div id="platformToast" class="platform-toast hidden" role="status" aria-live="polite"></div>
 
+    <div id="mappingReviewModal" class="modal hidden" role="dialog" aria-labelledby="mappingReviewModalTitle">
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-card modal-card--wide">
+        <h2 id="mappingReviewModalTitle">Select FastMoss match</h2>
+        <div id="mappingReviewModalBody"></div>
+        <button type="button" class="btn" data-close-modal data-i18n="modal.close">Close</button>
+      </div>
+    </div>
+
     <div id="settingsModal" class="modal hidden" role="dialog" aria-labelledby="settingsTitle">
       <div class="modal-backdrop" data-close-modal></div>
       <div class="modal-card">
@@ -579,6 +609,7 @@
     <script src="/static/dashboard.js"></script>
     <script src="/static/competitor-tracker.js"></script>
     <script src="/static/assortment.js"></script>
+    <script src="/static/mapping-review.js"></script>
     <script src="/static/intelligence-v1.js"></script>
     <script type="module" src="/static/dashboard-charts.js"></script>
   </body>

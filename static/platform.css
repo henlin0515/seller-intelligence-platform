@@ -732,6 +732,118 @@ body {
   line-height: 1.7;
 }
 
+.mapping-review-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 106, 0, 0.2);
+}
+
+.mapping-review-header h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.mapping-review-status {
+  min-height: 1.2rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--sip-text-secondary);
+}
+
+.mapping-review-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.mapping-review-summary-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--sip-text-secondary);
+  margin-bottom: 0.2rem;
+}
+
+.mapping-review-table-wrap {
+  overflow: auto;
+  border: 1px solid rgba(255, 106, 0, 0.2);
+  border-radius: 12px;
+}
+
+.mapping-review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.mapping-review-table th,
+.mapping-review-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: left;
+  vertical-align: top;
+}
+
+.mapping-review-table th {
+  background: rgba(255, 106, 0, 0.08);
+  color: #fff;
+  font-weight: 600;
+}
+
+.mapping-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.mapping-review-actions .btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.72rem;
+}
+
+.modal-card--wide {
+  width: min(920px, 92vw);
+  max-height: 85vh;
+  overflow: auto;
+}
+
+.mapping-review-candidates {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.mapping-review-candidate {
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 106, 0, 0.25);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.mapping-review-candidate-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.mapping-review-candidate-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin: 0 0 0.75rem;
+}
+
+.mapping-review-candidate-meta dt {
+  font-size: 0.72rem;
+  color: var(--sip-text-secondary);
+}
+
+.mapping-review-candidate-meta dd {
+  margin: 0;
+}
+
 /* Modal (legacy) */
 .modal {
   position: fixed;

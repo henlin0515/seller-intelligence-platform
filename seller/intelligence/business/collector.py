@@ -7,7 +7,7 @@ import time
 from datetime import date
 from typing import Any
 
-from seller.fastmoss.mapping import MAPPING_MAPPED, load_fastmoss_mapping
+from seller.fastmoss.review import approved_mapping_rows
 from seller.fastmoss.recent_data import REQUEST_DELAY_SEC, fetch_period_gmv_php, prefetch_shop_detail
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.periods import IntelligencePeriods, resolve_periods
@@ -97,15 +97,10 @@ def collect_all_mapped_shops(
     mapping_path: str | None = None,
     delay_sec: float = REQUEST_DELAY_SEC,
 ) -> dict[str, Any]:
-    """Collect TikTok GMV for every mapping_status=MAPPED shop."""
+    """Collect TikTok GMV for every review-approved FastMoss mapping."""
     today = reference_today or date.today()
     periods = resolve_periods(today)
-    mapping_payload = load_fastmoss_mapping(mapping_path)
-    mapped_rows = [
-        row
-        for row in mapping_payload.get("mappings") or []
-        if isinstance(row, dict) and row.get("mapping_status") == MAPPING_MAPPED
-    ]
+    mapped_rows = approved_mapping_rows(mapping_path)
 
     sellers: list[dict[str, Any]] = []
     for index, row in enumerate(mapped_rows):

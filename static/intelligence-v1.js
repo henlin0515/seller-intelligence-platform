@@ -63,14 +63,31 @@
   }
 
   function formatMappingSummary(data) {
+    const mapping = data.mapping || data;
+    const review = data.review || {};
+    const bi = data.tiktok_bi || {};
     const template = i18n(
-      "si.mappingSummary",
-      "New mapped: {mapped} · Still not found: {notFound} · TikTok data fetched: {tiktok}"
+      "si.refreshSummary",
+      "Approved: {approved} · Pending: {pending} · Rejected: {rejected} · TikTok refreshed: {tiktok}"
     );
     return template
-      .replace("{mapped}", String(data.newly_mapped_count ?? 0))
-      .replace("{notFound}", String(data.still_not_found_count ?? 0))
-      .replace("{tiktok}", String(data.tiktok_data_refreshed_count ?? 0));
+      .replace("{approved}", String(review.APPROVED ?? 0))
+      .replace("{pending}", String(review.PENDING_REVIEW ?? 0))
+      .replace("{rejected}", String(review.REJECTED ?? 0))
+      .replace("{tiktok}", String(bi.tiktok_data_refreshed_count ?? mapping.tiktok_data_refreshed_count ?? 0));
+  }
+
+  function mappingReviewBadge(seller) {
+    const review = String(seller.fastmoss_review_status || "").toUpperCase();
+    if (review === "APPROVED") {
+      return fastmossStatusBadge(seller.fastmoss_match_status);
+    }
+    const map = {
+      PENDING_REVIEW: ["si-v1-badge--warn", "Pending review"],
+      REJECTED: ["si-v1-badge--risk", "Rejected"],
+    };
+    const [cls, label] = map[review] || ["si-v1-badge--muted", review || "Pending review"];
+    return `<span class="si-v1-badge ${cls}">${escapeHtml(label)}</span>`;
   }
 
   function escapeHtml(text) {
@@ -805,7 +822,7 @@
         <dl class="si-detail-grid si-detail-grid--compact">
           <div class="si-detail-cell"><dt>TikTok Shop Name</dt><dd>${fmtDetail(s.tiktok_shop_name)}</dd></div>
           <div class="si-detail-cell"><dt>FastMoss Matched Shop</dt><dd>${fmtDetail(s.fastmoss_matched_shop)}</dd></div>
-          <div class="si-detail-cell"><dt>FastMoss Match Status</dt><dd>${fastmossStatusBadge(s.fastmoss_match_status)}</dd></div>
+          <div class="si-detail-cell"><dt>FastMoss Match Status</dt><dd>${mappingReviewBadge(s)}</dd></div>
           <div class="si-detail-cell"><dt>TikTok raw MTD GMV PHP</dt><dd>${fmtDetailPhp(s.tiktok_mtd_gmv_php, tkReason)}</dd></div>
           <div class="si-detail-cell"><dt>TikTok raw M-1 GMV PHP</dt><dd>${fmtDetailPhp(s.tiktok_m1_gmv_php, tkReason)}</dd></div>
         </dl>
@@ -831,7 +848,7 @@
           <td class="si-biz-toggle-cell"><span class="si-biz-toggle" aria-hidden="true">▶</span></td>
           <td>${escapeHtml(s.shop_id)}</td>
           <td class="si-biz-name">${escapeHtml(s.shop_name)}</td>
-          <td>${fastmossStatusBadge(s.fastmoss_match_status)}</td>
+          <td>${mappingReviewBadge(s)}</td>
           <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_mtd_adgmv_usd, s.tiktok_mtd_gmv_php, tkReason)}</td>
           <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_m1_adgmv_usd, s.tiktok_m1_gmv_php, tkReason)}</td>
           <td class="si-v1-num">${tkMom}</td>
@@ -1374,70 +1391,47 @@
     }
   }
 
-  async function refreshBusinessSheets() {
-    const btn = document.getElementById("siBusinessRefreshSheetsBtn");
-    const mappingBtn = document.getElementById("siBusinessRefreshMappingBtn");
-    const defaultLabel = i18n("si.refreshSheets", "Refresh Sheet Data");
+  async function refreshBusinessData() {
+    const btn = document.getElementById("siBusinessRefreshDataBtn");
+    const summaryEl = document.getElementById("siBusinessActionSummary");
+    const defaultLabel = i18n("si.refreshData", "Refresh Data");
     if (btn) {
       btn.disabled = true;
       btn.classList.add("is-loading");
-      btn.textContent = i18n("si.sheetsRefreshing", "Refreshing…");
+      btn.textContent = i18n("si.dataRefreshing", "Refreshing…");
     }
-    if (mappingBtn) mappingBtn.disabled = true;
     try {
       if (window.ShpPlatform?.refreshAllSheetData) {
-        await window.ShpPlatform.refreshAllSheetData();
-      } else {
-        const res = await fetchApi("/api/intelligence/v1/refresh-sheets", { method: "POST" });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "refresh failed");
-        window.ShpPlatform?.showPlatformToast?.(
-          i18n("si.sheetsRefreshSuccess", "Sheet data updated")
-        );
+        const data = await window.ShpPlatform.refreshAllSheetData();
+        if (summaryEl) {
+          summaryEl.textContent = formatMappingSummary(data);
+          summaryEl.classList.remove("hidden");
+        }
         delete cache.siBusiness;
+        delete cache.siDashboard;
+        delete cache.siAssortment;
         state.business.shellReady = false;
         await onShow("siBusiness");
+        return data;
       }
-    } catch (err) {
-      window.ShpPlatform?.showPlatformToast?.(err.message || "Refresh failed", "error");
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.classList.remove("is-loading");
-        btn.textContent = defaultLabel;
-      }
-      if (mappingBtn) mappingBtn.disabled = false;
-    }
-  }
-
-  async function refreshBusinessFastmossMapping() {
-    const btn = document.getElementById("siBusinessRefreshMappingBtn");
-    const sheetsBtn = document.getElementById("siBusinessRefreshSheetsBtn");
-    const summaryEl = document.getElementById("siBusinessActionSummary");
-    const defaultLabel = i18n("si.refreshFastmossMapping", "Refresh FastMoss Mapping");
-    if (btn) {
-      btn.disabled = true;
-      btn.classList.add("is-loading");
-      btn.textContent = i18n("si.mappingRefreshing", "Mapping…");
-    }
-    if (sheetsBtn) sheetsBtn.disabled = true;
-    try {
-      const res = await fetchApi("/api/intelligence/v1/refresh-fastmoss-mapping", { method: "POST" });
+      const res = await fetchApi("/api/intelligence/v1/refresh-data", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "refresh failed");
       window.ShpPlatform?.showPlatformToast?.(
-        i18n("si.mappingRefreshSuccess", "FastMoss mapping updated")
+        i18n("si.dataRefreshSuccess", "Data updated")
       );
       if (summaryEl) {
         summaryEl.textContent = formatMappingSummary(data);
         summaryEl.classList.remove("hidden");
       }
       delete cache.siBusiness;
+      delete cache.siDashboard;
+      delete cache.siAssortment;
       state.business.shellReady = false;
       await onShow("siBusiness");
       return data;
     } catch (err) {
-      window.ShpPlatform?.showPlatformToast?.(err.message || "Mapping refresh failed", "error");
+      window.ShpPlatform?.showPlatformToast?.(err.message || "Refresh failed", "error");
       throw err;
     } finally {
       if (btn) {
@@ -1445,15 +1439,11 @@
         btn.classList.remove("is-loading");
         btn.textContent = defaultLabel;
       }
-      if (sheetsBtn) sheetsBtn.disabled = false;
     }
   }
 
-  document.getElementById("siBusinessRefreshSheetsBtn")?.addEventListener("click", () => {
-    refreshBusinessSheets().catch(() => {});
-  });
-  document.getElementById("siBusinessRefreshMappingBtn")?.addEventListener("click", () => {
-    refreshBusinessFastmossMapping().catch(() => {});
+  document.getElementById("siBusinessRefreshDataBtn")?.addEventListener("click", () => {
+    refreshBusinessData().catch(() => {});
   });
 
   window.ShpIntelligenceV1 = {

@@ -17,6 +17,7 @@ def _seller(
         "shop_id": shop_id,
         "shop_name": name,
         "fastmoss_match_status": "MAPPED" if mapped else "NOT_FOUND",
+        "fastmoss_review_status": "APPROVED" if mapped else "PENDING_REVIEW",
         "shopee_mtd_adgmv_usd": sh_mtd,
         "shopee_m1_adgmv_usd": sh_m1,
         "tiktok_mtd_adgmv_usd": tk_mtd,

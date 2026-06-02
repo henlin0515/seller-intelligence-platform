@@ -185,14 +185,15 @@
     updatePlatformLastSync(null, true);
     try {
       const res = await (window.SipApi ? window.SipApi.fetch : fetch)(
-        "/api/intelligence/v1/refresh-sheets",
+        "/api/intelligence/v1/refresh-data",
         { method: "POST", credentials: "same-origin" }
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || i18n("platform.refreshFailed"));
-      updatePlatformLastSync(data.refreshed_at);
-      showPlatformToast(i18n("platform.refreshSuccess", "Sheet data updated"));
+      updatePlatformLastSync(data.refreshed_at || data.sheets?.refreshed_at);
+      showPlatformToast(i18n("platform.refreshSuccess", "Data updated"));
       await reloadCurrentViewAfterRefresh(data);
+      window.ShpMappingReview?.load?.();
       return data;
     } catch (err) {
       showPlatformToast(
@@ -392,7 +393,10 @@
     if (viewKey === "competitorTracker" && window.ShpCompetitorTracker?.onShow) {
       window.ShpCompetitorTracker.onShow();
     }
-    if (viewKey === "settings") loadSellerMasterSyncStatus();
+    if (viewKey === "settings") {
+      loadSellerMasterSyncStatus();
+      window.ShpMappingReview?.init?.();
+    }
     if (viewKey === "assortment" && window.ShpAssortment?.onShow) {
       window.ShpAssortment.onShow(caiTab || "dashboard");
     }

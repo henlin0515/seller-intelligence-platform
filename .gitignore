@@ -37,8 +37,14 @@ Thumbs.db
 
 # Assortment SQLite (local dev)
 data/assortment.db
+data/shopee_catalogs/
 
 # Test / tooling artifacts
 playwright-report/
 test-results/
+.playwright-shopee-profile/
+_debug_shopee_shop_*.png
+_shopee_extract_*.png
+_tmp_shopee_*.json
+mapping_review_status.json
 *.log

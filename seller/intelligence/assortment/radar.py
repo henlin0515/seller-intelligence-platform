@@ -9,7 +9,8 @@ from datetime import UTC, date, datetime
 from typing import Any
 
 from seller.fastmoss.goods import GOODS_PATH, fetch_shop_goods_catalog
-from seller.fastmoss.mapping import MAPPING_MAPPED, load_fastmoss_mapping
+from seller.fastmoss.mapping import load_fastmoss_mapping
+from seller.fastmoss.review import approved_mapping_rows
 from seller.fastmoss.recent_data import _base_url
 
 logger = logging.getLogger("seller.intelligence.assortment.radar")
@@ -354,12 +355,11 @@ def _public_product(row: dict[str, Any], *, rank: int | None = None) -> dict[str
 
 
 def _collect_mapped_products() -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    mapping_payload = load_fastmoss_mapping()
+    load_fastmoss_mapping()
     mappings = [
         row
-        for row in (mapping_payload.get("mappings") or [])
-        if str(row.get("mapping_status") or "").upper() == MAPPING_MAPPED
-        and str(row.get("fastmoss_shop_id") or "").strip()
+        for row in approved_mapping_rows()
+        if str(row.get("fastmoss_shop_id") or "").strip()
     ]
 
     products: list[dict[str, Any]] = []
