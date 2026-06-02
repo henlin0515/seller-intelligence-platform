@@ -136,6 +136,13 @@
     const cmp = (a, b) => (a > b ? 1 : a < b ? -1 : 0);
     copy.sort((a, b) => {
       switch (filters.sort) {
+        case "april_sob":
+          return cmp(
+            b.april_tiktok_sob_percent ?? -1,
+            a.april_tiktok_sob_percent ?? -1
+          );
+        case "may_sob":
+          return cmp(b.may_tiktok_sob_percent ?? -1, a.may_tiktok_sob_percent ?? -1);
         case "tiktok_sob":
           return cmp(
             b.may_tiktok_sob_percent ?? b.april_tiktok_sob_percent ?? -1,
@@ -387,11 +394,29 @@
     return escapeHtml(g);
   }
 
-  function cellSob(value) {
-    if (value == null || Number.isNaN(Number(value))) {
-      return fmtNa("SOB requires Shopee and TikTok GMV");
+  function renderInlineSobBarCell(shpPct, tkPct) {
+    const shp = clampSobPct(shpPct);
+    const tk = clampSobPct(tkPct);
+    if (shp == null || tk == null) {
+      return `<td class="hs-sob-bar-cell">${fmtNa("SOB requires Shopee and TikTok GMV")}</td>`;
     }
-    return escapeHtml(fmtPct(value));
+    return `
+      <td class="hs-sob-bar-cell">
+        <div class="hs-inline-sob">
+          <div class="hs-inline-sob-legend">
+            <span class="hs-inline-sob-tag hs-inline-sob-tag--shp">
+              <span class="hs-inline-sob-dot" aria-hidden="true"></span>Shopee ${fmtPct(shp)}
+            </span>
+            <span class="hs-inline-sob-tag hs-inline-sob-tag--tk">
+              <span class="hs-inline-sob-dot" aria-hidden="true"></span>TikTok ${fmtPct(tk)}
+            </span>
+          </div>
+          <div class="si-sob-stack-bar hs-inline-sob-bar" data-sob-animate="1" data-shp="${shp}" data-tk="${tk}">
+            <div class="si-sob-stack-seg si-sob-stack-seg--shp" style="width:0%" aria-hidden="true"></div>
+            <div class="si-sob-stack-seg si-sob-stack-seg--tk" style="width:0%" aria-hidden="true"></div>
+          </div>
+        </div>
+      </td>`;
   }
 
   function renderTableRow(row, isExpanded) {
@@ -403,18 +428,16 @@
           <td>${escapeHtml(row.shop_id)}</td>
           <td class="si-biz-name">${escapeHtml(row.shop_name)}</td>
           <td>${mappingReviewBadge(row)}</td>
+          ${renderInlineSobBarCell(row.april_shopee_sob_percent, row.april_tiktok_sob_percent)}
+          ${renderInlineSobBarCell(row.may_shopee_sob_percent, row.may_tiktok_sob_percent)}
+          <td class="si-v1-num">${escapeHtml(fmtChange(row.sob_change_pp))}</td>
           <td class="si-v1-num">${cellGmv(row.april_shopee_gmv, row.shopee_na_reason)}</td>
           <td class="si-v1-num">${cellGmv(row.april_tiktok_gmv, row.tiktok_na_reason)}</td>
-          <td class="si-v1-num">${cellSob(row.april_shopee_sob_percent)}</td>
-          <td class="si-v1-num">${cellSob(row.april_tiktok_sob_percent)}</td>
           <td class="si-v1-num">${cellGmv(row.may_shopee_gmv, row.shopee_na_reason)}</td>
           <td class="si-v1-num">${cellGmv(row.may_tiktok_gmv, row.tiktok_na_reason)}</td>
-          <td class="si-v1-num">${cellSob(row.may_shopee_sob_percent)}</td>
-          <td class="si-v1-num">${cellSob(row.may_tiktok_sob_percent)}</td>
-          <td class="si-v1-num">${escapeHtml(fmtChange(row.sob_change_pp))}</td>
         </tr>
         <tr class="si-biz-row-detail">
-          <td colspan="13">${renderDetailPanel(row)}</td>
+          <td colspan="11">${renderDetailPanel(row)}</td>
         </tr>
       </tbody>`;
   }
@@ -425,22 +448,20 @@
     }
     return `
       <div class="si-v1-table-wrap si-v1-table-wrap--wide">
-        <table class="si-v1-table si-v1-table--business">
+        <table class="si-v1-table si-v1-table--business hs-seller-table">
           <thead>
             <tr>
               <th class="si-biz-toggle-cell" aria-label="Expand row"></th>
               <th>Shop ID</th>
               <th>Shop Name</th>
               <th>Mapping Status</th>
+              <th class="hs-sob-bar-col">APR SOB BAR</th>
+              <th class="hs-sob-bar-col">MAY SOB BAR</th>
+              <th>SOB Change %</th>
               <th>April Shopee GMV</th>
               <th>April TikTok GMV</th>
-              <th>April Shopee SOB</th>
-              <th>April TikTok SOB</th>
               <th>May Shopee GMV</th>
               <th>May TikTok GMV</th>
-              <th>May Shopee SOB</th>
-              <th>May TikTok SOB</th>
-              <th>SOB Change</th>
             </tr>
           </thead>
           ${rows.map((r) => renderTableRow(r, expanded.has(r.shop_id))).join("")}
@@ -480,9 +501,11 @@
           <label for="hsFilterSort">${escapeHtml(i18n("historicalSob.filterSort", "Sort"))}</label>
           <select id="hsFilterSort" data-f="sort">
             <option value="shop_name"${f.sort === "shop_name" ? " selected" : ""}>Shop name</option>
+            <option value="april_sob"${f.sort === "april_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortAprilSob", "April SOB"))}</option>
+            <option value="may_sob"${f.sort === "may_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortMaySob", "May SOB"))}</option>
+            <option value="sob_change"${f.sort === "sob_change" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortChange", "SOB Change"))}</option>
             <option value="tiktok_sob"${f.sort === "tiktok_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortTiktokSob", "Highest TikTok SOB"))}</option>
             <option value="shopee_sob"${f.sort === "shopee_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortShopeeSob", "Highest Shopee SOB"))}</option>
-            <option value="sob_change"${f.sort === "sob_change" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortChange", "Largest Change"))}</option>
           </select>
         </div>
         <button type="button" class="si-v1-btn-reset" data-reset>${escapeHtml(i18n("historicalSob.resetFilters", "Reset filters"))}</button>
@@ -560,6 +583,7 @@
     }
     listEl.innerHTML = renderTable(filtered);
     bindRowToggles(listEl);
+    animateSobBars(listEl);
   }
 
   function setupShell() {

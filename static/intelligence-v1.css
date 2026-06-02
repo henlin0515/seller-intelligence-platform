@@ -2227,3 +2227,69 @@
   font-weight: 600;
   color: #ddd;
 }
+
+/* Inline SOB bars in seller table */
+.hs-seller-table .hs-sob-bar-col {
+  min-width: 168px;
+}
+
+.hs-sob-bar-cell {
+  min-width: 168px;
+  max-width: 220px;
+  vertical-align: middle;
+  white-space: normal;
+}
+
+.hs-inline-sob {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 150px;
+}
+
+.hs-inline-sob-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.hs-inline-sob-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.hs-inline-sob-tag--shp {
+  color: #ff8a3d;
+}
+
+.hs-inline-sob-tag--tk {
+  color: #b57bff;
+}
+
+.hs-inline-sob-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.hs-inline-sob-tag--shp .hs-inline-sob-dot {
+  background: #ff8a3d;
+}
+
+.hs-inline-sob-tag--tk .hs-inline-sob-dot {
+  background: #b57bff;
+}
+
+.hs-inline-sob-bar {
+  height: 10px;
+  min-width: 140px;
+}
+
+.hs-inline-sob-bar .si-sob-stack-seg {
+  min-width: 0;
+}
