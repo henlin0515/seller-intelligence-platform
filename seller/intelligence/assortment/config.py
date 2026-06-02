@@ -6,6 +6,7 @@ import os
 
 # Shop list: Google Sheet tab (columns A–D via seller_master parser).
 # Env override: GOOGLE_SHEET_SELLER_MASTER_TAB (default in seller_master.py: "shpoee link")
+# Spreadsheet: GOOGLE_SHEET_MIRROR_ID (see .env.example)
 
 # FastMoss shop mapping: fastmoss_mapping.json (refreshed from seller master on Update Data).
 
@@ -24,8 +25,8 @@ RADAR_CACHE_SEC = int(os.getenv("ASSORTMENT_RADAR_CACHE_SEC", "900"))
 
 
 def radar_page_size() -> int:
-    """FastMoss goods API accepts pagesize <= 10; larger values return 400 Bad Request."""
-    raw = os.getenv("ASSORTMENT_RADAR_PAGE_SIZE", "10")
+    """FastMoss goods API accepts pagesize <= 10; larger values return HTTP 400 Bad Request."""
+    raw = os.getenv("ASSORTMENT_RADAR_PAGE_SIZE", str(FASTMOSS_GOODS_MAX_PAGE_SIZE))
     try:
         size = int(raw)
     except ValueError:

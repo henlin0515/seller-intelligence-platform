@@ -7,7 +7,7 @@ import time
 from datetime import UTC, date, datetime
 from typing import Any
 
-from seller.fastmoss.goods import GOODS_PATH, fetch_shop_goods_catalog
+from seller.fastmoss.goods import GOODS_PATH, _clamp_page_size, fetch_shop_goods_catalog
 from seller.fastmoss.mapping import load_fastmoss_mapping
 from seller.fastmoss.review import approved_mapping_rows
 from seller.fastmoss.recent_data import _base_url
@@ -25,7 +25,7 @@ from seller.intelligence.seller_master import SellerMasterLoadResult, seller_mas
 
 logger = logging.getLogger("seller.intelligence.assortment.radar")
 
-RADAR_PAGE_SIZE = radar_page_size()
+RADAR_PAGE_SIZE = _clamp_page_size(radar_page_size())
 
 _cache_payload: dict[str, Any] | None = None
 _cache_ts: float = 0.0
@@ -354,9 +354,9 @@ def _public_product(row: dict[str, Any], *, rank: int | None = None) -> dict[str
     return out
 
 
-def _collect_mapped_products(
+def _approved_mappings_for_master(
     master_shop_ids: set[str] | None = None,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+) -> list[dict[str, Any]]:
     load_fastmoss_mapping()
     mappings = [
         row
@@ -365,6 +365,51 @@ def _collect_mapped_products(
     ]
     if master_shop_ids is not None:
         mappings = [row for row in mappings if str(row.get("shop_id") or "") in master_shop_ids]
+    return mappings
+
+
+def _build_shop_filter_options(
+    *,
+    master: SellerMasterLoadResult | None,
+    mappings: list[dict[str, Any]],
+    enriched: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    """Shop dropdown: seller master rows with approved FastMoss mapping (latest sheet scope)."""
+    master_by_id: dict[str, SellerMasterRecord] = {}
+    if master is not None:
+        master_by_id = {str(s.shop_id): s for s in master.sellers}
+
+    options: dict[str, dict[str, str]] = {}
+    for row in mappings:
+        shop_id = str(row.get("shop_id") or "").strip()
+        if not shop_id:
+            continue
+        master_row = master_by_id.get(shop_id)
+        shop_name = (
+            (master_row.shop_name if master_row else None)
+            or row.get("shop_name")
+            or row.get("tiktok_shop_name")
+            or shop_id
+        )
+        options[shop_id] = {"shop_id": shop_id, "shop_name": str(shop_name)}
+
+    for product in enriched:
+        shop_id = str(product.get("seller_shop_id") or "").strip()
+        if not shop_id or shop_id in options:
+            continue
+        options[shop_id] = {
+            "shop_id": shop_id,
+            "shop_name": str(
+                product.get("seller_shop_name") or product.get("shop_name") or shop_id
+            ),
+        }
+
+    return sorted(options.values(), key=lambda row: (row.get("shop_name") or "").lower())
+
+
+def _collect_mapped_products(
+    mappings: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
 
     products: list[dict[str, Any]] = []
     raw_api_rows = 0
@@ -431,6 +476,8 @@ def _collect_mapped_products(
 
 def _validation_block(
     *,
+    seller_master_rows: int,
+    approved_shop_count: int,
     raw_api_rows: int,
     mapped_count: int,
     shop_count: int,
@@ -440,17 +487,23 @@ def _validation_block(
     if mapped_count > 0:
         status = "ok"
         message = None
+    elif seller_master_rows == 0:
+        status = "source_error"
+        message = (
+            "Seller master sheet returned no rows — check Google Sheets connection "
+            "and GOOGLE_SHEET_SELLER_MASTER_TAB, then click Update Data."
+        )
+    elif approved_shop_count == 0:
+        status = "source_error"
+        message = (
+            "No approved FastMoss shop mappings for sellers in the Google Sheet master list. "
+            "Approve mappings in Mapping Center, then click Update Data."
+        )
     elif raw_api_rows > 0:
         status = "mapping_error"
         message = (
             "FastMoss returned product rows but none could be mapped — "
             "check product_id / product_link fields."
-        )
-    elif fetch_meta.get("shops_scanned", 0) == 0:
-        status = "source_error"
-        message = (
-            "No approved FastMoss shop mappings for sellers in the Google Sheet master list. "
-            "Approve mappings in Mapping Center, then click Update Data."
         )
     else:
         status = "source_error"
@@ -459,6 +512,8 @@ def _validation_block(
         message = f"TikTok product catalog unavailable: {hint}"
 
     return {
+        "seller_master_row_count": seller_master_rows,
+        "approved_shop_count": approved_shop_count,
         "raw_record_count": raw_api_rows,
         "mapped_product_count": mapped_count,
         "shop_count": shop_count,
@@ -484,11 +539,14 @@ def build_tiktok_product_radar(
 
     master_shop_ids = None
     master_tab = seller_master_tab_name()
+    seller_master_rows = 0
     if master is not None:
         master_shop_ids = {str(s.shop_id) for s in master.sellers}
         master_tab = master.tab
+        seller_master_rows = master.stats.total_loaded
 
-    raw_products, fetch_meta = _collect_mapped_products(master_shop_ids)
+    mappings = _approved_mappings_for_master(master_shop_ids)
+    raw_products, fetch_meta = _collect_mapped_products(mappings)
     enriched = enrich_product_metrics(raw_products)
 
     top_100 = sorted(enriched, key=_sort_key_sales, reverse=True)[:100]
@@ -506,22 +564,17 @@ def build_tiktok_product_radar(
         reverse=True,
     )[:RADAR_TOP_OPPORTUNITIES]
 
-    shops = sorted(
-        {
-            (p.get("seller_shop_id"), p.get("seller_shop_name"))
-            for p in enriched
-            if p.get("seller_shop_id")
-        },
-        key=lambda row: row[1] or "",
-    )
+    shop_filters = _build_shop_filter_options(master=master, mappings=mappings, enriched=enriched)
     categories = sorted({_uncategorized(p.get("category")) for p in enriched})
     shop_view = _build_shop_view(enriched)
     category_dashboard = _build_category_dashboard(enriched)
 
     validation = _validation_block(
+        seller_master_rows=seller_master_rows,
+        approved_shop_count=len(mappings),
         raw_api_rows=int(fetch_meta.get("raw_api_rows") or 0),
         mapped_count=len(enriched),
-        shop_count=len(shop_view.get("shops") or []),
+        shop_count=len(shop_filters),
         category_count=len(category_dashboard.get("categories") or []),
         fetch_meta=fetch_meta,
     )
@@ -573,7 +626,7 @@ def build_tiktok_product_radar(
             "opportunity_products": len(top_opportunities),
         },
         "filters": {
-            "shops": [{"shop_id": sid, "shop_name": name} for sid, name in shops],
+            "shops": shop_filters,
             "categories": categories,
             "new_product_days": NEW_PRODUCT_DAYS,
         },

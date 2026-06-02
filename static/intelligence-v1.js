@@ -307,8 +307,33 @@
   }
 
   function resolveDefaultShopId(data) {
-    const shops = data?.shop_view?.shops || data?.filters?.shops || [];
+    const shops = data?.filters?.shops || data?.shop_view?.shops || [];
     return shops[0]?.shop_id || "all";
+  }
+
+  function emptyRadarShop(shopId, shopName) {
+    return {
+      shop_id: shopId,
+      shop_name: shopName,
+      summary: {
+        total_products: 0,
+        new_products_20d: 0,
+        growth_products: 0,
+        opportunity_products: 0,
+      },
+      top_products: [],
+      new_products: [],
+      growth_products: [],
+      opportunity_products: [],
+    };
+  }
+
+  function resolveRadarShop(raw, shopId) {
+    const shops = raw?.shop_view?.shops || [];
+    const found = shops.find((s) => String(s.shop_id) === String(shopId));
+    if (found) return found;
+    const opt = (raw?.filters?.shops || []).find((s) => String(s.shop_id) === String(shopId));
+    return opt ? emptyRadarShop(opt.shop_id, opt.shop_name) : null;
   }
 
   function resolveDefaultCategory(data) {
@@ -1155,11 +1180,11 @@
     const body = el.querySelector("[data-radar-body]");
     if (!body) return;
     const f = st.filters;
-    const shops = st.raw.shop_view?.shops || [];
+    const filterShops = st.raw.filters?.shops || [];
+    const shopId = f.shop || resolveDefaultShopId(st.raw);
     const shop =
-      shops.find((s) => String(s.shop_id) === String(f.shop)) ||
-      shops[0] ||
-      null;
+      resolveRadarShop(st.raw, shopId) ||
+      (filterShops[0] ? emptyRadarShop(filterShops[0].shop_id, filterShops[0].shop_name) : null);
     if (!shop) {
       body.innerHTML = `<p class="si-v1-empty">${radarEmptyMessage(st.raw)}</p>`;
       return;
@@ -1313,8 +1338,8 @@
     const p = data.portfolio || {};
     const v = data.validation || {};
     const ds = data.data_source || {};
-    const shopCount = (data.shop_view?.shops || []).length;
-    const catCount = (data.category_dashboard?.categories || []).length;
+    const shopCount = v.shop_count ?? (data.filters?.shops || []).length;
+    const catCount = v.category_count ?? (data.category_dashboard?.categories || []).length;
     if (metas.siAssortment) {
       const tab = ds.seller_master_tab || data.tab || "shpoee link";
       metas.siAssortment.textContent = [
@@ -1559,7 +1584,10 @@
     if (!cache[view]) showLoading(view);
 
     try {
-      if (!cache[view]) {
+      if (view === "siAssortment") {
+        if (!cache[view]) showLoading(view);
+        cache[view] = await load(path);
+      } else if (!cache[view]) {
         cache[view] = await load(path);
       }
       const data = cache[view];

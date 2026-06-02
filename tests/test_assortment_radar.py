@@ -164,6 +164,8 @@ def test_radar_page_size_capped_at_fastmoss_max():
 
 def test_validation_block_statuses():
     ok = _validation_block(
+        seller_master_rows=50,
+        approved_shop_count=5,
         raw_api_rows=100,
         mapped_count=95,
         shop_count=5,
@@ -173,15 +175,19 @@ def test_validation_block_statuses():
     assert ok["data_status"] == "ok"
 
     mapping_err = _validation_block(
+        seller_master_rows=50,
+        approved_shop_count=2,
         raw_api_rows=50,
         mapped_count=0,
-        shop_count=0,
+        shop_count=2,
         category_count=0,
         fetch_meta={"shops_scanned": 2},
     )
     assert mapping_err["data_status"] == "mapping_error"
 
     source_err = _validation_block(
+        seller_master_rows=0,
+        approved_shop_count=0,
         raw_api_rows=0,
         mapped_count=0,
         shop_count=0,
