@@ -49,7 +49,7 @@
       shop: "all",
       category: "all",
       dateRange: "all",
-      section: "top100",
+      tab: "shop",
     };
   }
 
@@ -212,11 +212,21 @@
       .toLowerCase();
   }
 
-  function filterRadarProducts(products, f) {
+  function filterRadarProducts(products, f, opts = {}) {
+    const skipShop = opts.skipShop === true;
+    const skipCategory = opts.skipCategory === true;
     return (products || []).filter((p) => {
       if (f.q && !productSearchBlob(p).includes(f.q.trim().toLowerCase())) return false;
-      if (f.shop !== "all" && String(p.seller_shop_id || "") !== String(f.shop)) return false;
-      if (f.category !== "all" && String(p.category || "") !== String(f.category)) return false;
+      if (!skipShop && f.shop !== "all" && String(p.seller_shop_id || "") !== String(f.shop)) {
+        return false;
+      }
+      if (
+        !skipCategory &&
+        f.category !== "all" &&
+        String(p.category || "Uncategorized") !== String(f.category)
+      ) {
+        return false;
+      }
       if (f.dateRange !== "all") {
         const days = p.days_since_launch;
         if (days == null) return false;
@@ -224,6 +234,16 @@
       }
       return true;
     });
+  }
+
+  function resolveDefaultShopId(data) {
+    const shops = data?.shop_view?.shops || data?.filters?.shops || [];
+    return shops[0]?.shop_id || "all";
+  }
+
+  function resolveDefaultCategory(data) {
+    const categories = data?.category_dashboard?.categories || [];
+    return categories[0]?.category || "all";
   }
 
   function filterAssortmentSellers(_sellers, _f) {
@@ -442,43 +462,39 @@
       </div>`;
   }
 
-  function assortmentToolbarHtml(f, data) {
-    const shops = data?.filters?.shops || [];
-    const categories = data?.filters?.categories || [];
+  function assortmentTabsHtml(f) {
+    const shopActive = f.tab === "shop" ? " is-active" : "";
+    const dashActive = f.tab === "dashboard" ? " is-active" : "";
+    return `
+      <div class="si-radar-tabs" data-radar-tabs>
+        <button type="button" class="si-radar-tab${shopActive}" data-radar-tab="shop">Shop View</button>
+        <button type="button" class="si-radar-tab${dashActive}" data-radar-tab="dashboard">Assortment Dashboard</button>
+      </div>`;
+  }
+
+  function assortmentShopToolbarHtml(f, data) {
+    const shops = data?.shop_view?.shops || data?.filters?.shops || [];
     const shopOpts = shops
       .map(
         (s) =>
           `<option value="${escapeHtml(s.shop_id)}"${f.shop === s.shop_id ? " selected" : ""}>${escapeHtml(s.shop_name)}</option>`
       )
       .join("");
-    const catOpts = categories
-      .map(
-        (c) =>
-          `<option value="${escapeHtml(c)}"${f.category === c ? " selected" : ""}>${escapeHtml(c)}</option>`
-      )
-      .join("");
     return `
       <div class="si-v1-toolbar si-radar-toolbar" data-toolbar="assortment">
+        ${assortmentTabsHtml(f)}
         <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
           <label for="siRadarSearch">Product search</label>
-          <input id="siRadarSearch" type="search" placeholder="Product name, category, shop…" value="${escapeHtml(f.q)}" data-f="q" />
+          <input id="siRadarSearch" type="search" placeholder="Product name, category…" value="${escapeHtml(f.q)}" data-f="q" />
         </div>
-        <div class="si-v1-toolbar-field">
+        <div class="si-v1-toolbar-field si-v1-toolbar-field--primary">
           <label for="siRadarShop">Shop</label>
           <select id="siRadarShop" data-f="shop">
-            <option value="all"${f.shop === "all" ? " selected" : ""}>All shops</option>
             ${shopOpts}
           </select>
         </div>
         <div class="si-v1-toolbar-field">
-          <label for="siRadarCat">Category</label>
-          <select id="siRadarCat" data-f="category">
-            <option value="all"${f.category === "all" ? " selected" : ""}>All categories</option>
-            ${catOpts}
-          </select>
-        </div>
-        <div class="si-v1-toolbar-field">
-          <label for="siRadarDate">Date range</label>
+          <label for="siRadarDate">Upload window</label>
           <select id="siRadarDate" data-f="dateRange">
             <option value="all"${f.dateRange === "all" ? " selected" : ""}>All dates</option>
             <option value="20"${f.dateRange === "20" ? " selected" : ""}>Last 20 days</option>
@@ -490,6 +506,37 @@
         <button type="button" class="si-v1-btn-reset" data-reset>Reset filters</button>
         <p class="si-v1-result-count" data-result-count></p>
       </div>`;
+  }
+
+  function assortmentDashboardToolbarHtml(f, data) {
+    const categories = data?.category_dashboard?.categories || [];
+    const catOpts = categories
+      .map(
+        (c) =>
+          `<option value="${escapeHtml(c.category)}"${f.category === c.category ? " selected" : ""}>${escapeHtml(c.category)}</option>`
+      )
+      .join("");
+    return `
+      <div class="si-v1-toolbar si-radar-toolbar" data-toolbar="assortment">
+        ${assortmentTabsHtml(f)}
+        <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
+          <label for="siRadarSearch">Category search</label>
+          <input id="siRadarSearch" type="search" placeholder="Category name…" value="${escapeHtml(f.q)}" data-f="q" />
+        </div>
+        <div class="si-v1-toolbar-field si-v1-toolbar-field--primary">
+          <label for="siRadarCat">Category</label>
+          <select id="siRadarCat" data-f="category">
+            ${catOpts}
+          </select>
+        </div>
+        <button type="button" class="si-v1-btn-reset" data-reset>Reset filters</button>
+        <p class="si-v1-result-count" data-result-count></p>
+      </div>`;
+  }
+
+  function assortmentToolbarHtml(f, data) {
+    if (f.tab === "dashboard") return assortmentDashboardToolbarHtml(f, data);
+    return assortmentShopToolbarHtml(f, data);
   }
 
   function readFiltersFromToolbar(toolbar, defaults) {
@@ -904,71 +951,271 @@
       </div>`;
   }
 
-  function paintAssortmentRadar() {
+  function renderRadarShopSummary(summary, shopName) {
+    const s = summary || {};
+    return `
+      <div class="si-radar-portfolio">
+        <div class="si-port-kpi-grid">
+          ${renderPortfolioKpi("Shop", escapeHtml(shopName || "—"), "Selected seller", "hero")}
+          ${renderPortfolioKpi("Total Products", fmtNum(s.total_products), "FastMoss catalog", "neutral")}
+          ${renderPortfolioKpi("New Products (20D)", fmtNum(s.new_products_20d), "Upload ≤ 20 days", "accent")}
+          ${renderPortfolioKpi("Growth Products", fmtNum(s.growth_products), "Top momentum in shop", "tiktok")}
+          ${renderPortfolioKpi("Opportunity Products", fmtNum(s.opportunity_products), "High opportunity picks", "shopee")}
+        </div>
+      </div>`;
+  }
+
+  function renderCategorySummaryCard(cat, activeCategory) {
+    const active = cat.category === activeCategory ? " is-active" : "";
+    const topShop = cat.top_shop?.shop_name || "—";
+    const topProduct = cat.top_product?.product_name || "—";
+    return `
+      <article class="si-radar-cat-card${active}" data-category-card="${escapeHtml(cat.category)}">
+        <div class="si-radar-cat-card-head">
+          <h4>${escapeHtml(cat.category)}</h4>
+          <span class="si-radar-section-count">${fmtNum(cat.total_products)} products</span>
+        </div>
+        <div class="si-radar-cat-metrics">
+          <div><span>Sales</span><strong>${fmtPhp(cat.total_sales_amount) || "—"}</strong></div>
+          <div><span>Sold</span><strong>${fmtNum(cat.total_sold_count)}</strong></div>
+          <div><span>New (20D)</span><strong>${fmtNum(cat.new_products_20d)}</strong></div>
+          <div><span>Growth</span><strong>${fmtNum(cat.growth_products)}</strong></div>
+        </div>
+        <div class="si-radar-cat-leaders">
+          <p><span>Top shop</span> ${escapeHtml(topShop)}</p>
+          <p><span>Top product</span> ${escapeHtml(topProduct)}</p>
+        </div>
+      </article>`;
+  }
+
+  function renderCategorySummaryGrid(categories, activeCategory, query) {
+    const q = (query || "").trim().toLowerCase();
+    const filtered = (categories || []).filter((c) => !q || String(c.category || "").toLowerCase().includes(q));
+    if (!filtered.length) {
+      return '<p class="si-v1-empty">No categories match the current search.</p>';
+    }
+    return `<div class="si-radar-cat-grid">${filtered.map((c) => renderCategorySummaryCard(c, activeCategory)).join("")}</div>`;
+  }
+
+  function renderCategoryTopShopsSection(shops) {
+    if (!shops?.length) {
+      return `<section class="si-radar-section"><h3 class="si-radar-section-title">Top Shops by Sales</h3><p class="si-v1-empty">No shop data for this category.</p></section>`;
+    }
+    const rows = shops
+      .map(
+        (s) => `<tr>
+          <td class="si-port-rank">#${s.rank}</td>
+          <td>${escapeHtml(s.shop_name || "—")}</td>
+          <td class="si-v1-num">${fmtPhp(s.total_sales_amount) || "—"}</td>
+          <td class="si-v1-num">${fmtNum(s.total_sold_count)}</td>
+          <td class="si-v1-num">${fmtNum(s.product_count)}</td>
+        </tr>`
+      )
+      .join("");
+    return `
+      <section class="si-radar-section" id="category-shops">
+        <div class="si-radar-section-head">
+          <h3 class="si-radar-section-title">Top Shops by Sales in Category</h3>
+          <span class="si-radar-section-count">${shops.length} shops</span>
+        </div>
+        <div class="si-v1-table-wrap">
+          <table class="si-v1-table si-v1-table--portfolio">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Shop</th>
+                <th>Sales Amount</th>
+                <th>Sold Count</th>
+                <th>Products</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </section>`;
+  }
+
+  function paintAssortmentShopView() {
     const el = containers.siAssortment;
     const st = state.assortment;
     if (!el || !st.raw) return;
     const body = el.querySelector("[data-radar-body]");
     if (!body) return;
     const f = st.filters;
-    const top100 = filterRadarProducts(st.raw.top_100, f);
-    const opportunities = filterRadarProducts(st.raw.top_opportunities, f);
-    const topNew = filterRadarProducts(st.raw.top_new, f);
-    const topGrowth = filterRadarProducts(st.raw.top_growth, f);
+    const shops = st.raw.shop_view?.shops || [];
+    const shop =
+      shops.find((s) => String(s.shop_id) === String(f.shop)) ||
+      shops[0] ||
+      null;
+    if (!shop) {
+      body.innerHTML = '<p class="si-v1-empty">No shop catalog data available.</p>';
+      return;
+    }
+    if (String(f.shop) !== String(shop.shop_id)) {
+      st.filters.shop = shop.shop_id;
+    }
+    const topProducts = filterRadarProducts(shop.top_products, f, { skipShop: true });
+    const newProducts = filterRadarProducts(shop.new_products, f, { skipShop: true });
+    const growthProducts = filterRadarProducts(shop.growth_products, f, { skipShop: true });
+    const opportunityProducts = filterRadarProducts(shop.opportunity_products, f, {
+      skipShop: true,
+    });
     const countEl = el.querySelector("[data-result-count]");
     if (countEl) {
-      countEl.textContent = `Showing ${top100.length} top · ${opportunities.length} opp · ${topNew.length} new · ${topGrowth.length} growth`;
+      countEl.textContent = `${shop.shop_name} · ${topProducts.length} top · ${newProducts.length} new · ${growthProducts.length} growth · ${opportunityProducts.length} opp`;
     }
     body.innerHTML = `
-      ${renderRadarPortfolio(st.raw)}
-      ${renderRadarSection("Top 100 TikTok Products", top100, { anchor: "top100" })}
-      ${renderRadarSection("Top 20 Missing Opportunities", opportunities, {
-        anchor: "opportunities",
-        showOpportunity: true,
-      })}
-      ${renderRadarSection("Top New Products", topNew, { anchor: "new", showGrowth: false })}
-      ${renderRadarSection("Top Growth Products", topGrowth, {
-        anchor: "growth",
+      ${renderRadarShopSummary(shop.summary, shop.shop_name)}
+      ${renderRadarSection("Top Products", topProducts, { anchor: "shop-top" })}
+      ${renderRadarSection("New Products (20 Days)", newProducts, { anchor: "shop-new" })}
+      ${renderRadarSection("Growth Products", growthProducts, {
+        anchor: "shop-growth",
         showGrowth: true,
+      })}
+      ${renderRadarSection("Opportunity Products", opportunityProducts, {
+        anchor: "shop-opp",
+        showOpportunity: true,
       })}`;
+  }
+
+  function paintAssortmentDashboard() {
+    const el = containers.siAssortment;
+    const st = state.assortment;
+    if (!el || !st.raw) return;
+    const body = el.querySelector("[data-radar-body]");
+    if (!body) return;
+    const f = st.filters;
+    const dashboard = st.raw.category_dashboard || {};
+    const categories = dashboard.categories || [];
+    const activeCategory =
+      categories.find((c) => c.category === f.category)?.category ||
+      categories[0]?.category ||
+      null;
+    if (activeCategory && f.category !== activeCategory) {
+      st.filters.category = activeCategory;
+    }
+    const detail = activeCategory ? dashboard.category_details?.[activeCategory] : null;
+    const topProducts = filterRadarProducts(detail?.top_products || [], f, { skipCategory: true });
+    const newProducts = filterRadarProducts(detail?.new_products || [], f, { skipCategory: true });
+    const growthProducts = filterRadarProducts(detail?.growth_products || [], f, {
+      skipCategory: true,
+    });
+    const topShops = detail?.top_shops || [];
+    const countEl = el.querySelector("[data-result-count]");
+    if (countEl) {
+      countEl.textContent = `${activeCategory || "—"} · ${topProducts.length} top · ${newProducts.length} new · ${growthProducts.length} growth · ${topShops.length} shops`;
+    }
+    body.innerHTML = `
+      <section class="si-radar-section">
+        <div class="si-radar-section-head">
+          <h3 class="si-radar-section-title">Category Market Overview</h3>
+          <span class="si-radar-section-count">${categories.length} categories</span>
+        </div>
+        ${renderCategorySummaryGrid(categories, activeCategory, f.q)}
+      </section>
+      ${
+        activeCategory
+          ? `<div class="si-radar-category-focus">
+              <h3 class="si-radar-section-title">${escapeHtml(activeCategory)}</h3>
+              ${renderRadarSection("Top Products in Category", topProducts, { anchor: "cat-top" })}
+              ${renderRadarSection("New Products in Category (20 Days)", newProducts, { anchor: "cat-new" })}
+              ${renderRadarSection("Growth Products in Category", growthProducts, {
+                anchor: "cat-growth",
+                showGrowth: true,
+              })}
+              ${renderCategoryTopShopsSection(topShops)}
+            </div>`
+          : '<p class="si-v1-empty">Select a category to drill down.</p>'
+      }`;
+    body.querySelectorAll("[data-category-card]").forEach((card) => {
+      card.addEventListener("click", () => {
+        const category = card.dataset.categoryCard;
+        if (!category) return;
+        st.filters.category = category;
+        const toolbar = el.querySelector("[data-toolbar]");
+        if (toolbar) {
+          const select = toolbar.querySelector('[data-f="category"]');
+          if (select) select.value = category;
+        }
+        paintAssortmentDashboard();
+      });
+    });
+  }
+
+  function paintAssortmentRadar() {
+    const tab = state.assortment.filters.tab || "shop";
+    if (tab === "dashboard") paintAssortmentDashboard();
+    else paintAssortmentShopView();
+  }
+
+  function bindRadarTabs(toolbar, onChange) {
+    toolbar.querySelectorAll("[data-radar-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tab = btn.dataset.radarTab;
+        if (!tab || state.assortment.filters.tab === tab) return;
+        state.assortment.filters.tab = tab;
+        if (tab === "shop") {
+          state.assortment.filters.shop = resolveDefaultShopId(state.assortment.raw);
+        } else {
+          state.assortment.filters.category = resolveDefaultCategory(state.assortment.raw);
+        }
+        onChange({ tabSwitch: true });
+      });
+    });
   }
 
   function setupAssortment(data) {
     const el = containers.siAssortment;
     if (!el) return;
     state.assortment.raw = data;
+    if (state.assortment.filters.shop === "all") {
+      state.assortment.filters.shop = resolveDefaultShopId(data);
+    }
+    if (
+      state.assortment.filters.tab === "dashboard" &&
+      (state.assortment.filters.category === "all" || !state.assortment.filters.category)
+    ) {
+      state.assortment.filters.category = resolveDefaultCategory(data);
+    }
     const fm = data.fastmoss || {};
     const p = data.portfolio || {};
+    const shopCount = (data.shop_view?.shops || []).length;
+    const catCount = (data.category_dashboard?.categories || []).length;
     if (metas.siAssortment) {
-      metas.siAssortment.textContent = `TikTok Product Radar · FastMoss only · ${fmtNum(p.total_products)} products · ${fmtNum(fm.shops_scanned)} shops`;
+      metas.siAssortment.textContent = `TikTok Product Radar · ${fmtNum(p.total_products)} products · ${fmtNum(shopCount)} shops · ${fmtNum(catCount)} categories · FastMoss only`;
     }
 
-    function onToolbarChange(ev) {
-      if (ev?.reset) state.assortment.filters = defaultAssortmentFilters();
-      else {
-        state.assortment.filters = readFiltersFromToolbar(
-          el.querySelector("[data-toolbar]"),
-          defaultAssortmentFilters()
-        );
-      }
+    function refreshToolbar() {
       el.querySelector("[data-toolbar]").outerHTML = assortmentToolbarHtml(
         state.assortment.filters,
         state.assortment.raw
       );
       bindToolbar(el.querySelector("[data-toolbar]"), onToolbarChange);
+      bindRadarTabs(el.querySelector("[data-toolbar]"), onToolbarChange);
+    }
+
+    function onToolbarChange(ev) {
+      if (ev?.reset) {
+        state.assortment.filters = defaultAssortmentFilters();
+        state.assortment.filters.shop = resolveDefaultShopId(state.assortment.raw);
+        state.assortment.filters.category = resolveDefaultCategory(state.assortment.raw);
+      } else if (!ev?.tabSwitch) {
+        state.assortment.filters = readFiltersFromToolbar(
+          el.querySelector("[data-toolbar]"),
+          state.assortment.filters
+        );
+      }
+      refreshToolbar();
       paintAssortmentRadar();
     }
 
     if (!state.assortment.shellReady) {
       el.innerHTML = `${assortmentToolbarHtml(state.assortment.filters, data)}<div data-radar-body></div>`;
       bindToolbar(el.querySelector("[data-toolbar]"), onToolbarChange);
+      bindRadarTabs(el.querySelector("[data-toolbar]"), onToolbarChange);
       state.assortment.shellReady = true;
     } else {
-      const toolbar = el.querySelector("[data-toolbar]");
-      if (toolbar) {
-        toolbar.outerHTML = assortmentToolbarHtml(state.assortment.filters, data);
-        bindToolbar(el.querySelector("[data-toolbar]"), onToolbarChange);
-      }
+      refreshToolbar();
     }
     paintAssortmentRadar();
   }

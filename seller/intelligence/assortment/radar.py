@@ -148,6 +148,181 @@ def _sort_key_sales(product: dict[str, Any]) -> tuple[float, float]:
     return (float(product.get("sales_amount") or 0), float(product.get("sold_count") or 0))
 
 
+def _uncategorized(category: str | None) -> str:
+    text = str(category or "").strip()
+    return text or "Uncategorized"
+
+
+def _shop_sales_totals(products: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    totals: dict[str, dict[str, Any]] = {}
+    for row in products:
+        shop_id = str(row.get("seller_shop_id") or "").strip()
+        if not shop_id:
+            continue
+        bucket = totals.setdefault(
+            shop_id,
+            {
+                "shop_id": shop_id,
+                "shop_name": row.get("seller_shop_name") or row.get("shop_name") or shop_id,
+                "total_sales_amount": 0.0,
+                "total_sold_count": 0.0,
+                "product_count": 0,
+            },
+        )
+        bucket["total_sales_amount"] += float(row.get("sales_amount") or 0)
+        bucket["total_sold_count"] += float(row.get("sold_count") or 0)
+        bucket["product_count"] += 1
+    return totals
+
+
+def _build_shop_view(enriched: list[dict[str, Any]]) -> dict[str, Any]:
+    by_shop: dict[str, list[dict[str, Any]]] = {}
+    shop_names: dict[str, str] = {}
+    for row in enriched:
+        shop_id = str(row.get("seller_shop_id") or "").strip()
+        if not shop_id:
+            continue
+        by_shop.setdefault(shop_id, []).append(row)
+        shop_names[shop_id] = row.get("seller_shop_name") or row.get("shop_name") or shop_id
+
+    shops: list[dict[str, Any]] = []
+    for shop_id in sorted(shop_names, key=lambda sid: shop_names[sid].lower()):
+        products = by_shop.get(shop_id) or []
+        top_products = sorted(products, key=_sort_key_sales, reverse=True)
+        new_products = sorted(
+            [p for p in products if p.get("is_new_product")],
+            key=_sort_key_sales,
+            reverse=True,
+        )
+        growth_products = sorted(
+            products,
+            key=lambda p: float(p.get("growth_score") or 0),
+            reverse=True,
+        )[:RADAR_TOP_GROWTH]
+        opportunity_products = sorted(
+            products,
+            key=lambda p: float(p.get("opportunity_score") or 0),
+            reverse=True,
+        )[:RADAR_TOP_OPPORTUNITIES]
+
+        shops.append(
+            {
+                "shop_id": shop_id,
+                "shop_name": shop_names[shop_id],
+                "summary": {
+                    "total_products": len(products),
+                    "new_products_20d": len(new_products),
+                    "growth_products": len(growth_products),
+                    "opportunity_products": len(opportunity_products),
+                },
+                "top_products": [
+                    _public_product(p, rank=i + 1) for i, p in enumerate(top_products)
+                ],
+                "new_products": [
+                    _public_product(p, rank=i + 1) for i, p in enumerate(new_products)
+                ],
+                "growth_products": [
+                    _public_product(p, rank=i + 1) for i, p in enumerate(growth_products)
+                ],
+                "opportunity_products": [
+                    _public_product(p, rank=i + 1) for i, p in enumerate(opportunity_products)
+                ],
+            }
+        )
+    return {"shops": shops}
+
+
+def _build_category_dashboard(enriched: list[dict[str, Any]]) -> dict[str, Any]:
+    by_category: dict[str, list[dict[str, Any]]] = {}
+    for row in enriched:
+        category = _uncategorized(row.get("category"))
+        by_category.setdefault(category, []).append(row)
+
+    summaries: list[dict[str, Any]] = []
+    details: dict[str, dict[str, Any]] = {}
+
+    for category in sorted(by_category, key=str.lower):
+        products = by_category[category]
+        total_sales = sum(float(p.get("sales_amount") or 0) for p in products)
+        total_sold = sum(float(p.get("sold_count") or 0) for p in products)
+        new_products = sorted(
+            [p for p in products if p.get("is_new_product")],
+            key=_sort_key_sales,
+            reverse=True,
+        )
+        growth_products = sorted(
+            products,
+            key=lambda p: float(p.get("growth_score") or 0),
+            reverse=True,
+        )[:RADAR_TOP_GROWTH]
+        top_products = sorted(products, key=_sort_key_sales, reverse=True)
+
+        shop_totals = _shop_sales_totals(products)
+        top_shop_row = max(
+            shop_totals.values(),
+            key=lambda row: float(row.get("total_sales_amount") or 0),
+            default=None,
+        )
+        top_product_row = top_products[0] if top_products else None
+        top_shops = sorted(
+            shop_totals.values(),
+            key=lambda row: float(row.get("total_sales_amount") or 0),
+            reverse=True,
+        )
+
+        summaries.append(
+            {
+                "category": category,
+                "total_products": len(products),
+                "total_sales_amount": round(total_sales, 2),
+                "total_sold_count": int(total_sold),
+                "new_products_20d": len(new_products),
+                "growth_products": len(growth_products),
+                "top_shop": {
+                    "shop_id": top_shop_row.get("shop_id") if top_shop_row else None,
+                    "shop_name": top_shop_row.get("shop_name") if top_shop_row else None,
+                    "total_sales_amount": top_shop_row.get("total_sales_amount") if top_shop_row else None,
+                }
+                if top_shop_row
+                else None,
+                "top_product": {
+                    "product_id": top_product_row.get("product_id"),
+                    "product_name": top_product_row.get("product_name"),
+                    "product_image": top_product_row.get("product_image"),
+                    "sales_amount": top_product_row.get("sales_amount"),
+                    "sold_count": top_product_row.get("sold_count"),
+                }
+                if top_product_row
+                else None,
+            }
+        )
+
+        details[category] = {
+            "top_products": [
+                _public_product(p, rank=i + 1) for i, p in enumerate(top_products[:100])
+            ],
+            "new_products": [
+                _public_product(p, rank=i + 1) for i, p in enumerate(new_products)
+            ],
+            "growth_products": [
+                _public_product(p, rank=i + 1) for i, p in enumerate(growth_products)
+            ],
+            "top_shops": [
+                {
+                    "rank": i + 1,
+                    "shop_id": row.get("shop_id"),
+                    "shop_name": row.get("shop_name"),
+                    "total_sales_amount": row.get("total_sales_amount"),
+                    "total_sold_count": row.get("total_sold_count"),
+                    "product_count": row.get("product_count"),
+                }
+                for i, row in enumerate(top_shops)
+            ],
+        }
+
+    return {"categories": summaries, "category_details": details}
+
+
 def _public_product(row: dict[str, Any], *, rank: int | None = None) -> dict[str, Any]:
     out = {
         "rank": rank,
@@ -259,7 +434,9 @@ def build_tiktok_product_radar(*, force_refresh: bool = False) -> dict[str, Any]
         },
         key=lambda row: row[1] or "",
     )
-    categories = sorted({p.get("category") for p in enriched if p.get("category")})
+    categories = sorted({_uncategorized(p.get("category")) for p in enriched})
+    shop_view = _build_shop_view(enriched)
+    category_dashboard = _build_category_dashboard(enriched)
 
     payload = {
         "module": "assortment_intelligence",
@@ -283,6 +460,8 @@ def build_tiktok_product_radar(*, force_refresh: bool = False) -> dict[str, Any]
         "top_new": [_public_product(p, rank=i + 1) for i, p in enumerate(top_new)],
         "top_growth": [_public_product(p, rank=i + 1) for i, p in enumerate(top_growth)],
         "top_opportunities": [_public_product(p, rank=i + 1) for i, p in enumerate(top_opportunities)],
+        "shop_view": shop_view,
+        "category_dashboard": category_dashboard,
     }
 
     _cache_payload = payload

@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 
 BASE_URLS = [
+    "https://sellerintelligence.up.railway.app",
     "https://seller-intelligence-platform-production.up.railway.app",
     "https://seller-intelligence-platform.up.railway.app",
 ]
@@ -38,7 +39,7 @@ def check(base: str) -> dict:
     home_s, _home_body = fetch(f"{base}/")
     if home_s in (301, 302, 303, 307):
         pass
-    intel_js = "ShpIntelligenceV1" in static_body and "TikTok Product Radar" in static_body
+    intel_js = "ShpIntelligenceV1" in static_body and "Shop View" in static_body
     login_ok = login_page_s == 200 and "loginForm" in login_body
     return {
         "base": base,

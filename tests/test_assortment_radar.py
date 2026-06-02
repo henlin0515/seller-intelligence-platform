@@ -6,6 +6,8 @@ from datetime import date, timedelta
 
 from seller.intelligence.assortment.radar import (
     NEW_PRODUCT_DAYS,
+    _build_category_dashboard,
+    _build_shop_view,
     compute_growth_raw,
     days_since_launch,
     enrich_product_metrics,
@@ -70,3 +72,81 @@ def test_compute_growth_raw_uses_inc_fields():
         }
     )
     assert boosted > base
+
+
+def test_build_shop_view_groups_by_shop():
+    today = date(2026, 6, 1)
+    recent = (today - timedelta(days=4)).strftime("%Y-%m-%d %H:%M:%S")
+    products = enrich_product_metrics(
+        [
+            {
+                "product_id": "a1",
+                "product_name": "Alpha Tee",
+                "category": "Fashion",
+                "sales_amount": 1000,
+                "sold_count": 10,
+                "upload_date": recent,
+                "seller_shop_id": "1",
+                "seller_shop_name": "Shop A",
+            },
+            {
+                "product_id": "b1",
+                "product_name": "Beta Bag",
+                "category": "Bags",
+                "sales_amount": 5000,
+                "sold_count": 50,
+                "upload_date": recent,
+                "seller_shop_id": "2",
+                "seller_shop_name": "Shop B",
+            },
+        ],
+        today=today,
+    )
+    payload = _build_shop_view(products)
+    assert len(payload["shops"]) == 2
+    shop_a = next(s for s in payload["shops"] if s["shop_id"] == "1")
+    assert shop_a["summary"]["total_products"] == 1
+    assert shop_a["top_products"][0]["rank"] == 1
+    assert shop_a["new_products"][0]["product_id"] == "a1"
+
+
+def test_build_category_dashboard_groups_and_summaries():
+    today = date(2026, 6, 1)
+    recent = (today - timedelta(days=2)).strftime("%Y-%m-%d %H:%M:%S")
+    old = (today - timedelta(days=120)).strftime("%Y-%m-%d %H:%M:%S")
+    products = enrich_product_metrics(
+        [
+            {
+                "product_id": "f1",
+                "product_name": "Fresh Item",
+                "category": "Beauty",
+                "sales_amount": 900,
+                "sold_count": 9,
+                "upload_date": recent,
+                "seller_shop_id": "10",
+                "seller_shop_name": "Glow Shop",
+            },
+            {
+                "product_id": "f2",
+                "product_name": "Classic Item",
+                "category": "Beauty",
+                "sales_amount": 300,
+                "sold_count": 3,
+                "upload_date": old,
+                "seller_shop_id": "11",
+                "seller_shop_name": "Other Shop",
+            },
+        ],
+        today=today,
+    )
+    payload = _build_category_dashboard(products)
+    assert len(payload["categories"]) == 1
+    summary = payload["categories"][0]
+    assert summary["category"] == "Beauty"
+    assert summary["total_products"] == 2
+    assert summary["new_products_20d"] == 1
+    assert summary["top_shop"]["shop_name"] == "Glow Shop"
+    detail = payload["category_details"]["Beauty"]
+    assert detail["top_products"][0]["product_name"] == "Fresh Item"
+    assert detail["new_products"][0]["days_since_launch"] == 2
+    assert detail["top_shops"][0]["shop_name"] == "Glow Shop"
