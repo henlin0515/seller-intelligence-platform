@@ -8,7 +8,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
-PRIMARY_TAB_NAME = "AI DATA"
+PRIMARY_TAB_NAME = "AI data"
+PRIMARY_TAB_CANONICAL = "AI DATA"
 HEADER_ROW_1_BASED = 6
 DATA_START_ROW_1_BASED = 7
 SHOP_ID_COL_LETTER = "J"
@@ -19,10 +20,29 @@ SHOP_ID_HEADER = "Shop ID"
 SHOP_NAME_HEADER = "Shop Name"
 
 MERGE_STRATEGY_AI_DATA = (
-    "ai_data_fixed_layout: primary tab AI DATA; header row 6; data from row 7; "
+    "ai_data_fixed_layout: primary tab AI data; header row 6; data from row 7; "
     "Shop ID column J (header 'Shop ID'); Shop Name column K; "
     "rawData[headerName]=cellValue for all columns"
 )
+
+
+def normalize_tab_name(title: str) -> str:
+    return re.sub(r"\s+", " ", (title or "").strip()).lower()
+
+
+def resolve_ai_data_tab_title(titles: list[str]) -> str | None:
+    """Match mirror tab for Seller Performance (AI data / AI DATA)."""
+    if not titles:
+        return None
+    by_norm = {normalize_tab_name(title): title for title in titles}
+    for candidate in (PRIMARY_TAB_NAME, PRIMARY_TAB_CANONICAL, "ai data", "AI DATA"):
+        hit = by_norm.get(normalize_tab_name(candidate))
+        if hit:
+            return hit
+    for norm, original in by_norm.items():
+        if norm.replace(" ", "") == "aidata":
+            return original
+    return None
 
 
 def col_index_to_letter(index: int) -> str:
@@ -137,14 +157,21 @@ def parse_ai_data_grid(grid: list[list[Any]]) -> tuple[list[str], list[dict[str,
     return headers, records, layout_meta
 
 
-def build_sellers_from_ai_data(grid: list[list[Any]]) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+def build_sellers_from_ai_data(
+    grid: list[list[Any]],
+    *,
+    source_tab: str | None = None,
+) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     """Build seller cache entries keyed by Shop ID."""
+    from seller.google_sheets.merge import apply_resolver_aliases
+
+    tab_name = source_tab or PRIMARY_TAB_NAME
     headers, records, layout_meta = parse_ai_data_grid(grid)
     sellers: dict[str, dict[str, Any]] = {}
 
     for rec in records:
         sid = rec["shop_id"]
-        raw = dict(rec["raw"])
+        raw = apply_resolver_aliases(dict(rec["raw"]))
         raw[SHOP_ID_HEADER] = sid
         if rec.get("shop_name"):
             raw[SHOP_NAME_HEADER] = rec["shop_name"]
@@ -161,7 +188,7 @@ def build_sellers_from_ai_data(grid: list[list[Any]]) -> tuple[dict[str, dict[st
             "tier": tier,
             "category": category,
             "raw": raw,
-            "_source_tabs": [PRIMARY_TAB_NAME],
+            "_source_tabs": [tab_name],
             "_shop_name_header": SHOP_NAME_HEADER,
         }
 
@@ -171,16 +198,17 @@ def build_sellers_from_ai_data(grid: list[list[Any]]) -> tuple[dict[str, dict[st
 
     summary = {
         "merge_strategy": MERGE_STRATEGY_AI_DATA,
-        "primary_tab": PRIMARY_TAB_NAME,
+        "primary_tab": tab_name,
+        "data_source": "google_sheets_ai_data",
         "shop_id_field": SHOP_ID_HEADER,
         "shop_name_field": SHOP_NAME_HEADER,
         "layout": layout_meta,
-        "tabs_discovered": [PRIMARY_TAB_NAME],
-        "tabs_merged": [PRIMARY_TAB_NAME],
+        "tabs_discovered": [tab_name],
+        "tabs_merged": [tab_name],
         "tabs_skipped": [],
         "tab_structures": [
             {
-                "title": PRIMARY_TAB_NAME,
+                "title": tab_name,
                 "grid_rows": len(grid),
                 "header_row": HEADER_ROW_1_BASED,
                 "data_start_row": DATA_START_ROW_1_BASED,

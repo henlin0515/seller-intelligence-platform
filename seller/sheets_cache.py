@@ -17,7 +17,6 @@ from seller.google_sheets.config import (
     log_startup_configuration,
     validate_for_connection,
 )
-from seller.google_sheets.merge import merge_tabs, should_skip_tab
 
 logger = logging.getLogger("seller.sheets_cache")
 
@@ -81,7 +80,7 @@ def get_status() -> dict[str, Any]:
             "error": _state.get("error"),
             "spreadsheet_id": settings.spreadsheet_id if _use_live_sheets() else None,
             "spreadsheet_title": _state.get("spreadsheet_title"),
-            "data_source": "google_sheets" if _state["loaded"] else ("mock" if not _use_live_sheets() else "pending"),
+            "data_source": "google_sheets_ai_data" if _state["loaded"] else ("mock" if not _use_live_sheets() else "pending"),
             "tabs_discovered": summary.get("tabs_discovered"),
             "tabs_merged": summary.get("tabs_merged"),
             "tabs_skipped": summary.get("tabs_skipped"),
@@ -110,7 +109,7 @@ def get_public_status() -> dict[str, Any]:
 
 def refresh(*, force: bool = False) -> dict[str, Any]:
     """
-    Load or reload all mirror tabs into memory.
+    Load or reload Seller Performance data from the AI data tab only.
     Returns status dict after load completes.
     """
     if not _use_live_sheets():
@@ -137,20 +136,26 @@ def refresh(*, force: bool = False) -> dict[str, Any]:
         client = get_sheets_client()
         ping = client.ping()
         titles = ping["worksheet_titles"]
-        tab_grids: dict[str, list[list[Any]]] = {}
-        for title in titles:
-            if should_skip_tab(title):
-                tab_grids[title] = []
-                continue
-            tab_grids[title] = client.fetch_worksheet_values(title)
-
-        sellers, summary = merge_tabs(
-            tab_grids,
-            primary_tab_hint=settings.primary_tab_hint,
+        from seller.google_sheets.ai_data_layout import (
+            build_sellers_from_ai_data,
+            resolve_ai_data_tab_title,
         )
+
+        ai_tab = resolve_ai_data_tab_title(titles)
+        if not ai_tab:
+            raise RuntimeError(
+                "AI data tab not found in mirror spreadsheet. "
+                f"Available tabs sample: {titles[:12]}"
+            )
+
+        grid = client.fetch_worksheet_values(ai_tab)
+        sellers, summary = build_sellers_from_ai_data(grid, source_tab=ai_tab)
         summary["spreadsheet_title"] = ping.get("spreadsheet_title")
         summary["spreadsheet_id"] = ping.get("spreadsheet_id")
         summary["service_account_email"] = ping.get("service_account_email")
+        summary["tabs_discovered"] = titles
+        summary["tabs_merged"] = [ai_tab]
+        summary["tabs_skipped"] = [t for t in titles if t != ai_tab]
 
         layout = summary.get("layout") or {}
         with _lock:

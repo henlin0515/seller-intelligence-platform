@@ -8,7 +8,7 @@ from typing import Any
 
 from seller.google_sheets.config import is_configured
 
-SHEET_NAME = "[Raw] Shop Level - Fashion (mirror)"
+SHEET_NAME = "AI data"
 
 # Mock fallback when GOOGLE_SHEETS_ENABLED=false
 RAW_SHOP_ROWS: list[dict[str, Any]] = [

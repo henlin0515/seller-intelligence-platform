@@ -113,10 +113,11 @@ def should_skip_tab(title: str) -> bool:
 
 
 def choose_primary_tab(titles: list[str], hint: str) -> str:
-    from seller.google_sheets.ai_data_layout import PRIMARY_TAB_NAME
+    from seller.google_sheets.ai_data_layout import resolve_ai_data_tab_title
 
-    if PRIMARY_TAB_NAME in titles:
-        return PRIMARY_TAB_NAME
+    resolved = resolve_ai_data_tab_title(titles)
+    if resolved:
+        return resolved
     if hint in titles:
         return hint
     for t in titles:
@@ -160,15 +161,18 @@ def merge_tabs(
     Returns (sellers_by_id, load_summary).
     Each seller: { shop_id, shop_name, tier, category, raw, _source_tabs }.
     """
-    from seller.google_sheets.ai_data_layout import PRIMARY_TAB_NAME, build_sellers_from_ai_data
+    from seller.google_sheets.ai_data_layout import build_sellers_from_ai_data, resolve_ai_data_tab_title
 
-    if PRIMARY_TAB_NAME in tab_grids and tab_grids[PRIMARY_TAB_NAME]:
-        sellers, summary = build_sellers_from_ai_data(tab_grids[PRIMARY_TAB_NAME])
+    ai_tab = resolve_ai_data_tab_title(list(tab_grids.keys()))
+    if ai_tab and tab_grids.get(ai_tab):
+        sellers, summary = build_sellers_from_ai_data(tab_grids[ai_tab], source_tab=ai_tab)
         summary["tabs_discovered"] = list(tab_grids.keys())
-        other = [t for t in tab_grids if t != PRIMARY_TAB_NAME and not should_skip_tab(t)]
+        other = [t for t in tab_grids if t != ai_tab and not should_skip_tab(t)]
         if other:
-            logger.warning(
-                "AI DATA layout used as primary; additional tabs not merged: %s", other
+            logger.info(
+                "Seller Performance uses %r only; other tabs ignored: %s",
+                ai_tab,
+                other,
             )
         return sellers, summary
 

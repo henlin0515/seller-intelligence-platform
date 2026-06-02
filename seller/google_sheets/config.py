@@ -123,7 +123,7 @@ def get_settings() -> GoogleSheetsSettings:
         credentials_path=_env_str("GOOGLE_SHEETS_CREDENTIALS_PATH"),
         credentials_json=_env_str("GOOGLE_SHEETS_CREDENTIALS_JSON"),
         scopes=scopes or (DEFAULT_SCOPES,),
-        primary_tab_hint=_env_str("GOOGLE_SHEET_PRIMARY_TAB", "AI DATA"),
+        primary_tab_hint=_env_str("GOOGLE_SHEET_PRIMARY_TAB", "AI data"),
         connect_on_startup=_env_bool("GOOGLE_SHEETS_CONNECT_ON_STARTUP", False),
     )
 

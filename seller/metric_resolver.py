@@ -266,8 +266,13 @@ def _shop_info(raw: dict[str, Any]) -> list[dict[str, Any]]:
         _info(raw, "managed_tier", "Managed Tier", "Managed Tier"),
         _info(raw, "bu", "BU", "BU2"),
         _info(raw, "lead", "Lead", "Lead"),
+        _info(raw, "rm_kam", "RM/KAM", "RM/KAM"),
         _info(raw, "bd_category", "BD Category", "BD Category"),
         _info(raw, "bi_category", "BI Category", "BI Category"),
+        _info(raw, "shop_link", "Shop Link", "Shop Link"),
+        _info(raw, "seller_penalty_points", "Seller Penalty Points", "Seller Penalty Points"),
+        _direct(raw, "mtd_fsp", "MTD FSP", "mtd_fsp", "m1_fsp"),
+        _direct(raw, "mtd_pp", "MTD PP", "mtd_pp", "m1_pp"),
     ]
 
 
@@ -481,13 +486,15 @@ def build_dashboard_from_raw(raw: dict[str, Any]) -> dict[str, Any]:
 
 
 def shop_info_from_raw(raw: dict[str, Any], shop_id: str, shop_name: str) -> dict[str, str]:
-    """Map shop metadata from AI DATA columns."""
+    """Map shop metadata from AI data columns."""
     return {
         "shop_id": shop_id,
         "shop_name": shop_name or str(_raw(raw, "Shop Name") or shop_id).strip(),
         "tier": str(_raw(raw, "Managed Tier") or "").strip(),
         "category": str(_raw(raw, "BD Category") or _raw(raw, "BI Category") or "").strip(),
-        "bu": str(_raw(raw, "BU2") or "").strip(),
+        "bu": str(_raw(raw, "BU2") or _raw(raw, "BU") or "").strip(),
         "lead": str(_raw(raw, "Lead") or "").strip(),
+        "rm_kam": str(_raw(raw, "RM/KAM") or "").strip(),
+        "shop_link": str(_raw(raw, "Shop Link") or "").strip(),
         "bi_category": str(_raw(raw, "BI Category") or "").strip(),
     }
