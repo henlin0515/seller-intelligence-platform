@@ -286,6 +286,7 @@
     if (viewKey === "competitorTracker" && window.ShpCompetitorTracker?.onShow) {
       window.ShpCompetitorTracker.onShow();
     }
+    if (viewKey === "settings") loadSellerMasterSyncStatus();
     if (viewKey === "assortment" && window.ShpAssortment?.onShow) {
       window.ShpAssortment.onShow(caiTab || "dashboard");
     }
@@ -355,6 +356,40 @@
       window.ShpChat.refreshWelcome();
     }
   });
+
+  function formatSellerMasterSyncTime(isoValue) {
+    if (!isoValue) return null;
+    const parsed = new Date(isoValue);
+    if (Number.isNaN(parsed.getTime())) return isoValue;
+    return parsed.toLocaleString();
+  }
+
+  async function loadSellerMasterSyncStatus() {
+    const syncEl = document.getElementById("settingsSellerMasterSync");
+    const metaEl = document.getElementById("settingsSellerMasterMeta");
+    if (!syncEl) return;
+    const pending =
+      window.SipI18n?.t?.("settings.sellerMasterSyncPending", "Not synced yet") || "Not synced yet";
+    syncEl.textContent = pending;
+    if (metaEl) metaEl.textContent = "";
+    try {
+      const res = await (window.SipApi ? window.SipApi.fetch : fetch)(
+        "/api/intelligence/v1/seller-master/status",
+        { credentials: "same-origin" }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "status failed");
+      syncEl.textContent = formatSellerMasterSyncTime(data.last_sync_at) || pending;
+      if (metaEl) {
+        const sellers = data.seller_count != null ? `${data.seller_count} sellers` : "";
+        const tab = data.tab ? `tab: ${data.tab}` : "";
+        const ttl = data.cache_ttl_sec ? `TTL: ${Math.round(data.cache_ttl_sec / 60)} min` : "";
+        metaEl.textContent = [sellers, tab, ttl].filter(Boolean).join(" · ");
+      }
+    } catch {
+      syncEl.textContent = pending;
+    }
+  }
 
   async function initAuthUi() {
     const logoutBtn = document.getElementById("logoutBtn");

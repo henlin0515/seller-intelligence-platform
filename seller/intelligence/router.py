@@ -21,7 +21,7 @@ from seller.intelligence.business.meta import (
 from seller.intelligence.business.portfolio import build_portfolio_overview
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.periods import resolve_periods
-from seller.intelligence.seller_master import get_seller_master
+from seller.intelligence.seller_master import get_seller_master, get_seller_master_sync_status
 from seller.intelligence.voucher import build_voucher_intelligence_placeholder
 
 router = APIRouter(
@@ -129,3 +129,16 @@ async def intelligence_v1_assortment():
 @router.get("/voucher")
 async def intelligence_v1_voucher():
     return build_voucher_intelligence_placeholder(_shop_list())
+
+
+@router.get("/seller-master/status")
+async def intelligence_v1_seller_master_status():
+    """Seller Master cache sync metadata for Settings."""
+    try:
+        status = get_seller_master_sync_status()
+        if not status.get("last_sync_at"):
+            _load_master()
+            status = get_seller_master_sync_status()
+        return {"version": "v1", **status}
+    except (GoogleSheetsNotConfiguredError, GoogleSheetsNotEnabledError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc

@@ -39,3 +39,32 @@ def test_parse_empty_row_fails():
     result = parse_shpoee_link_rows(rows)
     assert result.stats.total_loaded == 1
     assert any(f["reason"] == "empty_row" for f in result.stats.failed_rows)
+
+
+def test_seller_master_cache_ttl_refreshes_after_expiry():
+    from unittest.mock import patch
+
+    from seller.intelligence import seller_master as sm
+
+    sm.clear_seller_master_cache()
+    rows = [["123", "Alpha Shop", "https://shopee.ph/alpha", "Alpha TT"]]
+    parsed = parse_shpoee_link_rows(rows)
+
+    with patch.object(sm, "SELLER_MASTER_CACHE_TTL_SEC", 300):
+        with patch.object(sm, "is_configured", return_value=True):
+            with patch.object(sm, "get_sheets_client") as mock_client:
+                mock_client.return_value.fetch_worksheet_values.return_value = [
+                    ["Shop ID", "Shop Name", "Shopee Link", "TikTok Shop Name"],
+                    *rows,
+                ]
+                t0 = 1_000_000.0
+                with patch.object(sm.time, "time", side_effect=[t0, t0 + 1, t0 + 301, t0 + 302]):
+                    first = sm.load_seller_master_from_sheet()
+                    second = sm.load_seller_master_from_sheet()
+                    third = sm.load_seller_master_from_sheet()
+
+    assert first.stats.total_loaded == 1
+    assert second is first
+    assert third is not first
+    assert mock_client.return_value.fetch_worksheet_values.call_count == 2
+    sm.clear_seller_master_cache()

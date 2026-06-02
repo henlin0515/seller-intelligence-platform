@@ -695,6 +695,35 @@ body {
   font-weight: 700;
 }
 
+.settings-sync-card {
+  margin: 1.25rem 0 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--sip-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.settings-sync-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sip-text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.settings-sync-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--sip-text);
+}
+
+.settings-sync-meta {
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--sip-text-secondary);
+}
+
 .settings-list {
   margin: 1.5rem 0 0;
   padding-left: 1.2rem;

@@ -505,13 +505,18 @@
               <h1 data-i18n="settings.title">Settings</h1>
               <p class="subtitle" data-i18n="settings.subtitle">Platform configuration and integrations.</p>
               <p class="settings-auth-user hidden" id="settingsAuthUser"></p>
+              <div class="settings-sync-card">
+                <div class="settings-sync-label" data-i18n="settings.sellerMasterSyncLabel">Seller Master Last Sync Time</div>
+                <div class="settings-sync-value" id="settingsSellerMasterSync">—</div>
+                <div class="settings-sync-meta" id="settingsSellerMasterMeta"></div>
+              </div>
               <button type="button" id="logoutBtn" class="btn btn-secondary btn-sm">Sign out</button>
               <ul class="settings-list">
                 <li data-i18n="settings.li1">AI Assistant uses your Anthropic API key from server environment (not exposed to browser)</li>
                 <li data-i18n="settings.li2">Replies match the language of your question</li>
                 <li data-i18n="settings.li3">Sources are fetched from seller.shopee.ph/edu</li>
-                <li data-i18n="settings.li4">Seller Intelligence loads metrics from the Google Sheets mirror (AI DATA tab)</li>
-                <li data-i18n="settings.li5">Click Refresh on Seller Intelligence to reload the seller cache</li>
+                <li data-i18n="settings.li4">Seller Intelligence loads seller master from Google Sheets (shpoee link tab)</li>
+                <li data-i18n="settings.li5">Seller Master auto-refreshes every 5 minutes from Google Sheets</li>
               </ul>
             </div>
           </div>
