@@ -30,7 +30,6 @@
       filters: defaultBusinessFilters(),
       expanded: new Set(),
       shellReady: false,
-      viewMode: "portfolio",
     },
     assortment: {
       raw: null,
@@ -504,17 +503,7 @@
     return f;
   }
 
-  /* ---------- Business render ---------- */
-
-  function businessViewToggleHtml(mode) {
-    const portfolioActive = mode === "portfolio" ? " is-active" : "";
-    const sellerActive = mode === "seller" ? " is-active" : "";
-    return `
-      <div class="si-biz-view-toggle" role="tablist" aria-label="Business Intelligence view">
-        <button type="button" class="si-biz-view-btn${portfolioActive}" data-biz-view="portfolio" role="tab" aria-selected="${mode === "portfolio"}">Portfolio View</button>
-        <button type="button" class="si-biz-view-btn${sellerActive}" data-biz-view="seller" role="tab" aria-selected="${mode === "seller"}">Seller View</button>
-      </div>`;
-  }
+  /* ---------- Portfolio overview (Dashboard) ---------- */
 
   function renderPortfolioKpi(label, value, sub, accent) {
     const accentCls = accent ? ` si-port-kpi--${accent}` : "";
@@ -696,41 +685,6 @@
       </div>`;
   }
 
-  function bindBusinessViewToggle(el) {
-    el.querySelectorAll("[data-biz-view]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const mode = btn.dataset.bizView;
-        if (!mode || state.business.viewMode === mode) return;
-        state.business.viewMode = mode;
-        paintBusinessShell();
-      });
-    });
-  }
-
-  function paintBusinessShell() {
-    const el = containers.siBusiness;
-    const st = state.business;
-    if (!el || !st.raw) return;
-    const toggle = el.querySelector("[data-biz-view-toggle]");
-    if (toggle) {
-      toggle.outerHTML = businessViewToggleHtml(st.viewMode);
-      bindBusinessViewToggle(el);
-    }
-    const portfolioEl = el.querySelector("[data-portfolio-root]");
-    const sellerEl = el.querySelector("[data-seller-root]");
-    if (portfolioEl) {
-      portfolioEl.hidden = st.viewMode !== "portfolio";
-      if (st.viewMode === "portfolio") {
-        portfolioEl.innerHTML = renderPortfolioOverview(st.raw);
-        animateSobBars(portfolioEl);
-      }
-    }
-    if (sellerEl) {
-      sellerEl.hidden = st.viewMode !== "seller";
-      if (st.viewMode === "seller") paintBusinessList();
-    }
-  }
-
   function fmtDetail(value, fallback) {
     if (value == null || value === "") return fallback || "—";
     return escapeHtml(String(value));
@@ -844,17 +798,7 @@
       metas.siBusiness.textContent = `${periodLabel(data.periods)} · ${src}${collected} · USD/PHP ${data.usd_php_rate}`;
     }
     if (!state.business.shellReady) {
-      const showPortfolio = state.business.viewMode === "portfolio";
-      el.innerHTML = `
-        <div class="si-biz-shell">
-          <div data-biz-view-toggle>${businessViewToggleHtml(state.business.viewMode)}</div>
-          <div class="si-biz-view-panel" data-portfolio-root${showPortfolio ? "" : " hidden"}></div>
-          <div class="si-biz-view-panel" data-seller-root${showPortfolio ? " hidden" : ""}>
-            ${businessToolbarHtml(state.business.filters)}
-            <div class="si-v1-list" data-si-list></div>
-          </div>
-        </div>`;
-      bindBusinessViewToggle(el);
+      el.innerHTML = `${businessToolbarHtml(state.business.filters)}<div class="si-v1-list" data-si-list></div>`;
       const onToolbar = (ev) => {
         if (ev?.reset) state.business.filters = defaultBusinessFilters();
         else {
@@ -870,7 +814,7 @@
       bindToolbar(el.querySelector("[data-toolbar]"), onToolbar);
       state.business.shellReady = true;
     }
-    paintBusinessShell();
+    paintBusinessList();
   }
 
   /* ---------- Assortment render ---------- */
@@ -1028,31 +972,13 @@
   function renderDashboard(data) {
     const el = containers.siDashboard;
     if (!el) return;
-    const p = data.periods;
+    const fm = data.modules?.business_intelligence || {};
+    const src = fm.fastmoss_connected ? "FastMoss TikTok" : "Seller master";
     if (metas.siDashboard) {
-      metas.siDashboard.textContent = `${periodLabel(p)} · USD/PHP ${data.usd_php_rate}`;
+      metas.siDashboard.textContent = `${periodLabel(data.periods)} · ${src} · USD/PHP ${data.usd_php_rate}`;
     }
-    const mods = data.modules || {};
-    el.innerHTML = `
-      <div class="si-v1-cards">
-        <article class="si-v1-card">
-          <div class="si-v1-card-label">Sellers</div>
-          <div class="si-v1-card-value">${escapeHtml(String(data.seller_count ?? 0))}</div>
-        </article>
-        <article class="si-v1-card">
-          <div class="si-v1-card-label">Business</div>
-          <div class="si-v1-card-value"><span class="si-v1-badge si-v1-badge--ok">${escapeHtml(mods.business_intelligence?.status || "—")}</span></div>
-          <p class="si-v1-card-sub">FastMoss ${mods.business_intelligence?.fastmoss_connected ? "on" : "off"} · TikTok ${mods.business_intelligence?.tiktok_collected ?? "—"}</p>
-        </article>
-        <article class="si-v1-card">
-          <div class="si-v1-card-label">Assortment</div>
-          <div class="si-v1-card-value"><span class="si-v1-badge si-v1-badge--warn">${escapeHtml(mods.assortment_intelligence?.status || "—")}</span></div>
-        </article>
-        <article class="si-v1-card">
-          <div class="si-v1-card-label">Voucher</div>
-          <div class="si-v1-card-value">${escapeHtml(mods.voucher_intelligence?.value || "N/A")}</div>
-        </article>
-      </div>`;
+    el.innerHTML = renderPortfolioOverview(data);
+    animateSobBars(el);
   }
 
   function renderVoucher(data) {
@@ -1098,7 +1024,7 @@
     const path = paths[view];
     if (!path) return;
 
-    const useCache = cache[view] && view !== "siBusiness" && view !== "siAssortment";
+    const useCache = cache[view] && view !== "siBusiness" && view !== "siAssortment" && view !== "siDashboard";
     if (useCache) {
       if (view === "siDashboard") renderDashboard(cache[view]);
       else if (view === "siVoucher") renderVoucher(cache[view]);

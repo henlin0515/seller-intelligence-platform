@@ -391,6 +391,6 @@
   renderLearningCenter();
   initAuthUi().then(() => {
     fetchAndUpdateHomeStats();
-    navigate("home");
+    navigate("siDashboard");
   });
 })();

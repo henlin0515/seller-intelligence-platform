@@ -61,6 +61,7 @@ async def intelligence_v1_dashboard():
     business = get_business_intelligence_payload(master)
     fastmoss_meta = get_business_intelligence_meta()
     imp = master.stats.as_dict()
+    portfolio = build_portfolio_overview(business, total_sellers=len(business))
     return {
         "version": "v1",
         "reference_today": today.isoformat(),
@@ -69,6 +70,7 @@ async def intelligence_v1_dashboard():
         "data_source": master.data_source,
         "tab": master.tab,
         "seller_count": len(business),
+        "portfolio": portfolio,
         "import": imp,
         "modules": {
             "business_intelligence": {
@@ -98,7 +100,6 @@ async def intelligence_v1_business():
     sellers = get_business_intelligence_payload(master)
     tiktok_available = sum(1 for s in sellers if s.get("tiktok_data_status") == "available")
     shopee_available = sum(1 for s in sellers if s.get("shopee_data_status") == "available")
-    portfolio = build_portfolio_overview(sellers, total_sellers=len(sellers))
     return {
         "version": "v1",
         "data_source": master.data_source,
@@ -106,7 +107,6 @@ async def intelligence_v1_business():
         "periods": resolve_periods(today).as_dict(),
         "usd_php_rate": USD_PHP_RATE,
         "fastmoss": fastmoss_meta,
-        "portfolio": portfolio,
         "summary": {
             "seller_count": len(sellers),
             "tiktok_available": tiktok_available,
