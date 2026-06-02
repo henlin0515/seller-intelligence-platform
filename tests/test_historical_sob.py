@@ -16,6 +16,8 @@ from seller.intelligence.historical_sob.ytd_monthly import (
     lookup_ytd_record,
     normalize_shop_name,
     parse_ytd_monthly_rows,
+    resolve_ytd_monthly_tab_title,
+    _header_row_has_ytd_columns,
 )
 from seller.intelligence.seller_master import (
     SellerMasterImportStats,
@@ -61,6 +63,18 @@ class YtdMonthlyParseTests(unittest.TestCase):
         rec = lookup_ytd_record(ytd, shop_name="LaLa_Shoes.PH", shop_id="64329852")
         self.assertIsNotNone(rec)
         self.assertEqual(rec.april_shopee_gmv, 300.0)
+
+    def test_resolve_ytd_tab_title_case_insensitive(self):
+        titles = ["AI data", "YTD Monthly Data", "shpoee link"]
+        self.assertEqual(
+            resolve_ytd_monthly_tab_title(titles, "ytd monthly data"),
+            "YTD Monthly Data",
+        )
+
+    def test_header_row_detects_ytd_columns(self):
+        header = ["shop_name", "shop_id", "ytd_apr_adgmv", "ytd_may_adgmv"]
+        self.assertTrue(_header_row_has_ytd_columns(header))
+        self.assertFalse(_header_row_has_ytd_columns(["shop_name", "shop_id", "other"]))
 
 
 class HistoricalSobRowTests(unittest.TestCase):

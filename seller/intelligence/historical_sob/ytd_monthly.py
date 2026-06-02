@@ -30,6 +30,91 @@ def normalize_shop_name(name: str) -> str:
     return (name or "").strip().casefold()
 
 
+def normalize_tab_name(title: str) -> str:
+    return re.sub(r"\s+", " ", (title or "").strip()).lower()
+
+
+def resolve_ytd_monthly_tab_title(titles: list[str], hint: str | None = None) -> str | None:
+    """Resolve mirror tab for Historical SOB YTD data (case/spacing tolerant)."""
+    if not titles:
+        return None
+    preferred = (hint or ytd_monthly_tab_name()).strip()
+    if preferred in titles:
+        return preferred
+
+    by_norm = {normalize_tab_name(title): title for title in titles}
+    hit = by_norm.get(normalize_tab_name(preferred))
+    if hit:
+        return hit
+
+    for norm, original in by_norm.items():
+        compact = norm.replace(" ", "").replace("_", "")
+        if compact == "ytdmonthlydata":
+            return original
+        if "ytd" in norm and "month" in norm:
+            return original
+    return None
+
+
+def _ytd_tab_name_candidates(titles: list[str], hint: str) -> list[str]:
+    """Prefer tabs whose names look like YTD monthly before scanning headers."""
+    resolved = resolve_ytd_monthly_tab_title(titles, hint)
+    if resolved:
+        return [resolved]
+
+    scored: list[tuple[int, str]] = []
+    hint_norm = normalize_tab_name(hint)
+    for title in titles:
+        norm = normalize_tab_name(title)
+        compact = norm.replace(" ", "").replace("_", "")
+        score = 0
+        if norm == hint_norm:
+            score += 100
+        if "ytd" in norm:
+            score += 40
+        if "month" in norm:
+            score += 30
+        if "data" in norm:
+            score += 10
+        if compact == "ytdmonthlydata":
+            score += 80
+        if score:
+            scored.append((score, title))
+    scored.sort(key=lambda item: (-item[0], item[1].lower()))
+    return [title for _, title in scored]
+
+
+def _header_row_has_ytd_columns(header_row: list[Any]) -> bool:
+    has_shop_name = False
+    has_apr = False
+    has_may = False
+    for cell in header_row:
+        label = _cell([cell], 0).lower()
+        if _HEADER_SHOP_NAME.match(label):
+            has_shop_name = True
+        elif _HEADER_YTD_APR.match(label):
+            has_apr = True
+        elif _HEADER_YTD_MAY.match(label):
+            has_may = True
+    return has_shop_name and (has_apr or has_may)
+
+
+def discover_ytd_monthly_tab(
+    client: Any,
+    titles: list[str],
+    *,
+    hint: str | None = None,
+) -> tuple[str | None, list[list[Any]] | None]:
+    """Resolve tab by name, then scan likely tabs for YTD header columns."""
+    preferred = (hint or ytd_monthly_tab_name()).strip()
+    candidates = _ytd_tab_name_candidates(titles, preferred)
+    for title in candidates:
+        rows = client.fetch_worksheet_values(title)
+        if rows and _header_row_has_ytd_columns(rows[0]):
+            return title, rows
+    return None, None
+
+
 @dataclass(frozen=True)
 class YtdMonthlyRecord:
     shop_id: str
@@ -237,14 +322,40 @@ def load_ytd_monthly_from_sheet(*, force_refresh: bool = False) -> YtdMonthlyLoa
 
     try:
         client = get_sheets_client()
-        rows = client.fetch_worksheet_values(tab)
-        result = parse_ytd_monthly_rows(rows, tab=tab)
+        titles = client.list_worksheet_titles()
+        resolved_tab = resolve_ytd_monthly_tab_title(titles, tab)
+        rows: list[list[Any]] | None = None
+        if resolved_tab:
+            rows = client.fetch_worksheet_values(resolved_tab)
+            tab = resolved_tab
+        else:
+            discovered_tab, discovered_rows = discover_ytd_monthly_tab(client, titles, hint=tab)
+            if discovered_tab and discovered_rows is not None:
+                tab = discovered_tab
+                rows = discovered_rows
+            else:
+                similar = [
+                    title
+                    for title in titles
+                    if "ytd" in normalize_tab_name(title) or "month" in normalize_tab_name(title)
+                ]
+                sample = similar[:8] or titles[:8]
+                message = (
+                    f"YTD monthly tab not found (expected {tab!r}). "
+                    f"Similar tabs: {sample}"
+                )
+                logger.warning(message)
+                result = _empty_result(tab=tab, load_error=message)
+                _cache = result
+                return result
+
+        result = parse_ytd_monthly_rows(rows or [], tab=tab)
     except GoogleSheetsNotConfiguredError as exc:
         logger.warning("YTD monthly load skipped: %s", exc)
         result = _empty_result(tab=tab, load_error=str(exc))
     except Exception as exc:
         logger.exception("YTD monthly load failed for tab %r", tab)
-        result = _empty_result(tab=tab, load_error=str(exc))
+        result = _empty_result(tab=tab, load_error=f"YTD monthly load failed: {exc}")
     else:
         logger.info(
             "YTD monthly loaded from tab %r: %s shops by shop_name (%s rows read)",
