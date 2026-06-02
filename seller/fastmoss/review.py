@@ -230,7 +230,13 @@ def _mapping_identity(row: dict[str, Any]) -> tuple[str, str, str]:
     )
 
 
+def is_manual_override(record: dict[str, Any] | None) -> bool:
+    return bool(record and record.get("manual_override"))
+
+
 def preserve_manual_review(existing: dict[str, Any] | None, mapping_row: dict[str, Any]) -> bool:
+    if is_manual_override(existing) or mapping_row.get("manual_override"):
+        return True
     if not existing:
         return False
     prior = str(existing.get("review_status") or "")
@@ -258,6 +264,9 @@ def upsert_review_from_mapping(
     if force_status:
         review_status = force_status
         reason = notes or f"Set to {force_status}"
+    elif mapping_row.get("manual_override"):
+        review_status = REVIEW_APPROVED
+        reason = notes or "Manual mapping override — locked approved"
     elif preserve_manual_review(existing, mapping_row):
         review_status = str(existing.get("review_status"))
         reason = str(existing.get("notes") or "Manual review preserved")
@@ -282,8 +291,13 @@ def upsert_review_from_mapping(
         "notes": notes or reason,
         "updated_at": now,
     }
+    if mapping_row.get("manual_override") or is_manual_override(existing):
+        record["manual_override"] = True
     if reviewed_by:
         record["reviewed_by"] = reviewed_by
+        record["reviewed_at"] = now
+    elif mapping_row.get("manual_override"):
+        record["reviewed_by"] = record.get("reviewed_by") or "manual_override"
         record["reviewed_at"] = now
     reviews[shop_id] = record
     return record
@@ -316,6 +330,89 @@ def sync_reviews_from_mappings(
     return data
 
 
+def apply_manual_mapping_override(
+    shop_id: str,
+    *,
+    tiktok_shop_name: str | None = None,
+    fastmoss_shop_id: str,
+    fastmoss_shop_name: str,
+    fastmoss_shop_url: str | None = None,
+    confidence: float = 1.0,
+    reviewed_by: str = "manual_override",
+    notes: str | None = None,
+) -> dict[str, Any]:
+    """Replace FastMoss match, approve review, and lock against auto-matching/rejection."""
+    mapping_payload = load_fastmoss_mapping()
+    mapping_row = None
+    for row in mapping_payload.get("mappings") or []:
+        if str(row.get("shop_id")) == str(shop_id):
+            mapping_row = row
+            break
+    if mapping_row is None:
+        raise KeyError(f"Shop {shop_id} not found in mapping file")
+
+    if tiktok_shop_name:
+        mapping_row["tiktok_shop_name"] = tiktok_shop_name
+    mapping_row["fastmoss_shop_id"] = fastmoss_shop_id
+    mapping_row["fastmoss_shop_name"] = fastmoss_shop_name
+    mapping_row["fastmoss_shop_url"] = (
+        fastmoss_shop_url
+        or f"https://www.fastmoss.com/shop-marketing/detail/{fastmoss_shop_id}"
+    )
+    mapping_row["mapping_status"] = MAPPING_MAPPED
+    mapping_row["confidence"] = confidence
+    mapping_row["manual_override"] = True
+    save_fastmoss_mapping(mapping_payload)
+
+    data = load_review_store()
+    record = upsert_review_from_mapping(
+        mapping_row,
+        store=data,
+        reviewed_by=reviewed_by,
+        notes=notes or "Manual mapping override — locked approved",
+        force_status=REVIEW_APPROVED,
+    )
+    record["manual_override"] = True
+    record["review_status"] = REVIEW_APPROVED
+    data["reviews"][shop_id] = record
+    save_review_store(data)
+    return {"mapping": dict(mapping_row), "review": dict(record)}
+
+
+def sync_manual_overrides_from_mapping_file() -> list[dict[str, Any]]:
+    """Ensure review store reflects mapping rows flagged with manual_override."""
+    payload = load_fastmoss_mapping()
+    applied: list[dict[str, Any]] = []
+    for row in payload.get("mappings") or []:
+        if not isinstance(row, dict) or not row.get("manual_override"):
+            continue
+        shop_id = str(row.get("shop_id") or "")
+        if not shop_id:
+            continue
+        existing = get_review_by_shop_id(shop_id)
+        needs_apply = (
+            not existing
+            or not existing.get("manual_override")
+            or existing.get("review_status") != REVIEW_APPROVED
+            or _mapping_identity(existing) != _mapping_identity(row)
+        )
+        if not needs_apply:
+            continue
+        applied.append(
+            apply_manual_mapping_override(
+                shop_id,
+                tiktok_shop_name=str(row.get("tiktok_shop_name") or "") or None,
+                fastmoss_shop_id=str(row.get("fastmoss_shop_id") or ""),
+                fastmoss_shop_name=str(row.get("fastmoss_shop_name") or ""),
+                fastmoss_shop_url=str(row.get("fastmoss_shop_url") or "") or None,
+                confidence=float(row.get("confidence") or 1.0),
+                notes=str(existing.get("notes") if existing else "")
+                or "Manual mapping override — locked approved",
+            )
+        )
+    return applied
+
+
 def set_review_decision(
     shop_id: str,
     *,
@@ -326,6 +423,7 @@ def set_review_decision(
     fastmoss_shop_name: str | None = None,
     fastmoss_shop_url: str | None = None,
     confidence: float | None = None,
+    manual_override: bool = False,
 ) -> dict[str, Any]:
     """Persist approve/reject/select and update fastmoss_mapping.json when candidate chosen."""
     mapping_payload = load_fastmoss_mapping()
@@ -344,6 +442,8 @@ def set_review_decision(
         mapping_row["mapping_status"] = MAPPING_MAPPED
         if confidence is not None:
             mapping_row["confidence"] = confidence
+        if manual_override:
+            mapping_row["manual_override"] = True
         save_fastmoss_mapping(mapping_payload)
 
     data = load_review_store()
@@ -359,6 +459,9 @@ def set_review_decision(
     record["review_status"] = review_status
     if notes:
         record["notes"] = notes
+    if manual_override:
+        record["manual_override"] = True
+        mapping_row["manual_override"] = True
     data["reviews"][shop_id] = record
     save_review_store(data)
     return record

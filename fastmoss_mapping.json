@@ -12,12 +12,13 @@
     {
       "shop_id": "64329852",
       "shop_name": "LaLa_Shoes.PH",
-      "tiktok_shop_name": "YOTO SHOES",
-      "fastmoss_shop_name": "YOTO SHOES",
-      "fastmoss_shop_id": "7494609333713275265",
-      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494609333713275265",
+      "tiktok_shop_name": "LALA",
+      "fastmoss_shop_name": "LALA",
+      "fastmoss_shop_id": "7494929890907294497",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494929890907294497",
       "mapping_status": "MAPPED",
-      "confidence": 1.0
+      "confidence": 1.0,
+      "manual_override": true
     },
     {
       "shop_id": "15868997",
@@ -162,12 +163,13 @@
     {
       "shop_id": "383771904",
       "shop_name": "8% STORE Eight Percent",
-      "tiktok_shop_name": "999 Studio",
-      "fastmoss_shop_name": "997 Studio",
-      "fastmoss_shop_id": "8649702564509812001",
-      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/8649702564509812001",
+      "tiktok_shop_name": "Eight Persent Store",
+      "fastmoss_shop_name": "Eight Persent Store",
+      "fastmoss_shop_id": "7494670296136190188",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494670296136190188",
       "mapping_status": "MAPPED",
-      "confidence": 0.9
+      "confidence": 1.0,
+      "manual_override": true
     },
     {
       "shop_id": "25587666",

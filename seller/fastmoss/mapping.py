@@ -45,6 +45,8 @@ def should_retry_fastmoss_mapping(
     force_refresh_all: bool = False,
 ) -> bool:
     """Whether to run FastMoss search again for this seller."""
+    if existing and existing.get("manual_override"):
+        return False
     if force_refresh_all:
         return True
     if existing is None:

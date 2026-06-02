@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-02T02:01:52Z",
+  "generated_at": "2026-06-02T12:00:54Z",
   "reference_today": "2026-06-02",
   "periods": {
     "reference_today": "2026-06-02",
@@ -16,40 +16,26 @@
   "usd_php_rate": 61.55,
   "source": "fastmoss_recentData",
   "summary": {
-    "processed": 26,
-    "success": 26,
-    "failed": 0
+    "processed": 24,
+    "success": 24,
+    "failed": 0,
+    "approved_only": true
   },
   "sellers": [
     {
       "shop_id": "64329852",
       "shop_name": "LaLa_Shoes.PH",
-      "tiktok_shop_name": "YOTO SHOES",
-      "fastmoss_shop_id": "7494609333713275265",
-      "fastmoss_shop_name": "YOTO SHOES",
+      "tiktok_shop_name": "LALA",
+      "fastmoss_shop_id": "7494929890907294497",
+      "fastmoss_shop_name": "LALA",
       "status": "success",
       "error": null,
-      "mtd_gmv_php": 1496852.1,
-      "m1_gmv_php": 1285051.39,
-      "tiktok_mtd_adgmv_php": 1496852.1,
-      "tiktok_m1_adgmv_php": 1285051.39,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494609333713275265&start_date=2026-06-01&end_date=2026-06-01&region=PH&_time=1780365681&cnonce=55360448",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494609333713275265&start_date=2026-05-01&end_date=2026-05-01&region=PH&_time=1780365681&cnonce=79764273"
-    },
-    {
-      "shop_id": "15868997",
-      "shop_name": "Sklyer",
-      "tiktok_shop_name": "Skyler Shop",
-      "fastmoss_shop_id": "7494113782734292853",
-      "fastmoss_shop_name": "Skyler shop8",
-      "status": "success",
-      "error": null,
-      "mtd_gmv_php": 50079.52,
-      "m1_gmv_php": 8588.22,
-      "tiktok_mtd_adgmv_php": 50079.52,
-      "tiktok_m1_adgmv_php": 8588.22,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494113782734292853&start_date=2026-06-01&end_date=2026-06-01&region=PH&_time=1780365682&cnonce=90050526",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494113782734292853&start_date=2026-05-01&end_date=2026-05-01&region=PH&_time=1780365682&cnonce=45189657"
+      "mtd_gmv_php": 94802.62,
+      "m1_gmv_php": 109544.83,
+      "tiktok_mtd_adgmv_php": 94802.62,
+      "tiktok_m1_adgmv_php": 109544.83,
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494929890907294497&start_date=2026-06-01&end_date=2026-06-01&region=PH&_time=1780401652&cnonce=65974736",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494929890907294497&start_date=2026-05-01&end_date=2026-05-01&region=PH&_time=1780401652&cnonce=95817493"
     },
     {
       "shop_id": "157416761",
@@ -110,21 +96,6 @@
       "tiktok_m1_adgmv_php": 2172404.93,
       "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494615843035646064&start_date=2026-06-01&end_date=2026-06-01&region=PH&_time=1780365686&cnonce=29040213",
       "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494615843035646064&start_date=2026-05-01&end_date=2026-05-01&region=PH&_time=1780365686&cnonce=62138159"
-    },
-    {
-      "shop_id": "50099410",
-      "shop_name": "UISN Mall",
-      "tiktok_shop_name": "STAY YOUNG.PH",
-      "fastmoss_shop_id": "7494955659735107850",
-      "fastmoss_shop_name": "STAYOUNG.PH",
-      "status": "success",
-      "error": null,
-      "mtd_gmv_php": 137756.32,
-      "m1_gmv_php": 169059.63,
-      "tiktok_mtd_adgmv_php": 137756.32,
-      "tiktok_m1_adgmv_php": 169059.63,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494955659735107850&start_date=2026-06-01&end_date=2026-06-01&region=PH&_time=1780365687&cnonce=67619804",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494955659735107850&start_date=2026-05-01&end_date=2026-05-01&region=PH&_time=1780365687&cnonce=17780546"
     },
     {
       "shop_id": "5185360",
@@ -219,17 +190,17 @@
     {
       "shop_id": "383771904",
       "shop_name": "8% STORE Eight Percent",
-      "tiktok_shop_name": "999 Studio",
-      "fastmoss_shop_id": "8649702564509812001",
-      "fastmoss_shop_name": "997 Studio",
+      "tiktok_shop_name": "Eight Persent Store",
+      "fastmoss_shop_id": "7494670296136190188",
+      "fastmoss_shop_name": "Eight Persent Store",
       "status": "success",
       "error": null,
-      "mtd_gmv_php": 0.0,
-      "m1_gmv_php": 0.0,
-      "tiktok_mtd_adgmv_php": 0.0,
-      "tiktok_m1_adgmv_php": 0.0,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=8649702564509812001&start_date=2026-06-01&end_date=2026-06-01&region=PH&_time=1780365695&cnonce=66646618",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=8649702564509812001&start_date=2026-05-01&end_date=2026-05-01&region=PH&_time=1780365695&cnonce=72521356"
+      "mtd_gmv_php": 20889.0,
+      "m1_gmv_php": 67331.46,
+      "tiktok_mtd_adgmv_php": 20889.0,
+      "tiktok_m1_adgmv_php": 67331.46,
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494670296136190188&start_date=2026-06-01&end_date=2026-06-01&region=PH&_time=1780401653&cnonce=81668765",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494670296136190188&start_date=2026-05-01&end_date=2026-05-01&region=PH&_time=1780401654&cnonce=22531165"
     },
     {
       "shop_id": "25587666",

@@ -102,6 +102,42 @@ class MappingReviewBiGatingTests(unittest.TestCase):
         self.assertIsNone(record["mtd_tiktok_sob_percent"])
 
 
+class MappingReviewManualOverrideTests(unittest.TestCase):
+    def test_manual_override_skips_auto_rejection(self):
+        from seller.fastmoss.review import upsert_review_from_mapping, REVIEW_APPROVED
+
+        row = _mapping_row(
+            shop_name="LaLa_Shoes.PH",
+            tiktok_shop_name="LALA",
+            fastmoss_shop_name="LALA",
+            fastmoss_shop_id="7494929890907294497",
+            confidence=1.0,
+            manual_override=True,
+        )
+        store = {"version": 1, "reviews": {}}
+        record = upsert_review_from_mapping(row, store=store)
+        self.assertEqual(record["review_status"], REVIEW_APPROVED)
+        self.assertTrue(record.get("manual_override"))
+
+    def test_should_retry_skips_manual_override(self):
+        from seller.fastmoss.mapping import should_retry_fastmoss_mapping
+        from seller.intelligence.seller_master import SellerMasterRecord
+
+        seller = SellerMasterRecord(
+            shop_id="64329852",
+            shop_name="LaLa_Shoes.PH",
+            shopee_link="",
+            tiktok_shop_name="LALA",
+        )
+        existing = _mapping_row(
+            shop_id="64329852",
+            tiktok_shop_name="LALA",
+            fastmoss_shop_name="LALA",
+            manual_override=True,
+        )
+        self.assertFalse(should_retry_fastmoss_mapping(seller, existing, force_refresh_all=True))
+
+
 class MappingReviewSyncTests(unittest.TestCase):
     def test_ensure_review_store_synced_from_empty(self):
         mappings = [
