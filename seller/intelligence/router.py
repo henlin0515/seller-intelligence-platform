@@ -16,6 +16,7 @@ from seller.intelligence.assortment import get_assortment_intelligence
 from seller.intelligence.business.meta import (
     get_business_intelligence_meta,
     get_business_intelligence_payload,
+    get_shopee_adgmv_match_summary,
 )
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.periods import resolve_periods
@@ -95,6 +96,7 @@ async def intelligence_v1_business():
     fastmoss_meta = get_business_intelligence_meta()
     sellers = get_business_intelligence_payload(master)
     tiktok_available = sum(1 for s in sellers if s.get("tiktok_data_status") == "available")
+    shopee_available = sum(1 for s in sellers if s.get("shopee_data_status") == "available")
     return {
         "version": "v1",
         "data_source": master.data_source,
@@ -106,8 +108,11 @@ async def intelligence_v1_business():
             "seller_count": len(sellers),
             "tiktok_available": tiktok_available,
             "tiktok_na": len(sellers) - tiktok_available,
+            "shopee_available": shopee_available,
+            "shopee_na": len(sellers) - shopee_available,
         },
         "sellers": sellers,
+        "shopee_adgmv": get_shopee_adgmv_match_summary(master),
         "import": master.stats.as_dict(),
     }
 

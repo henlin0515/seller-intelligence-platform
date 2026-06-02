@@ -89,7 +89,19 @@
     return `${fmtNum(n, 1)}%`;
   }
 
-  function fmtNa(reason) {
+  function fmtShopeeUsd(value, reason) {
+    if (value == null || Number.isNaN(value)) {
+      return fmtNa(reason || "Shopee ADGMV not found in Tracker");
+    }
+    return escapeHtml(fmtUsd(value));
+  }
+
+  function fmtSobPct(value, reason) {
+    if (value == null || Number.isNaN(value)) {
+      return fmtNa(reason || "SOB requires Shopee and TikTok ADGMV");
+    }
+    return `${fmtNum(value, 1)}%`;
+  }
     const title = reason ? ` title="${escapeHtml(reason)}"` : "";
     return `<span class="si-v1-na"${title}>NA</span>`;
   }
@@ -436,8 +448,8 @@
 
   function renderBusinessTableRow(s, expanded) {
     const tkReason = s.tiktok_na_reason || "TikTok data unavailable";
-    const shReason = s.shopee_na_reason || "Shopee ADGMV source not connected";
-    const sobReason = s.sob_na_reason || "SOB requires Shopee ADGMV";
+    const shReason = s.shopee_na_reason || "Shopee ADGMV not found in Tracker";
+    const sobReason = s.sob_na_reason || "SOB requires Shopee and TikTok ADGMV";
     const tkMom =
       s.tiktok_data_status === "available"
         ? renderMom(s.tiktok_mom_percent, tkReason)
@@ -453,13 +465,15 @@
           <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_mtd_adgmv_usd, s.tiktok_mtd_gmv_php, tkReason)}</td>
           <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_m1_adgmv_usd, s.tiktok_m1_gmv_php, tkReason)}</td>
           <td class="si-v1-num">${tkMom}</td>
-          <td class="si-v1-num">${fmtNa(shReason)}</td>
-          <td class="si-v1-num">${fmtNa(shReason)}</td>
-          <td class="si-v1-num">${fmtNa(sobReason)}</td>
-          <td class="si-v1-num">${fmtNa(sobReason)}</td>
+          <td class="si-v1-num">${fmtShopeeUsd(s.shopee_mtd_adgmv_usd, shReason)}</td>
+          <td class="si-v1-num">${fmtShopeeUsd(s.shopee_m1_adgmv_usd, shReason)}</td>
+          <td class="si-v1-num si-v1-sob-shp">${fmtSobPct(s.mtd_shopee_sob_percent, sobReason)}</td>
+          <td class="si-v1-num si-v1-sob-tk">${fmtSobPct(s.mtd_tiktok_sob_percent, sobReason)}</td>
+          <td class="si-v1-num si-v1-sob-shp">${fmtSobPct(s.m1_shopee_sob_percent, sobReason)}</td>
+          <td class="si-v1-num si-v1-sob-tk">${fmtSobPct(s.m1_tiktok_sob_percent, sobReason)}</td>
         </tr>
         <tr class="si-biz-row-detail">
-          <td colspan="11">${renderBusinessDetailPanel(s)}</td>
+          <td colspan="13">${renderBusinessDetailPanel(s)}</td>
         </tr>
       </tbody>`;
   }
@@ -479,8 +493,10 @@
               <th>TikTok MoM %</th>
               <th>Shopee MTD ADGMV</th>
               <th>Shopee M-1 ADGMV</th>
-              <th>MTD SOB</th>
-              <th>M-1 SOB</th>
+              <th>MTD SOB Shopee</th>
+              <th>MTD SOB TikTok</th>
+              <th>M-1 SOB Shopee</th>
+              <th>M-1 SOB TikTok</th>
             </tr>
           </thead>
           ${sellers.map((s) => renderBusinessTableRow(s, expandedSet.has(s.shop_id))).join("")}

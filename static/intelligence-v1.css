@@ -666,6 +666,14 @@
   text-decoration: underline;
 }
 
+.si-v1-table--business .si-v1-sob-shp {
+  color: #ff8c33;
+}
+
+.si-v1-table--business .si-v1-sob-tk {
+  color: #b57aff;
+}
+
 .si-v1-na {
   color: #888;
   font-style: italic;
