@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import unittest
-
 from unittest.mock import patch
 
 from seller.fastmoss.mapping import MAPPING_MAPPED
@@ -11,6 +10,7 @@ from seller.fastmoss.review import (
     REVIEW_APPROVED,
     REVIEW_PENDING,
     REVIEW_REJECTED,
+    ensure_review_store_synced,
     suggest_review_status,
 )
 
@@ -100,6 +100,29 @@ class MappingReviewBiGatingTests(unittest.TestCase):
         self.assertEqual(record["tiktok_data_status"], "na")
         self.assertIsNone(record["tiktok_mtd_adgmv_usd"])
         self.assertIsNone(record["mtd_tiktok_sob_percent"])
+
+
+class MappingReviewSyncTests(unittest.TestCase):
+    def test_ensure_review_store_synced_from_empty(self):
+        mappings = [
+            _mapping_row(
+                shop_id="1",
+                shop_name="Mumu PH",
+                tiktok_shop_name="Mumu PH",
+                fastmoss_shop_name="Mumu PH",
+            )
+        ]
+        with (
+            patch("seller.fastmoss.review.load_mapping_rows_for_review", return_value=mappings),
+            patch(
+                "seller.fastmoss.review.load_review_store",
+                return_value={"version": 1, "updated_at": None, "reviews": {}},
+            ),
+            patch("seller.fastmoss.review.save_review_store", side_effect=lambda payload, path=None: payload),
+        ):
+            result = ensure_review_store_synced(force=True)
+        self.assertEqual(len(result.get("reviews") or {}), 1)
+        self.assertEqual(result["reviews"]["1"]["review_status"], REVIEW_APPROVED)
 
 
 if __name__ == "__main__":

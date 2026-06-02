@@ -86,8 +86,11 @@
       PENDING_REVIEW: ["si-v1-badge--warn", "Pending review"],
       REJECTED: ["si-v1-badge--risk", "Rejected"],
     };
-    const [cls, label] = map[review] || ["si-v1-badge--muted", review || "Pending review"];
-    return `<span class="si-v1-badge ${cls}">${escapeHtml(label)}</span>`;
+    if (map[review]) {
+      const [cls, label] = map[review];
+      return `<span class="si-v1-badge ${cls}">${escapeHtml(label)}</span>`;
+    }
+    return fastmossStatusBadge(seller.fastmoss_match_status);
   }
 
   function escapeHtml(text) {

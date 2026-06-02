@@ -168,8 +168,56 @@ def save_review_store(payload: dict[str, Any], path: Path | None = None) -> Path
     return target.resolve()
 
 
+def load_mapping_rows_for_review() -> list[dict[str, Any]]:
+    """Load FastMoss mapping rows, bootstrapping from Seller Master when missing."""
+    try:
+        payload = load_fastmoss_mapping()
+        rows = [row for row in (payload.get("mappings") or []) if isinstance(row, dict)]
+        if rows:
+            return rows
+    except OSError:
+        pass
+
+    try:
+        from seller.intelligence.seller_master import get_seller_master
+
+        master = get_seller_master()
+    except Exception:
+        return []
+
+    return [
+        {
+            "shop_id": seller.shop_id,
+            "shop_name": seller.shop_name,
+            "tiktok_shop_name": seller.tiktok_shop_name,
+            "fastmoss_shop_name": None,
+            "fastmoss_shop_id": None,
+            "fastmoss_shop_url": None,
+            "mapping_status": MAPPING_NOT_FOUND,
+            "confidence": 0.0,
+        }
+        for seller in master.sellers
+    ]
+
+
+def ensure_review_store_synced(*, force: bool = False) -> dict[str, Any]:
+    """Populate review store from mapping file + Seller Master when empty or stale."""
+    mappings = load_mapping_rows_for_review()
+    if not mappings:
+        return load_review_store()
+
+    store = load_review_store()
+    reviews: dict[str, Any] = store.get("reviews") or {}
+    mapping_ids = {str(row.get("shop_id") or "") for row in mappings if row.get("shop_id")}
+    review_ids = set(reviews.keys())
+    needs_sync = force or not reviews or mapping_ids != review_ids
+    if needs_sync:
+        return sync_reviews_from_mappings(mappings, store=store)
+    return store
+
+
 def get_review_by_shop_id(shop_id: str, store: dict[str, Any] | None = None) -> dict[str, Any] | None:
-    data = store if store is not None else load_review_store()
+    data = store if store is not None else ensure_review_store_synced()
     row = (data.get("reviews") or {}).get(str(shop_id))
     return dict(row) if isinstance(row, dict) else None
 
@@ -317,7 +365,7 @@ def set_review_decision(
 
 
 def review_summary(store: dict[str, Any] | None = None) -> dict[str, int]:
-    data = store if store is not None else load_review_store()
+    data = store if store is not None else ensure_review_store_synced()
     reviews = list((data.get("reviews") or {}).values())
     mapped = [r for r in reviews if str(r.get("mapping_status") or "").upper() == MAPPING_MAPPED]
     return {
@@ -330,7 +378,7 @@ def review_summary(store: dict[str, Any] | None = None) -> dict[str, int]:
 
 
 def list_review_rows(store: dict[str, Any] | None = None) -> list[dict[str, Any]]:
-    data = store if store is not None else load_review_store()
+    data = store if store is not None else ensure_review_store_synced()
     rows = [dict(r) for r in (data.get("reviews") or {}).values() if isinstance(r, dict)]
     order = {REVIEW_REJECTED: 0, REVIEW_PENDING: 1, REVIEW_APPROVED: 2}
     rows.sort(
@@ -346,6 +394,7 @@ def approved_mapping_rows(
     mapping_path: Path | None = None,
     review_path: Path | None = None,
 ) -> list[dict[str, Any]]:
+    ensure_review_store_synced()
     payload = load_fastmoss_mapping(mapping_path)
     store = load_review_store(review_path)
     out: list[dict[str, Any]] = []

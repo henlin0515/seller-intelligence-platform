@@ -248,6 +248,9 @@ def get_business_intelligence_payload(
     shopee_adgmv: ShopeeAdgmvLoadResult | None = None,
 ) -> list[dict[str, Any]]:
     """Return BI seller rows with TikTok FastMoss + Shopee Tracker ADGMV."""
+    from seller.fastmoss.review import ensure_review_store_synced
+
+    ensure_review_store_synced()
     loaded = master or get_seller_master()
     tracker = shopee_adgmv or get_shopee_adgmv()
     saved = load_business_intelligence_data()

@@ -164,6 +164,12 @@ async def on_startup() -> None:
     clear_settings_cache()
     log_startup_configuration()
     init_assortment_db()
+    try:
+        from seller.fastmoss.review import ensure_review_store_synced
+
+        ensure_review_store_synced()
+    except Exception as exc:
+        logger.warning("FastMoss mapping review bootstrap skipped: %s", exc)
     logger.info("Authentication enabled for all protected routes")
 
 

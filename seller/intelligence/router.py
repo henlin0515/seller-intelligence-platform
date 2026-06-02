@@ -213,8 +213,9 @@ async def intelligence_v1_refresh_fastmoss_mapping(force_all: bool = False):
 @router.get("/mapping-review")
 async def intelligence_v1_mapping_review_list():
     """List FastMoss mapping review rows and summary counts."""
-    from seller.fastmoss.review import list_review_rows, review_summary
+    from seller.fastmoss.review import ensure_review_store_synced, list_review_rows, review_summary
 
+    ensure_review_store_synced()
     rows = list_review_rows()
     summary = review_summary()
     pending = [r for r in rows if r.get("review_status") == "PENDING_REVIEW"][:10]
