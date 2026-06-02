@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hmac
 import logging
 
 from fastapi import APIRouter, HTTPException, Request
@@ -16,6 +15,7 @@ from seller.auth.session import (
     is_session_authenticated,
     session_public_view,
 )
+from seller.auth.users import authenticate, list_auth_users
 
 logger = logging.getLogger("auth")
 
@@ -52,14 +52,12 @@ async def login(body: LoginRequest, request: Request):
         logger.warning("Login blocked (lockout) ip=%s", ip)
         raise HTTPException(status_code=429, detail=GENERIC_LOGIN_ERROR)
 
-    if not settings.username or not settings.password:
-        logger.error("Login rejected: AUTH_USERNAME/AUTH_PASSWORD not configured")
+    if not list_auth_users():
+        logger.error("Login rejected: no auth users configured")
         raise HTTPException(status_code=503, detail=GENERIC_LOGIN_ERROR)
 
-    user_ok = hmac.compare_digest(body.username.strip(), settings.username)
-    pass_ok = hmac.compare_digest(body.password, settings.password)
-
-    if not (user_ok and pass_ok):
+    user = authenticate(body.username, body.password)
+    if user is None:
         record_failed_attempt(
             ip,
             username=body.username,
@@ -69,8 +67,8 @@ async def login(body: LoginRequest, request: Request):
         raise HTTPException(status_code=401, detail=GENERIC_LOGIN_ERROR)
 
     clear_attempts(ip)
-    establish_session(request.session, settings.username)
-    logger.info("Successful login ip=%s username=%s", ip, settings.username)
+    establish_session(request.session, user.username, role=user.role)
+    logger.info("Successful login ip=%s username=%s role=%s", ip, user.username, user.role)
     return {"ok": True, **session_public_view(request)}
 
 

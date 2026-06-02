@@ -1,0 +1,37 @@
+[
+  {
+    "username": "Yilun",
+    "password_hash": "pbkdf2_sha256$600000$c76d5c19233a02685134e9f642d04b31$5260806e8e2ff4f61e339ff86b5c89617d055f02cd7262d3c7aaa3a86e9fa061",
+    "role": "standard_user"
+  },
+  {
+    "username": "Eric",
+    "password_hash": "pbkdf2_sha256$600000$44408e40ba1a8fab686148aaf7c856d0$693d32ea90698d8a165eefd38478f6949cad42324852d33ffabb7bb6778c941f",
+    "role": "standard_user"
+  },
+  {
+    "username": "Kaiwen",
+    "password_hash": "pbkdf2_sha256$600000$6ef899e6ae97a0b9864812ca9bb13198$c6aadc2446b49b0214a484ff144ba48d5674ed86db160ea4e6df05eec76f1e88",
+    "role": "standard_user"
+  },
+  {
+    "username": "Nikki",
+    "password_hash": "pbkdf2_sha256$600000$ee258e5eeadcfea8764b88c4c44b5b27$e00fb8b8b27a27567f2d28945912ea393732926050008172b16a33324c8183df",
+    "role": "standard_user"
+  },
+  {
+    "username": "Lori",
+    "password_hash": "pbkdf2_sha256$600000$229c4d4aa536c72e9a82db328c053f82$6229fd6004b464b47f979322478efe3b5c68cc9d76ed1d2462ec94dcd5430733",
+    "role": "standard_user"
+  },
+  {
+    "username": "Frida",
+    "password_hash": "pbkdf2_sha256$600000$d0efbf4b442e1e8fb969e3637bc4982a$120f2d87f810df2c5f9d0d2e97a417c2b0695f9f52c99125e253486e4edb8293",
+    "role": "standard_user"
+  },
+  {
+    "username": "Paul",
+    "password_hash": "pbkdf2_sha256$600000$83a7b521ec3e7e42f645888d9934e28e$e104b826dbc967851a0025b0a2c4fd4108afdc0c7272857d73bd66f328508905",
+    "role": "standard_user"
+  }
+]
