@@ -211,9 +211,30 @@
         </div>
 
         <div id="viewSiBusiness" class="app-view hidden si-v1-view">
-          <header class="si-v1-header">
-            <h1 data-i18n="si.businessTitle">Seller Level Analysis</h1>
+          <header class="si-v1-header si-v1-header--actions">
+            <div class="si-v1-header-row">
+              <h1 data-i18n="si.businessTitle">Seller Level Analysis</h1>
+              <div class="si-v1-header-actions">
+                <button
+                  type="button"
+                  id="siBusinessRefreshSheetsBtn"
+                  class="btn si-v1-action-btn"
+                  data-i18n="si.refreshSheets"
+                >
+                  Refresh Sheet Data
+                </button>
+                <button
+                  type="button"
+                  id="siBusinessRefreshMappingBtn"
+                  class="btn si-v1-action-btn"
+                  data-i18n="si.refreshFastmossMapping"
+                >
+                  Refresh FastMoss Mapping
+                </button>
+              </div>
+            </div>
             <p class="si-v1-meta" id="siBusinessMeta">—</p>
+            <p class="si-v1-meta si-v1-action-summary hidden" id="siBusinessActionSummary" role="status"></p>
           </header>
           <div id="siBusinessContent" class="si-v1-scroll"></div>
         </div>

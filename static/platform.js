@@ -373,6 +373,11 @@
       el.classList.toggle("hidden", key !== viewKey);
     });
 
+    const platformTopBar = document.getElementById("platformTopBar");
+    if (platformTopBar) {
+      platformTopBar.classList.toggle("hidden", viewKey === "siBusiness");
+    }
+
     if (assistantSidebarTools) {
       assistantSidebarTools.classList.toggle("hidden", viewKey !== "assistant");
     }
@@ -448,6 +453,7 @@
     getCurrentView: () => currentView,
     refreshAllSheetData,
     updatePlatformLastSync,
+    showPlatformToast,
   };
 
   globalRefreshSheetBtn?.addEventListener("click", () => {

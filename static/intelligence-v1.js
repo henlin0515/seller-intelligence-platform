@@ -53,9 +53,24 @@
     };
   }
 
-  function fetchApi(path) {
+  function fetchApi(path, options = {}) {
     const fn = window.SipApi?.fetch || fetch;
-    return fn(path, { credentials: "same-origin" });
+    return fn(path, { credentials: "same-origin", ...options });
+  }
+
+  function i18n(key, fallback = "") {
+    return window.SipI18n?.t?.(key, fallback) ?? fallback ?? key;
+  }
+
+  function formatMappingSummary(data) {
+    const template = i18n(
+      "si.mappingSummary",
+      "New mapped: {mapped} · Still not found: {notFound} · TikTok data fetched: {tiktok}"
+    );
+    return template
+      .replace("{mapped}", String(data.newly_mapped_count ?? 0))
+      .replace("{notFound}", String(data.still_not_found_count ?? 0))
+      .replace("{tiktok}", String(data.tiktok_data_refreshed_count ?? 0));
   }
 
   function escapeHtml(text) {
@@ -1316,6 +1331,88 @@
     }
   }
 
+  async function refreshBusinessSheets() {
+    const btn = document.getElementById("siBusinessRefreshSheetsBtn");
+    const mappingBtn = document.getElementById("siBusinessRefreshMappingBtn");
+    const defaultLabel = i18n("si.refreshSheets", "Refresh Sheet Data");
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add("is-loading");
+      btn.textContent = i18n("si.sheetsRefreshing", "Refreshing…");
+    }
+    if (mappingBtn) mappingBtn.disabled = true;
+    try {
+      if (window.ShpPlatform?.refreshAllSheetData) {
+        await window.ShpPlatform.refreshAllSheetData();
+      } else {
+        const res = await fetchApi("/api/intelligence/v1/refresh-sheets", { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "refresh failed");
+        window.ShpPlatform?.showPlatformToast?.(
+          i18n("si.sheetsRefreshSuccess", "Sheet data updated")
+        );
+        delete cache.siBusiness;
+        state.business.shellReady = false;
+        await onShow("siBusiness");
+      }
+    } catch (err) {
+      window.ShpPlatform?.showPlatformToast?.(err.message || "Refresh failed", "error");
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove("is-loading");
+        btn.textContent = defaultLabel;
+      }
+      if (mappingBtn) mappingBtn.disabled = false;
+    }
+  }
+
+  async function refreshBusinessFastmossMapping() {
+    const btn = document.getElementById("siBusinessRefreshMappingBtn");
+    const sheetsBtn = document.getElementById("siBusinessRefreshSheetsBtn");
+    const summaryEl = document.getElementById("siBusinessActionSummary");
+    const defaultLabel = i18n("si.refreshFastmossMapping", "Refresh FastMoss Mapping");
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add("is-loading");
+      btn.textContent = i18n("si.mappingRefreshing", "Mapping…");
+    }
+    if (sheetsBtn) sheetsBtn.disabled = true;
+    try {
+      const res = await fetchApi("/api/intelligence/v1/refresh-fastmoss-mapping", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "refresh failed");
+      window.ShpPlatform?.showPlatformToast?.(
+        i18n("si.mappingRefreshSuccess", "FastMoss mapping updated")
+      );
+      if (summaryEl) {
+        summaryEl.textContent = formatMappingSummary(data);
+        summaryEl.classList.remove("hidden");
+      }
+      delete cache.siBusiness;
+      state.business.shellReady = false;
+      await onShow("siBusiness");
+      return data;
+    } catch (err) {
+      window.ShpPlatform?.showPlatformToast?.(err.message || "Mapping refresh failed", "error");
+      throw err;
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove("is-loading");
+        btn.textContent = defaultLabel;
+      }
+      if (sheetsBtn) sheetsBtn.disabled = false;
+    }
+  }
+
+  document.getElementById("siBusinessRefreshSheetsBtn")?.addEventListener("click", () => {
+    refreshBusinessSheets().catch(() => {});
+  });
+  document.getElementById("siBusinessRefreshMappingBtn")?.addEventListener("click", () => {
+    refreshBusinessFastmossMapping().catch(() => {});
+  });
+
   window.ShpIntelligenceV1 = {
     onShow,
     clearCache: () => {
@@ -1325,5 +1422,6 @@
       state.business.expanded.clear();
       state.assortment.expanded.clear();
     },
+    refreshBusinessFastmossMapping,
   };
 })();

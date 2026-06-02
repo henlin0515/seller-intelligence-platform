@@ -902,6 +902,10 @@ body {
   padding-right: min(18rem, 42vw);
 }
 
+.si-v1-header--actions {
+  padding-right: 2rem;
+}
+
 @media (max-width: 640px) {
   .platform-top-bar {
     flex-direction: column;

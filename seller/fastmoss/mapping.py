@@ -7,10 +7,12 @@ import re
 import time
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from seller.fastmoss.search import REQUEST_DELAY_SEC, search_shops
-from seller.intelligence.seller_master import SellerMasterRecord, get_seller_master
+
+if TYPE_CHECKING:
+    from seller.intelligence.seller_master import SellerMasterRecord
 
 DEFAULT_MAPPING_PATH = Path("fastmoss_mapping.json")
 MAPPING_MAPPED = "MAPPED"
@@ -25,6 +27,38 @@ def load_fastmoss_mapping(path: str | Path | None = None) -> dict[str, Any]:
     target = Path(path) if path else DEFAULT_MAPPING_PATH
     with target.open(encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def save_fastmoss_mapping(payload: dict[str, Any], path: str | Path | None = None) -> Path:
+    target = Path(path) if path else DEFAULT_MAPPING_PATH
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, ensure_ascii=False)
+        handle.write("\n")
+    return target.resolve()
+
+
+def should_retry_fastmoss_mapping(
+    seller: SellerMasterRecord,
+    existing: dict[str, Any] | None,
+    *,
+    force_refresh_all: bool = False,
+) -> bool:
+    """Whether to run FastMoss search again for this seller."""
+    if force_refresh_all:
+        return True
+    if existing is None:
+        return True
+    status = str(existing.get("mapping_status") or MAPPING_NOT_FOUND).upper()
+    if status == MAPPING_MAPPED:
+        return False
+    if status in {MAPPING_NOT_FOUND, MAPPING_NEED_REVIEW}:
+        return True
+    if not str(existing.get("fastmoss_shop_id") or "").strip():
+        return True
+    existing_tiktok = str(existing.get("tiktok_shop_name") or "").strip()
+    current_tiktok = str(seller.tiktok_shop_name or "").strip()
+    return existing_tiktok != current_tiktok
 
 def _normalize_name(value: str) -> str:
     text = (value or "").lower().strip()
@@ -124,6 +158,8 @@ def build_fastmoss_mapping(
     delay_sec: float = REQUEST_DELAY_SEC,
 ) -> dict[str, Any]:
     """Search FastMoss for every seller master row and return mapping payload."""
+    from seller.intelligence.seller_master import get_seller_master
+
     loaded = get_seller_master(force_refresh=True) if sellers is None else None
     rows_in = sellers if sellers is not None else loaded.sellers  # type: ignore[union-attr]
 
@@ -146,4 +182,137 @@ def build_fastmoss_mapping(
         "source": "seller_master_google_sheet",
         "summary": counts,
         "mappings": mappings,
+    }
+
+
+def refresh_fastmoss_mapping(
+    *,
+    force_refresh_all: bool = False,
+    mapping_path: str | Path | None = None,
+    delay_sec: float = REQUEST_DELAY_SEC,
+) -> dict[str, Any]:
+    """
+    Retry FastMoss search for unmapped sellers and collect TikTok BI for newly mapped shops.
+
+    Existing MAPPED rows are preserved unless ``force_refresh_all`` is True.
+    """
+    from datetime import date
+
+    from seller.intelligence.business.collector import collect_mapped_shop_tiktok
+    from seller.intelligence.business.store import (
+        fastmoss_collection_by_shop_id,
+        load_business_intelligence_data,
+        save_business_intelligence_data,
+    )
+    from seller.intelligence.config import USD_PHP_RATE
+    from seller.intelligence.periods import resolve_periods
+    from seller.intelligence.seller_master import get_seller_master
+
+    master = get_seller_master()
+    target = Path(mapping_path) if mapping_path else DEFAULT_MAPPING_PATH
+
+    try:
+        existing_payload = load_fastmoss_mapping(target)
+    except OSError:
+        existing_payload = {"mappings": []}
+
+    existing_by_shop: dict[str, dict[str, Any]] = {}
+    for row in existing_payload.get("mappings") or []:
+        if not isinstance(row, dict):
+            continue
+        shop_id = str(row.get("shop_id") or "").strip()
+        if shop_id:
+            existing_by_shop[shop_id] = row
+
+    mappings: list[dict[str, Any]] = []
+    newly_mapped_shop_ids: list[str] = []
+    processed_count = 0
+
+    for index, seller in enumerate(master.sellers):
+        existing = existing_by_shop.get(seller.shop_id)
+        if not should_retry_fastmoss_mapping(
+            seller,
+            existing,
+            force_refresh_all=force_refresh_all,
+        ):
+            mappings.append(existing)  # type: ignore[arg-type]
+            continue
+
+        processed_count += 1
+        if index > 0 and delay_sec > 0:
+            time.sleep(delay_sec)
+
+        prior_status = str((existing or {}).get("mapping_status") or MAPPING_NOT_FOUND).upper()
+        row = map_seller_to_fastmoss(seller)
+        mappings.append(row)
+
+        if row.get("mapping_status") == MAPPING_MAPPED and prior_status != MAPPING_MAPPED:
+            newly_mapped_shop_ids.append(seller.shop_id)
+
+    counts = {
+        "total": len(mappings),
+        "mapped": sum(1 for row in mappings if row["mapping_status"] == MAPPING_MAPPED),
+        "need_review": sum(1 for row in mappings if row["mapping_status"] == MAPPING_NEED_REVIEW),
+        "not_found": sum(1 for row in mappings if row["mapping_status"] == MAPPING_NOT_FOUND),
+    }
+    mapping_payload = {
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "region": "PH",
+        "source": "seller_master_google_sheet",
+        "summary": counts,
+        "mappings": mappings,
+    }
+    save_fastmoss_mapping(mapping_payload, target)
+
+    tiktok_data_refreshed_count = 0
+    if newly_mapped_shop_ids:
+        today = date.today()
+        periods = resolve_periods(today)
+        mapping_by_shop = {str(row["shop_id"]): row for row in mappings}
+        bi_data = load_business_intelligence_data() or {
+            "reference_today": today.isoformat(),
+            "periods": periods.as_dict(),
+            "usd_php_rate": USD_PHP_RATE,
+            "source": "fastmoss_recentData",
+            "sellers": [],
+        }
+        collection_by_shop = fastmoss_collection_by_shop_id(bi_data)
+
+        for shop_index, shop_id in enumerate(newly_mapped_shop_ids):
+            mapping_row = mapping_by_shop.get(shop_id)
+            if not mapping_row or mapping_row.get("mapping_status") != MAPPING_MAPPED:
+                continue
+            if shop_index > 0 and delay_sec > 0:
+                time.sleep(delay_sec)
+            collected = collect_mapped_shop_tiktok(mapping_row, periods, delay_sec=0)
+            collection_by_shop[shop_id] = collected
+            if collected.get("status") == "success":
+                tiktok_data_refreshed_count += 1
+
+        sellers_list = list(collection_by_shop.values())
+        success = sum(1 for row in sellers_list if row.get("status") == "success")
+        bi_data.update(
+            {
+                "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "reference_today": today.isoformat(),
+                "periods": periods.as_dict(),
+                "usd_php_rate": USD_PHP_RATE,
+                "source": "fastmoss_recentData",
+                "summary": {
+                    "processed": len(sellers_list),
+                    "success": success,
+                    "failed": len(sellers_list) - success,
+                },
+                "sellers": sellers_list,
+            }
+        )
+        save_business_intelligence_data(bi_data)
+
+    return {
+        "success": True,
+        "processed_count": processed_count,
+        "newly_mapped_count": len(newly_mapped_shop_ids),
+        "still_not_found_count": counts["not_found"],
+        "tiktok_data_refreshed_count": tiktok_data_refreshed_count,
+        "refreshed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }

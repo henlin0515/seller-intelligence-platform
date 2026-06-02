@@ -193,3 +193,22 @@ async def intelligence_v1_refresh_sheets():
             status_code=500,
             detail="Could not refresh sheet data. Try again later.",
         ) from exc
+
+
+@router.post("/refresh-fastmoss-mapping")
+async def intelligence_v1_refresh_fastmoss_mapping(force_all: bool = False):
+    """Retry FastMoss shop search for unmapped sellers; collect TikTok BI for new matches."""
+    from seller.fastmoss.mapping import refresh_fastmoss_mapping
+
+    try:
+        return await asyncio.to_thread(refresh_fastmoss_mapping, force_refresh_all=force_all)
+    except (GoogleSheetsNotConfiguredError, GoogleSheetsNotEnabledError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except OSError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("FastMoss mapping refresh failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Could not refresh FastMoss mapping. Try again later.",
+        ) from exc
