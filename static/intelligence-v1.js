@@ -46,12 +46,10 @@
   function defaultAssortmentFilters() {
     return {
       q: "",
-      mapping: "all",
-      missing: "all",
-      review: "all",
-      priceGap: "all",
-      newListings: "all",
-      sort: "shop_name",
+      shop: "all",
+      category: "all",
+      dateRange: "all",
+      section: "top100",
     };
   }
 
@@ -207,23 +205,29 @@
     return copy;
   }
 
-  function filterAssortmentSellers(sellers, f) {
-    let list = sellers.filter((s) => {
-      if (!matchesQuery(s, f.q)) return false;
-      if (f.mapping !== "all" && s.mapping_status !== f.mapping) return false;
-      if (f.missing === "yes" && !(s.missing_count > 0)) return false;
-      if (f.review === "yes" && !(s.need_review_count > 0)) return false;
-      if (f.priceGap === "yes" && !s.price_gap_risk) return false;
-      if (f.newListings === "yes" && !(s.new_listings_count > 0)) return false;
+  function productSearchBlob(p) {
+    return [p.product_name, p.category, p.shop_name, p.seller_shop_id, p.product_id]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+  }
+
+  function filterRadarProducts(products, f) {
+    return (products || []).filter((p) => {
+      if (f.q && !productSearchBlob(p).includes(f.q.trim().toLowerCase())) return false;
+      if (f.shop !== "all" && String(p.seller_shop_id || "") !== String(f.shop)) return false;
+      if (f.category !== "all" && String(p.category || "") !== String(f.category)) return false;
+      if (f.dateRange !== "all") {
+        const days = p.days_since_launch;
+        if (days == null) return false;
+        if (days > Number(f.dateRange)) return false;
+      }
       return true;
     });
-    const copy = [...list];
-    copy.sort((a, b) => {
-      if (f.sort === "missing") return (b.missing_count ?? 0) - (a.missing_count ?? 0);
-      if (f.sort === "review") return (b.need_review_count ?? 0) - (a.need_review_count ?? 0);
-      return (a.shop_name || "").localeCompare(b.shop_name || "");
-    });
-    return copy;
+  }
+
+  function filterAssortmentSellers(_sellers, _f) {
+    return [];
   }
 
   /* ---------- UI components ---------- */
@@ -438,56 +442,49 @@
       </div>`;
   }
 
-  function assortmentToolbarHtml(f) {
+  function assortmentToolbarHtml(f, data) {
+    const shops = data?.filters?.shops || [];
+    const categories = data?.filters?.categories || [];
+    const shopOpts = shops
+      .map(
+        (s) =>
+          `<option value="${escapeHtml(s.shop_id)}"${f.shop === s.shop_id ? " selected" : ""}>${escapeHtml(s.shop_name)}</option>`
+      )
+      .join("");
+    const catOpts = categories
+      .map(
+        (c) =>
+          `<option value="${escapeHtml(c)}"${f.category === c ? " selected" : ""}>${escapeHtml(c)}</option>`
+      )
+      .join("");
     return `
-      <div class="si-v1-toolbar" data-toolbar="assortment">
+      <div class="si-v1-toolbar si-radar-toolbar" data-toolbar="assortment">
         <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
-          <label for="siAssSearch">Seller search</label>
-          <input id="siAssSearch" type="search" placeholder="Shop ID, name, Shopee link, TikTok shop…" value="${escapeHtml(f.q)}" data-f="q" />
+          <label for="siRadarSearch">Product search</label>
+          <input id="siRadarSearch" type="search" placeholder="Product name, category, shop…" value="${escapeHtml(f.q)}" data-f="q" />
         </div>
         <div class="si-v1-toolbar-field">
-          <label for="siAssMap">Mapping</label>
-          <select id="siAssMap" data-f="mapping">
-            <option value="all"${f.mapping === "all" ? " selected" : ""}>All</option>
-            <option value="mapped"${f.mapping === "mapped" ? " selected" : ""}>Mapped</option>
-            <option value="partial"${f.mapping === "partial" ? " selected" : ""}>Partial</option>
-            <option value="unmapped"${f.mapping === "unmapped" ? " selected" : ""}>Unmapped</option>
+          <label for="siRadarShop">Shop</label>
+          <select id="siRadarShop" data-f="shop">
+            <option value="all"${f.shop === "all" ? " selected" : ""}>All shops</option>
+            ${shopOpts}
           </select>
         </div>
         <div class="si-v1-toolbar-field">
-          <label for="siAssMiss">Missing</label>
-          <select id="siAssMiss" data-f="missing">
-            <option value="all"${f.missing === "all" ? " selected" : ""}>All</option>
-            <option value="yes"${f.missing === "yes" ? " selected" : ""}>&gt; 0</option>
+          <label for="siRadarCat">Category</label>
+          <select id="siRadarCat" data-f="category">
+            <option value="all"${f.category === "all" ? " selected" : ""}>All categories</option>
+            ${catOpts}
           </select>
         </div>
         <div class="si-v1-toolbar-field">
-          <label for="siAssRev">Need review</label>
-          <select id="siAssRev" data-f="review">
-            <option value="all"${f.review === "all" ? " selected" : ""}>All</option>
-            <option value="yes"${f.review === "yes" ? " selected" : ""}>&gt; 0</option>
-          </select>
-        </div>
-        <div class="si-v1-toolbar-field">
-          <label for="siAssGap">Price gap</label>
-          <select id="siAssGap" data-f="priceGap">
-            <option value="all"${f.priceGap === "all" ? " selected" : ""}>All</option>
-            <option value="yes"${f.priceGap === "yes" ? " selected" : ""}>At risk</option>
-          </select>
-        </div>
-        <div class="si-v1-toolbar-field">
-          <label for="siAssNew">New listings</label>
-          <select id="siAssNew" data-f="newListings">
-            <option value="all"${f.newListings === "all" ? " selected" : ""}>All</option>
-            <option value="yes"${f.newListings === "yes" ? " selected" : ""}>&gt; 0</option>
-          </select>
-        </div>
-        <div class="si-v1-toolbar-field">
-          <label for="siAssSort">Sort</label>
-          <select id="siAssSort" data-f="sort">
-            <option value="shop_name"${f.sort === "shop_name" ? " selected" : ""}>Shop name</option>
-            <option value="missing"${f.sort === "missing" ? " selected" : ""}>Missing count</option>
-            <option value="review"${f.sort === "review" ? " selected" : ""}>Need review</option>
+          <label for="siRadarDate">Date range</label>
+          <select id="siRadarDate" data-f="dateRange">
+            <option value="all"${f.dateRange === "all" ? " selected" : ""}>All dates</option>
+            <option value="20"${f.dateRange === "20" ? " selected" : ""}>Last 20 days</option>
+            <option value="14"${f.dateRange === "14" ? " selected" : ""}>Last 14 days</option>
+            <option value="7"${f.dateRange === "7" ? " selected" : ""}>Last 7 days</option>
+            <option value="3"${f.dateRange === "3" ? " selected" : ""}>Last 3 days</option>
           </select>
         </div>
         <button type="button" class="si-v1-btn-reset" data-reset>Reset filters</button>
@@ -817,138 +814,163 @@
     paintBusinessList();
   }
 
-  /* ---------- Assortment render ---------- */
+  /* ---------- Assortment TikTok Product Radar ---------- */
 
-  function renderMissingCard(p) {
-    const sold =
-      p.sold_count != null ? `<p>Sold: ${escapeHtml(String(p.sold_count))}</p>` : "";
-    const sales =
-      p.sales_amount != null ? `<p>Sales: ₱${fmtNum(p.sales_amount)}</p>` : "";
+  function renderRadarBadges(p, opts = {}) {
+    const bits = [];
+    if (p.new_badge) {
+      bits.push(`<span class="si-radar-badge si-radar-badge--new">NEW · ${escapeHtml(p.new_badge)}</span>`);
+    }
+    if (opts.showGrowth && p.growth_score != null) {
+      const arrow = p.trend_arrow === "up" ? "▲" : "●";
+      bits.push(
+        `<span class="si-radar-badge si-radar-badge--growth">${arrow} ${fmtNum(p.growth_score, 1)}</span>`
+      );
+    }
+    if (opts.showOpportunity && p.opportunity_label) {
+      bits.push(
+        `<span class="si-radar-badge si-radar-badge--opp">${escapeHtml(p.opportunity_label)}</span>`
+      );
+    }
+    return bits.length ? `<div class="si-radar-badges">${bits.join("")}</div>` : "";
+  }
+
+  function renderRadarProductCard(p, opts = {}) {
+    const rank = p.rank != null ? `<span class="si-radar-rank">#${p.rank}</span>` : "";
+    const days =
+      p.days_since_launch != null
+        ? `<span class="si-radar-meta">${p.days_since_launch}d since launch</span>`
+        : "";
     return `
-      <article class="si-product-card">
-        <img src="${escapeHtml(p.image_url || "")}" alt="" loading="lazy" width="72" height="72" />
-        <div class="si-product-card-body">
-          <h4>${escapeHtml(p.product_name)}</h4>
-          <p>TikTok price: ₱${fmtNum(p.price_php)}</p>
-          ${sold}
-          ${sales}
-          <p>${escapeHtml(p.reason || "Not found on Shopee")}</p>
-          <a href="${escapeHtml(p.tiktok_link || "#")}" target="_blank" rel="noopener noreferrer">TikTok product link</a>
+      <article class="si-radar-card">
+        <div class="si-radar-card-media">
+          ${rank}
+          <img src="${escapeHtml(p.product_image || "")}" alt="" loading="lazy" />
+          ${renderRadarBadges(p, opts)}
+        </div>
+        <div class="si-radar-card-body">
+          <h4>${escapeHtml(p.product_name || "—")}</h4>
+          <p class="si-radar-shop">${escapeHtml(p.shop_name || "—")}</p>
+          <p class="si-radar-category">${escapeHtml(p.category || "Uncategorized")}</p>
+          <div class="si-radar-metrics">
+            <span><strong>${fmtPhp(p.product_price_php) || "—"}</strong></span>
+            <span>Sold ${fmtNum(p.sold_count)}</span>
+            <span>Sales ${fmtPhp(p.sales_amount) || "—"}</span>
+          </div>
+          <div class="si-radar-meta-row">
+            ${days}
+            <span>${escapeHtml(p.upload_date || "—")}</span>
+          </div>
+          ${
+            opts.showGrowth
+              ? `<p class="si-radar-score">Growth score <strong>${fmtNum(p.growth_score, 1)}</strong></p>`
+              : ""
+          }
+          ${
+            opts.showOpportunity
+              ? `<p class="si-radar-score">Opportunity <strong>${fmtNum(p.opportunity_score, 1)}</strong></p>`
+              : ""
+          }
+          <a class="si-radar-link" href="${escapeHtml(p.product_link || "#")}" target="_blank" rel="noopener noreferrer">View on TikTok</a>
         </div>
       </article>`;
   }
 
-  function renderReviewPair(r) {
-    const shopee = r.shopee || {};
-    const tiktok = r.tiktok || {};
+  function renderRadarSection(title, products, opts = {}) {
+    if (!products.length) {
+      return `<section class="si-radar-section"><h3 class="si-radar-section-title">${escapeHtml(title)}</h3><p class="si-v1-empty">No products in this section.</p></section>`;
+    }
     return `
-      <article class="si-review-pair">
-        <div class="si-review-pair-header">
-          <span>Similarity</span>
-          <strong>${r.similarity_score != null ? fmtPct(r.similarity_score * 100) : "—"}</strong>
+      <section class="si-radar-section" id="${escapeHtml(opts.anchor || "")}">
+        <div class="si-radar-section-head">
+          <h3 class="si-radar-section-title">${escapeHtml(title)}</h3>
+          <span class="si-radar-section-count">${products.length} products</span>
         </div>
-        <p class="si-review-reason">${escapeHtml(r.reason || "")}</p>
-        <div class="si-review-columns">
-          <div class="si-review-col">
-            <span class="tag">Shopee</span>
-            <img src="${escapeHtml(shopee.image_url || "")}" alt="" loading="lazy" />
-            <h5>${escapeHtml(shopee.product_name || "—")}</h5>
-            <p class="si-review-price">₱${fmtNum(shopee.price_php)}</p>
-            <a href="${escapeHtml(shopee.product_link || "#")}" target="_blank" rel="noopener noreferrer">Shopee link</a>
-          </div>
-          <div class="si-review-vs">VS</div>
-          <div class="si-review-col">
-            <span class="tag tag--tt">TikTok</span>
-            <img src="${escapeHtml(tiktok.image_url || "")}" alt="" loading="lazy" />
-            <h5>${escapeHtml(tiktok.product_name || "—")}</h5>
-            <p class="si-review-price">₱${fmtNum(tiktok.price_php)}</p>
-            <a href="${escapeHtml(tiktok.product_link || "#")}" target="_blank" rel="noopener noreferrer">TikTok link</a>
-          </div>
-        </div>
-      </article>`;
+        <div class="si-radar-grid">${products.map((p) => renderRadarProductCard(p, opts)).join("")}</div>
+      </section>`;
   }
 
-  function renderAssortmentRow(s, expanded) {
-    const expCls = expanded ? " is-expanded" : "";
-    const gapBadge = s.price_gap_risk
-      ? '<span class="si-v1-badge si-v1-badge--risk">Gap risk</span>'
-      : "";
+  function renderRadarPortfolio(data) {
+    const p = data.portfolio || {};
+    const fm = data.fastmoss || {};
     return `
-      <article class="si-v1-row${expCls}" data-shop-id="${escapeHtml(s.shop_id)}">
-        <div class="si-v1-row-head" data-toggle-row>
-          <div class="si-v1-row-toggle" aria-hidden="true">▶</div>
-          <div class="si-v1-row-title">
-            <strong>${escapeHtml(s.shop_name)}</strong>
-            <span>${escapeHtml(s.shop_id)}</span>
-          </div>
-          <div class="si-v1-row-summary si-v1-row-metrics-inline">
-            ${mappingBadge(s.mapping_status)}
-            <span class="si-v1-badge si-v1-badge--warn">Missing ${s.missing_count ?? 0}</span>
-            <span class="si-v1-badge si-v1-badge--muted">Review ${s.need_review_count ?? 0}</span>
-            ${gapBadge}
-            <span class="si-v1-badge si-v1-badge--muted">New ${s.new_listings_count ?? 0}</span>
-          </div>
+      <div class="si-radar-portfolio">
+        <div class="si-port-kpi-grid">
+          ${renderPortfolioKpi("Total Products", fmtNum(p.total_products), `${fmtNum(fm.shops_scanned)} shops scanned`, "hero")}
+          ${renderPortfolioKpi("New Products (20D)", fmtNum(p.new_products_20d), "Upload ≤ 20 days", "accent")}
+          ${renderPortfolioKpi("Growth Products", fmtNum(p.growth_products), "Top momentum picks", "tiktok")}
+          ${renderPortfolioKpi("Opportunity Products", fmtNum(p.opportunity_products), "High opportunity radar", "shopee")}
         </div>
-        <div class="si-v1-row-body">
-          <h3 class="si-section-title">Missing products (${(s.missing_products || []).length})</h3>
-          <div class="si-missing-grid">
-            ${(s.missing_products || []).map(renderMissingCard).join("") || '<p class="si-v1-empty">None</p>'}
-          </div>
-          <h3 class="si-section-title">Need review (${(s.need_review || []).length})</h3>
-          <div class="si-review-list">
-            ${(s.need_review || []).map(renderReviewPair).join("") || '<p class="si-v1-empty">None</p>'}
-          </div>
-        </div>
-      </article>`;
+      </div>`;
   }
 
-  function paintAssortmentList() {
+  function paintAssortmentRadar() {
     const el = containers.siAssortment;
     const st = state.assortment;
     if (!el || !st.raw) return;
-    const listEl = el.querySelector("[data-si-list]");
-    if (!listEl) return;
-    const filtered = filterAssortmentSellers(st.raw.sellers || [], st.filters);
+    const body = el.querySelector("[data-radar-body]");
+    if (!body) return;
+    const f = st.filters;
+    const top100 = filterRadarProducts(st.raw.top_100, f);
+    const opportunities = filterRadarProducts(st.raw.top_opportunities, f);
+    const topNew = filterRadarProducts(st.raw.top_new, f);
+    const topGrowth = filterRadarProducts(st.raw.top_growth, f);
     const countEl = el.querySelector("[data-result-count]");
     if (countEl) {
-      countEl.textContent = `Showing ${filtered.length} of ${(st.raw.sellers || []).length} sellers`;
+      countEl.textContent = `Showing ${top100.length} top · ${opportunities.length} opp · ${topNew.length} new · ${topGrowth.length} growth`;
     }
-    if (!filtered.length) {
-      listEl.innerHTML = '<p class="si-v1-empty">No sellers match the current filters.</p>';
-      return;
-    }
-    listEl.innerHTML = filtered.map((s) => renderAssortmentRow(s, st.expanded.has(s.shop_id))).join("");
-    bindRowToggles(listEl, st.expanded);
+    body.innerHTML = `
+      ${renderRadarPortfolio(st.raw)}
+      ${renderRadarSection("Top 100 TikTok Products", top100, { anchor: "top100" })}
+      ${renderRadarSection("Top 20 Missing Opportunities", opportunities, {
+        anchor: "opportunities",
+        showOpportunity: true,
+      })}
+      ${renderRadarSection("Top New Products", topNew, { anchor: "new", showGrowth: false })}
+      ${renderRadarSection("Top Growth Products", topGrowth, {
+        anchor: "growth",
+        showGrowth: true,
+      })}`;
   }
 
   function setupAssortment(data) {
     const el = containers.siAssortment;
     if (!el) return;
     state.assortment.raw = data;
+    const fm = data.fastmoss || {};
+    const p = data.portfolio || {};
     if (metas.siAssortment) {
-      const phase1 = data.phase1_shop_id;
-      metas.siAssortment.textContent = phase1
-        ? `Phase 1 live · ${phase1} · FastMoss + Shopee catalog compare`
-        : `Sheet master · Phase 1 pending`;
+      metas.siAssortment.textContent = `TikTok Product Radar · FastMoss only · ${fmtNum(p.total_products)} products · ${fmtNum(fm.shops_scanned)} shops`;
     }
+
+    function onToolbarChange(ev) {
+      if (ev?.reset) state.assortment.filters = defaultAssortmentFilters();
+      else {
+        state.assortment.filters = readFiltersFromToolbar(
+          el.querySelector("[data-toolbar]"),
+          defaultAssortmentFilters()
+        );
+      }
+      el.querySelector("[data-toolbar]").outerHTML = assortmentToolbarHtml(
+        state.assortment.filters,
+        state.assortment.raw
+      );
+      bindToolbar(el.querySelector("[data-toolbar]"), onToolbarChange);
+      paintAssortmentRadar();
+    }
+
     if (!state.assortment.shellReady) {
-      el.innerHTML = `${assortmentToolbarHtml(state.assortment.filters)}<div class="si-v1-list" data-si-list></div>`;
-      const handler = (ev) => {
-        if (ev?.reset) state.assortment.filters = defaultAssortmentFilters();
-        else {
-          state.assortment.filters = readFiltersFromToolbar(
-            el.querySelector("[data-toolbar]"),
-            defaultAssortmentFilters()
-          );
-        }
-        el.querySelector("[data-toolbar]").outerHTML = assortmentToolbarHtml(state.assortment.filters);
-        bindToolbar(el.querySelector("[data-toolbar]"), handler);
-        paintAssortmentList();
-      };
-      bindToolbar(el.querySelector("[data-toolbar]"), handler);
+      el.innerHTML = `${assortmentToolbarHtml(state.assortment.filters, data)}<div data-radar-body></div>`;
+      bindToolbar(el.querySelector("[data-toolbar]"), onToolbarChange);
       state.assortment.shellReady = true;
+    } else {
+      const toolbar = el.querySelector("[data-toolbar]");
+      if (toolbar) {
+        toolbar.outerHTML = assortmentToolbarHtml(state.assortment.filters, data);
+        bindToolbar(el.querySelector("[data-toolbar]"), onToolbarChange);
+      }
     }
-    paintAssortmentList();
+    paintAssortmentRadar();
   }
 
   function bindRowToggles(listEl, expandedSet) {

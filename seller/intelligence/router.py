@@ -80,7 +80,7 @@ async def intelligence_v1_dashboard():
                 "tiktok_collected": (fastmoss_meta.get("summary") or {}).get("success"),
             },
             "assortment_intelligence": {
-                "status": "sheet_master",
+                "status": "tiktok_product_radar",
                 "tracker_connected": False,
                 "fastmoss_connected": fastmoss_meta.get("fastmoss_connected", False),
             },
