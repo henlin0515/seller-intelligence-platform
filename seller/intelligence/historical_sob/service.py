@@ -21,7 +21,11 @@ from seller.intelligence.historical_sob.store import (
     save_historical_sob_cache,
     shop_tiktok_cache_row,
 )
-from seller.intelligence.historical_sob.ytd_monthly import YtdMonthlyLoadResult, get_ytd_monthly
+from seller.intelligence.historical_sob.ytd_monthly import (
+    YtdMonthlyLoadResult,
+    get_ytd_monthly,
+    lookup_ytd_record,
+)
 from seller.intelligence.seller_master import SellerMasterLoadResult, get_seller_master
 
 logger = logging.getLogger("seller.intelligence.historical_sob.service")
@@ -80,11 +84,11 @@ def _shop_sob_row(
 ) -> dict[str, Any]:
     shopee_na_reason = None
     if ytd_row is None:
-        shopee_na_reason = "No ytd monthly data row for shop_id"
-    elif ytd_row.ytd_ap_adgmv is None and ytd_row.ytd_may_adgmv is None:
-        shopee_na_reason = "Missing ytd_ap_adgmv and ytd_may_adgmv"
-    elif ytd_row.ytd_ap_adgmv is None:
-        shopee_na_reason = "Missing ytd_ap_adgmv"
+        shopee_na_reason = "No ytd monthly data row matched by shop_name"
+    elif ytd_row.ytd_apr_adgmv is None and ytd_row.ytd_may_adgmv is None:
+        shopee_na_reason = "Missing ytd_apr_adgmv and ytd_may_adgmv"
+    elif ytd_row.ytd_apr_adgmv is None:
+        shopee_na_reason = "Missing ytd_apr_adgmv"
     elif ytd_row.ytd_may_adgmv is None:
         shopee_na_reason = "Missing ytd_may_adgmv"
 
@@ -190,7 +194,7 @@ def build_historical_sob_rows(
         shop_id = str(seller.shop_id)
         mapping_row = mappings.get(shop_id)
         review_status = _review_status_for_shop(shop_id)
-        ytd_row = ytd.by_shop_id.get(shop_id)
+        ytd_row = lookup_ytd_record(ytd, shop_name=seller.shop_name, shop_id=shop_id)
         tiktok_row = shop_tiktok_cache_row(cache, shop_id)
         rows.append(
             _shop_sob_row(
@@ -228,23 +232,38 @@ def _tiktok_cache_counts(cache: dict[str, Any]) -> dict[str, int]:
     }
 
 
+def _count_ytd_matched(master: SellerMasterLoadResult, ytd: YtdMonthlyLoadResult) -> int:
+    matched = 0
+    for seller in master.sellers:
+        if lookup_ytd_record(ytd, shop_name=seller.shop_name, shop_id=str(seller.shop_id)):
+            matched += 1
+    return matched
+
+
 def _summary_counts(
     rows: list[dict[str, Any]],
     master: SellerMasterLoadResult,
     *,
     ytd: YtdMonthlyLoadResult,
     cache: dict[str, Any],
+    portfolio: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     tiktok_counts = _tiktok_cache_counts(cache)
+    portfolio = portfolio or build_portfolio_historical_sob(rows)
     april_sob = sum(1 for r in rows if r.get("april_shopee_sob_percent") is not None)
     may_sob = sum(1 for r in rows if r.get("may_shopee_sob_percent") is not None)
     return {
         "master_seller_count": len(master.sellers),
         "ytd_monthly_rows_loaded": ytd.stats.total_loaded,
+        "ytd_matched_count": _count_ytd_matched(master, ytd),
         "ytd_load_error": ytd.load_error,
         **tiktok_counts,
         "april_sob_calculated_count": april_sob,
         "may_sob_calculated_count": may_sob,
+        "april_shopee_gmv_total": portfolio.get("april_shopee_gmv"),
+        "may_shopee_gmv_total": portfolio.get("may_shopee_gmv"),
+        "april_tiktok_gmv_total": portfolio.get("april_tiktok_gmv"),
+        "may_tiktok_gmv_total": portfolio.get("may_tiktok_gmv"),
     }
 
 
@@ -347,10 +366,11 @@ def refresh_historical_sob(*, force: bool = True) -> dict[str, Any]:
     tiktok_result = refresh_historical_sob_tiktok_cache(master, force=force)
     cache = load_historical_sob_cache()
     rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache=cache)
+    portfolio = build_portfolio_historical_sob(rows)
     return {
         "success": True,
         "refreshed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "summary": _summary_counts(rows, master, ytd=ytd, cache=cache),
+        "summary": _summary_counts(rows, master, ytd=ytd, cache=cache, portfolio=portfolio),
         "tiktok_cache": tiktok_result,
     }
 
@@ -364,7 +384,7 @@ def _build_payload(
 ) -> dict[str, Any]:
     rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache=cache)
     portfolio = build_portfolio_historical_sob(rows)
-    summary = _summary_counts(rows, master, ytd=ytd, cache=cache)
+    summary = _summary_counts(rows, master, ytd=ytd, cache=cache, portfolio=portfolio)
     categories = sorted(
         {str(r.get("category")).strip() for r in rows if r.get("category")},
         key=str.lower,
@@ -458,9 +478,13 @@ def get_historical_sob_payload(
 
         if ytd.load_error:
             warnings.append(ytd.load_error)
-        if not ytd.by_shop_id:
+        if ytd.stats.total_loaded == 0:
             warnings.append(
                 "No rows loaded from ytd monthly data — Shopee GMV will show N/A until the tab is available."
+            )
+        elif _count_ytd_matched(master, ytd) == 0:
+            warnings.append(
+                "ytd monthly data loaded but no shop_name matches to shpoee link — check shop_name spelling."
             )
         if ensure_tiktok_cache and not cache.get("shops"):
             try:

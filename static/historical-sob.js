@@ -269,7 +269,7 @@
       ${renderToolbar()}
       <section class="hs-kpi-grid">
         ${renderKpi(i18n("historicalSob.kpiTotalShops", "Total Shops"), fmtNum(kpis.total_shops), payload.master_tab, "neutral")}
-        ${renderKpi(i18n("historicalSob.kpiAprShopee", "April Shopee GMV"), fmtGmv(kpis.april_shopee_gmv), "ytd_ap_adgmv × 30", "shopee")}
+        ${renderKpi(i18n("historicalSob.kpiAprShopee", "April Shopee GMV"), fmtGmv(kpis.april_shopee_gmv), "ytd_apr_adgmv × 30", "shopee")}
         ${renderKpi(i18n("historicalSob.kpiAprTiktok", "April TikTok GMV"), fmtGmv(kpis.april_tiktok_gmv), "FastMoss sale_amount", "tiktok")}
         ${renderKpi(i18n("historicalSob.kpiMayShopee", "May Shopee GMV"), fmtGmv(kpis.may_shopee_gmv), "ytd_may_adgmv × 31", "shopee")}
         ${renderKpi(i18n("historicalSob.kpiMayTiktok", "May TikTok GMV"), fmtGmv(kpis.may_tiktok_gmv), "FastMoss sale_amount", "tiktok")}
