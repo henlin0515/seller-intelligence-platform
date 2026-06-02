@@ -392,7 +392,49 @@
 
   /* ---------- Business render ---------- */
 
-  function renderBusinessTableRow(s) {
+  function fmtDetail(value, fallback) {
+    if (value == null || value === "") return fallback || "—";
+    return escapeHtml(String(value));
+  }
+
+  function fmtDetailLink(url, label) {
+    if (!url) return "—";
+    const text = label || url;
+    return `<a class="si-biz-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`;
+  }
+
+  function fmtDetailPhp(value, reason) {
+    if (value == null || Number.isNaN(value)) return fmtNa(reason || "TikTok data unavailable");
+    return escapeHtml(fmtPhp(value));
+  }
+
+  function renderBusinessDetailPanel(s) {
+    const tkReason = s.tiktok_na_reason || "TikTok data unavailable";
+    const confidence = s.fastmoss_match_confidence ?? s.fastmoss_confidence ?? s.confidence;
+    const mappingReason = s.mapping_reason || (s.fastmoss_match_status !== "MAPPED" ? s.tiktok_na_reason : null);
+    const confidenceText =
+      confidence == null || Number.isNaN(confidence)
+        ? "—"
+        : confidence <= 1
+          ? fmtPct(confidence * 100)
+          : fmtPct(confidence);
+    return `
+      <div class="si-biz-detail-panel">
+        <h3 class="si-section-title">FastMoss mapping details</h3>
+        <dl class="si-detail-grid">
+          <div class="si-detail-cell"><dt>TikTok Shop Name</dt><dd>${fmtDetail(s.tiktok_shop_name)}</dd></div>
+          <div class="si-detail-cell"><dt>FastMoss Matched Shop</dt><dd>${fmtDetail(s.fastmoss_matched_shop)}</dd></div>
+          <div class="si-detail-cell"><dt>FastMoss Match Status</dt><dd>${fastmossStatusBadge(s.fastmoss_match_status)}</dd></div>
+          <div class="si-detail-cell"><dt>FastMoss Shop URL</dt><dd>${fmtDetailLink(s.fastmoss_shop_url, "Open shop detail")}</dd></div>
+          <div class="si-detail-cell"><dt>Match confidence</dt><dd>${confidenceText}</dd></div>
+          <div class="si-detail-cell"><dt>Mapping reason</dt><dd>${fmtDetail(mappingReason)}</dd></div>
+          <div class="si-detail-cell"><dt>TikTok raw MTD GMV PHP</dt><dd>${fmtDetailPhp(s.tiktok_mtd_gmv_php, tkReason)}</dd></div>
+          <div class="si-detail-cell"><dt>TikTok raw M-1 GMV PHP</dt><dd>${fmtDetailPhp(s.tiktok_m1_gmv_php, tkReason)}</dd></div>
+        </dl>
+      </div>`;
+  }
+
+  function renderBusinessTableRow(s, expanded) {
     const tkReason = s.tiktok_na_reason || "TikTok data unavailable";
     const shReason = s.shopee_na_reason || "Shopee ADGMV source not connected";
     const sobReason = s.sob_na_reason || "SOB requires Shopee ADGMV";
@@ -400,34 +442,38 @@
       s.tiktok_data_status === "available"
         ? renderMom(s.tiktok_mom_percent, tkReason)
         : fmtNa(tkReason);
+    const expCls = expanded ? " is-expanded" : "";
     return `
-      <tr data-shop-id="${escapeHtml(s.shop_id)}">
-        <td>${escapeHtml(s.shop_id)}</td>
-        <td>${escapeHtml(s.shop_name)}</td>
-        <td>${escapeHtml(s.tiktok_shop_name || "—")}</td>
-        <td>${fastmossStatusBadge(s.fastmoss_match_status)}</td>
-        <td>${escapeHtml(s.fastmoss_matched_shop || "—")}</td>
-        <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_mtd_adgmv_usd, s.tiktok_mtd_gmv_php, tkReason)}</td>
-        <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_m1_adgmv_usd, s.tiktok_m1_gmv_php, tkReason)}</td>
-        <td class="si-v1-num">${tkMom}</td>
-        <td class="si-v1-num">${fmtNa(shReason)}</td>
-        <td class="si-v1-num">${fmtNa(shReason)}</td>
-        <td class="si-v1-num">${fmtNa(sobReason)}</td>
-        <td class="si-v1-num">${fmtNa(sobReason)}</td>
-      </tr>`;
+      <tbody class="si-biz-group${expCls}" data-shop-id="${escapeHtml(s.shop_id)}">
+        <tr class="si-biz-row-head" data-toggle-row>
+          <td class="si-biz-toggle-cell"><span class="si-biz-toggle" aria-hidden="true">▶</span></td>
+          <td>${escapeHtml(s.shop_id)}</td>
+          <td class="si-biz-name">${escapeHtml(s.shop_name)}</td>
+          <td>${fastmossStatusBadge(s.fastmoss_match_status)}</td>
+          <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_mtd_adgmv_usd, s.tiktok_mtd_gmv_php, tkReason)}</td>
+          <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_m1_adgmv_usd, s.tiktok_m1_gmv_php, tkReason)}</td>
+          <td class="si-v1-num">${tkMom}</td>
+          <td class="si-v1-num">${fmtNa(shReason)}</td>
+          <td class="si-v1-num">${fmtNa(shReason)}</td>
+          <td class="si-v1-num">${fmtNa(sobReason)}</td>
+          <td class="si-v1-num">${fmtNa(sobReason)}</td>
+        </tr>
+        <tr class="si-biz-row-detail">
+          <td colspan="11">${renderBusinessDetailPanel(s)}</td>
+        </tr>
+      </tbody>`;
   }
 
-  function renderBusinessTable(sellers) {
+  function renderBusinessTable(sellers, expandedSet) {
     return `
       <div class="si-v1-table-wrap si-v1-table-wrap--wide">
         <table class="si-v1-table si-v1-table--business">
           <thead>
             <tr>
+              <th class="si-biz-toggle-cell" aria-label="Expand row"></th>
               <th>Shop ID</th>
               <th>Shop Name</th>
-              <th>TikTok Shop Name</th>
               <th>FastMoss Match Status</th>
-              <th>FastMoss Matched Shop</th>
               <th>TikTok MTD ADGMV USD</th>
               <th>TikTok M-1 ADGMV USD</th>
               <th>TikTok MoM %</th>
@@ -437,7 +483,7 @@
               <th>M-1 SOB</th>
             </tr>
           </thead>
-          <tbody>${sellers.map(renderBusinessTableRow).join("")}</tbody>
+          ${sellers.map((s) => renderBusinessTableRow(s, expandedSet.has(s.shop_id))).join("")}
         </table>
       </div>`;
   }
@@ -457,7 +503,8 @@
       listEl.innerHTML = '<p class="si-v1-empty">No sellers match the current filters.</p>';
       return;
     }
-    listEl.innerHTML = renderBusinessTable(filtered);
+    listEl.innerHTML = renderBusinessTable(filtered, st.expanded);
+    bindRowToggles(listEl, st.expanded);
   }
 
   function setupBusiness(data) {

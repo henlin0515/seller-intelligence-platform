@@ -601,6 +601,71 @@
   white-space: nowrap;
 }
 
+.si-v1-table--business .si-biz-name {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.si-biz-group .si-biz-row-detail {
+  display: none;
+}
+
+.si-biz-group.is-expanded .si-biz-row-detail {
+  display: table-row;
+}
+
+.si-biz-group.is-expanded .si-biz-toggle {
+  transform: rotate(90deg);
+}
+
+.si-biz-row-head {
+  cursor: pointer;
+}
+
+.si-biz-row-head:hover {
+  background: rgba(255, 106, 0, 0.06);
+}
+
+.si-biz-toggle-cell {
+  width: 2.25rem;
+  padding-left: 0.45rem;
+  padding-right: 0.25rem;
+}
+
+.si-biz-toggle {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 106, 0, 0.3);
+  border-radius: 4px;
+  color: #ff8c33;
+  font-size: 0.68rem;
+  transition: transform 0.2s ease;
+}
+
+.si-biz-detail-panel {
+  padding: 0.65rem 0.75rem 0.85rem;
+  background: #0a0a0a;
+  border-top: 1px solid rgba(255, 106, 0, 0.12);
+}
+
+.si-biz-detail-panel .si-section-title {
+  margin: 0 0 0.65rem;
+}
+
+.si-biz-link {
+  color: #ff8c33;
+  text-decoration: none;
+}
+
+.si-biz-link:hover {
+  text-decoration: underline;
+}
+
 .si-v1-na {
   color: #888;
   font-style: italic;
