@@ -80,6 +80,7 @@ def main() -> int:
                 "total_master_shops_loaded": summary.get("master_seller_count"),
                 "ytd_monthly_rows_loaded": summary.get("ytd_monthly_rows_loaded"),
                 "ytd_matched_count": summary.get("ytd_matched_count"),
+                "ytd_unmatched_count": summary.get("ytd_unmatched_count"),
                 "ytd_load_error": summary.get("ytd_load_error"),
                 "april_shopee_gmv_total": summary.get("april_shopee_gmv_total"),
                 "may_shopee_gmv_total": summary.get("may_shopee_gmv_total"),

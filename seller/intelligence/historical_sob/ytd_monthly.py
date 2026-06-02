@@ -224,15 +224,15 @@ def lookup_ytd_record(
     shop_name: str,
     shop_id: str = "",
 ) -> YtdMonthlyRecord | None:
-    """Match ytd monthly row to seller master by shop_name, with shop_id fallback."""
-    name_key = normalize_shop_name(shop_name)
-    if name_key:
-        record = ytd.by_shop_name.get(name_key)
-        if record is not None:
-            return record
+    """Match ytd monthly row to seller master by shop_id, with shop_name fallback."""
     sid = str(shop_id or "").strip()
     if sid:
-        return ytd.by_shop_id.get(sid)
+        record = ytd.by_shop_id.get(sid)
+        if record is not None:
+            return record
+    name_key = normalize_shop_name(shop_name)
+    if name_key:
+        return ytd.by_shop_name.get(name_key)
     return None
 
 
@@ -254,12 +254,12 @@ def parse_ytd_monthly_rows(
         stats.total_rows_read += 1
         shop_name = _cell(row, indexes.get("shop_name", 0))
         shop_id = _cell(row, indexes.get("shop_id", 1))
-        if not shop_name:
-            stats.skipped_rows.append({"row": row_index, "reason": "missing_shop_name"})
+        if not shop_name and not shop_id:
+            stats.skipped_rows.append({"row": row_index, "reason": "missing_shop_id_and_shop_name"})
             continue
 
-        name_key = normalize_shop_name(shop_name)
-        if name_key in by_shop_name:
+        name_key = normalize_shop_name(shop_name) if shop_name else ""
+        if name_key and name_key in by_shop_name:
             if shop_name not in stats.duplicate_shop_names:
                 stats.duplicate_shop_names.append(shop_name)
             stats.skipped_rows.append(
@@ -281,11 +281,12 @@ def parse_ytd_monthly_rows(
             ytd_apr_adgmv=_parse_optional_float(_cell(row, indexes.get("ytd_apr_adgmv", 2))),
             ytd_may_adgmv=_parse_optional_float(_cell(row, indexes.get("ytd_may_adgmv", 3))),
         )
-        by_shop_name[name_key] = record
+        if name_key:
+            by_shop_name[name_key] = record
         if shop_id:
             by_shop_id[shop_id] = record
 
-    stats.total_loaded = len(by_shop_name)
+    stats.total_loaded = len({id(r) for r in set(by_shop_id.values()) | set(by_shop_name.values())})
     return YtdMonthlyLoadResult(
         by_shop_name=by_shop_name,
         by_shop_id=by_shop_id,

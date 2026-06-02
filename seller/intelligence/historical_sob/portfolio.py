@@ -52,6 +52,10 @@ def build_portfolio_historical_sob(rows: list[dict[str, Any]]) -> dict[str, Any]
         else (None, None)
     )
 
+    portfolio_sob_change_pp = None
+    if april_tiktok_sob is not None and may_tiktok_sob is not None:
+        portfolio_sob_change_pp = _round_sob(float(may_tiktok_sob) - float(april_tiktok_sob))
+
     return {
         "april_shopee_gmv": _round_gmv(april_shopee),
         "april_tiktok_gmv": _round_gmv(april_tiktok),
@@ -61,8 +65,11 @@ def build_portfolio_historical_sob(rows: list[dict[str, Any]]) -> dict[str, Any]
         "may_total_gmv": _round_gmv(may_total),
         "april_shopee_sob_percent": _round_sob(april_shopee_sob),
         "april_tiktok_sob_percent": _round_sob(april_tiktok_sob),
+        "april_portfolio_sob_percent": _round_sob(april_tiktok_sob),
         "may_shopee_sob_percent": _round_sob(may_shopee_sob),
         "may_tiktok_sob_percent": _round_sob(may_tiktok_sob),
+        "may_portfolio_sob_percent": _round_sob(may_tiktok_sob),
+        "portfolio_sob_change_pp": portfolio_sob_change_pp,
     }
 
 

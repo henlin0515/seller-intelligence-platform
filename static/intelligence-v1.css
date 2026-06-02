@@ -1979,3 +1979,22 @@
 .hs-warnings li + li {
   margin-top: 0.25rem;
 }
+
+.hs-overall-summary-wrap {
+  margin-bottom: 1rem;
+}
+
+.hs-overall-summary {
+  padding-bottom: 0.25rem;
+}
+
+.hs-debug-meta {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  color: #777;
+}
+
+.hs-seller-table th,
+.hs-seller-table td {
+  white-space: nowrap;
+}

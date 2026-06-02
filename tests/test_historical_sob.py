@@ -54,7 +54,17 @@ class YtdMonthlyParseTests(unittest.TestCase):
         self.assertEqual(partial.april_shopee_gmv, 1515.0)
         self.assertEqual(partial.may_shopee_gmv, 2332.75)
 
-    def test_match_by_shop_name_not_shop_id(self):
+    def test_match_by_shop_id_primary(self):
+        rows = [
+            ["shop_name", "shop_id", "ytd_apr_adgmv", "ytd_may_adgmv"],
+            ["Wrong Name", "64329852", "10", "20"],
+        ]
+        ytd = parse_ytd_monthly_rows(rows)
+        rec = lookup_ytd_record(ytd, shop_name="LaLa_Shoes.PH", shop_id="64329852")
+        self.assertIsNotNone(rec)
+        self.assertEqual(rec.april_shopee_gmv, 300.0)
+
+    def test_match_by_shop_name_fallback(self):
         rows = [
             ["shop_name", "shop_id", "ytd_apr_adgmv", "ytd_may_adgmv"],
             ["LaLa_Shoes.PH", "DIFFERENT_ID", "10", "20"],
@@ -120,9 +130,9 @@ class HistoricalSobRowTests(unittest.TestCase):
 
         shop_a = next(r for r in rows if r["shop_id"] == "1")
         shop_b = next(r for r in rows if r["shop_id"] == "2")
-        self.assertEqual(shop_a["april_shopee_sob_percent"], 75.0)
-        self.assertEqual(shop_a["april_tiktok_sob_percent"], 25.0)
-        self.assertIsNone(shop_b["april_shopee_sob_percent"])
+        self.assertEqual(shop_a["april_sob_percent"], 25.0)
+        self.assertEqual(shop_a["may_sob_percent"], 39.2)
+        self.assertIsNone(shop_b["april_sob_percent"])
         self.assertIsNotNone(shop_b["shopee_na_reason"])
 
     def test_portfolio_aggregate(self):
@@ -143,8 +153,7 @@ class HistoricalSobRowTests(unittest.TestCase):
         portfolio = build_portfolio_historical_sob(rows)
         self.assertEqual(portfolio["april_shopee_gmv"], 9000.0)
         self.assertEqual(portfolio["april_tiktok_gmv"], 3000.0)
-        self.assertEqual(portfolio["april_shopee_sob_percent"], 75.0)
-        self.assertEqual(portfolio["april_tiktok_sob_percent"], 25.0)
+        self.assertEqual(portfolio["april_portfolio_sob_percent"], 25.0)
 
     def test_payload_never_raises_on_ytd_error(self):
         master = self._master()
