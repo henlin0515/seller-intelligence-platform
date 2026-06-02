@@ -1,5 +1,5 @@
 /**
- * Historical SOB — fixed portfolio summary + seller table (Seller Level Analysis UX).
+ * Historical SOB — Section 1: portfolio summary + Section 2: seller drill-down.
  */
 (function () {
   const API = "/api/intelligence/v1/historical-sob";
@@ -120,88 +120,124 @@
     return copy;
   }
 
-  function renderPortfolioKpi(label, value, sub, accent) {
-    const accentCls = accent ? ` si-port-kpi--${accent}` : "";
+  function renderPortfolioCard(label, value, accent) {
+    const accentCls = accent ? ` hs-portfolio-card--${accent}` : "";
     return `
-      <article class="si-port-kpi${accentCls}">
-        <div class="si-port-kpi-label">${escapeHtml(label)}</div>
-        <div class="si-port-kpi-value">${value}</div>
-        ${sub ? `<div class="si-port-kpi-sub">${escapeHtml(sub)}</div>` : ""}
+      <article class="hs-portfolio-card${accentCls}">
+        <span class="hs-portfolio-card-label">${escapeHtml(label)}</span>
+        <strong class="hs-portfolio-card-value">${value}</strong>
       </article>`;
   }
 
-  function renderOverallSummary() {
+  function renderSobCompareRow(platform, pct) {
+    const width =
+      pct == null || Number.isNaN(Number(pct)) ? 0 : Math.max(0, Math.min(100, Number(pct)));
+    const variant = platform === "Shopee" ? "shopee" : "tiktok";
+    return `
+      <div class="hs-sob-compare-row hs-sob-compare-row--${variant}">
+        <span class="hs-sob-compare-platform">${escapeHtml(platform)}</span>
+        <div class="hs-sob-compare-track" aria-hidden="true">
+          <span class="hs-sob-compare-fill" data-target-width="${width}" style="width:0%"></span>
+        </div>
+        <span class="hs-sob-compare-pct">${escapeHtml(fmtPct(pct))}</span>
+      </div>`;
+  }
+
+  function renderSobCompareMonth(title, shopeePct, tiktokPct) {
+    return `
+      <div class="hs-sob-compare-month">
+        <h3 class="hs-sob-compare-month-title">${escapeHtml(title)}</h3>
+        ${renderSobCompareRow("Shopee", shopeePct)}
+        ${renderSobCompareRow("TikTok", tiktokPct)}
+      </div>`;
+  }
+
+  function renderSobCompareBars(portfolio) {
+    if (!portfolio) {
+      return `<p class="si-v1-empty">${escapeHtml(i18n("historicalSob.sobBarsNa", "SOB comparison unavailable"))}</p>`;
+    }
+    const aprShp = portfolio.april_shopee_sob_percent;
+    const aprTk = portfolio.april_tiktok_sob_percent;
+    const mayShp = portfolio.may_shopee_sob_percent;
+    const mayTk = portfolio.may_tiktok_sob_percent;
+    if ([aprShp, aprTk, mayShp, mayTk].every((v) => v == null)) {
+      return `<p class="si-v1-empty">${escapeHtml(i18n("historicalSob.sobBarsNa", "SOB comparison unavailable"))}</p>`;
+    }
+    return `
+      <div class="hs-sob-compare" data-hs-sob-bars>
+        ${renderSobCompareMonth("April", aprShp, aprTk)}
+        ${renderSobCompareMonth("May", mayShp, mayTk)}
+      </div>`;
+  }
+
+  function animateSobCompareBars(root) {
+    requestAnimationFrame(() => {
+      root.querySelectorAll(".hs-sob-compare-fill[data-target-width]").forEach((bar) => {
+        const target = bar.getAttribute("data-target-width") || "0";
+        bar.style.width = "0%";
+        bar.offsetHeight;
+        bar.style.width = `${target}%`;
+      });
+    });
+  }
+
+  function renderPortfolioSection() {
     const kpis = payload?.kpis || {};
-    const summary = payload?.summary || {};
+    const portfolio = payload?.portfolio || {};
     const warnings = payload?.warnings || [];
     const warnHtml = warnings.length
-      ? `<div class="hs-warnings" role="status"><strong>${escapeHtml(i18n("historicalSob.warningsTitle", "Data warnings"))}</strong><ul>${warnings
+      ? `<div class="hs-warnings" role="status"><ul>${warnings
           .map((w) => `<li>${escapeHtml(w)}</li>`)
           .join("")}</ul></div>`
       : "";
-    const debugLine = [
-      `YTD rows: ${fmtNum(summary.ytd_monthly_rows_loaded ?? 0)}`,
-      `Matched: ${fmtNum(summary.ytd_matched_count ?? 0)}`,
-      `Unmatched: ${fmtNum(summary.ytd_unmatched_count ?? 0)}`,
-      payload?.ytd_tab ? `Tab: ${payload.ytd_tab}` : "",
-    ]
-      .filter(Boolean)
-      .join(" · ");
 
     return `
       ${warnHtml}
-      <section class="hs-overall-summary" aria-label="Overall Historical SOB summary">
-        <div class="si-port-kpi-grid">
-          ${renderPortfolioKpi(
-            i18n("historicalSob.kpiTotalShops", "Total Shops"),
-            fmtNum(kpis.total_shops),
-            payload?.master_tab,
-            "neutral"
-          )}
-          ${renderPortfolioKpi(
+      <section class="hs-section hs-section--portfolio" aria-label="Overall portfolio summary">
+        <h2 class="hs-section-title">${escapeHtml(i18n("historicalSob.sectionPortfolio", "Overall Portfolio Summary"))}</h2>
+        <div class="hs-portfolio-cards">
+          ${renderPortfolioCard(
             i18n("historicalSob.kpiAprShopee", "April Shopee GMV"),
             escapeHtml(fmtGmv(kpis.april_shopee_gmv)),
-            "ytd_apr_adgmv × 30",
             "shopee"
           )}
-          ${renderPortfolioKpi(
+          ${renderPortfolioCard(
             i18n("historicalSob.kpiAprTiktok", "April TikTok GMV"),
             escapeHtml(fmtGmv(kpis.april_tiktok_gmv)),
-            "FastMoss Apr",
             "tiktok"
           )}
-          ${renderPortfolioKpi(
-            i18n("historicalSob.kpiAprSob", "April Portfolio SOB %"),
+          ${renderPortfolioCard(
+            i18n("historicalSob.kpiAprSob", "April SOB %"),
             escapeHtml(fmtPct(kpis.april_portfolio_sob_percent)),
-            "TikTok / (TikTok + Shopee)",
-            "hero"
+            "sob"
           )}
-          ${renderPortfolioKpi(
+          ${renderPortfolioCard(
             i18n("historicalSob.kpiMayShopee", "May Shopee GMV"),
             escapeHtml(fmtGmv(kpis.may_shopee_gmv)),
-            "ytd_may_adgmv × 31",
             "shopee"
           )}
-          ${renderPortfolioKpi(
+          ${renderPortfolioCard(
             i18n("historicalSob.kpiMayTiktok", "May TikTok GMV"),
             escapeHtml(fmtGmv(kpis.may_tiktok_gmv)),
-            "FastMoss May",
             "tiktok"
           )}
-          ${renderPortfolioKpi(
-            i18n("historicalSob.kpiMaySob", "May Portfolio SOB %"),
+          ${renderPortfolioCard(
+            i18n("historicalSob.kpiMaySob", "May SOB %"),
             escapeHtml(fmtPct(kpis.may_portfolio_sob_percent)),
-            "TikTok / (TikTok + Shopee)",
-            "hero"
+            "sob"
           )}
-          ${renderPortfolioKpi(
-            i18n("historicalSob.kpiSobChange", "Portfolio SOB Change %"),
+          ${renderPortfolioCard(
+            i18n("historicalSob.kpiSobChange", "SOB Change %"),
             escapeHtml(fmtChange(kpis.portfolio_sob_change_pp)),
-            "May SOB − April SOB",
-            "accent"
+            "change"
           )}
         </div>
-        <p class="hs-debug-meta">${escapeHtml(debugLine)}</p>
+        <div class="hs-portfolio-bars-wrap">
+          <h3 class="hs-portfolio-bars-title">${escapeHtml(
+            i18n("historicalSob.sobCompareTitle", "Shopee vs TikTok share — April vs May")
+          )}</h3>
+          ${renderSobCompareBars(portfolio)}
+        </div>
       </section>`;
   }
 
@@ -316,14 +352,15 @@
       </div>`;
   }
 
-  function paintSummary() {
-    const summaryEl = contentEl?.querySelector("[data-hs-summary]");
-    if (summaryEl && payload) {
-      summaryEl.innerHTML = renderOverallSummary();
-    }
+  function paintPortfolioSection() {
+    const portfolioEl = contentEl?.querySelector("[data-hs-portfolio]");
+    if (!portfolioEl || !payload) return;
+    portfolioEl.innerHTML = renderPortfolioSection();
+    const barsRoot = portfolioEl.querySelector("[data-hs-sob-bars]");
+    if (barsRoot) animateSobCompareBars(barsRoot);
   }
 
-  function paintSellerList() {
+  function paintSellerSection() {
     if (!contentEl || !payload) return;
     const listEl = contentEl.querySelector("[data-hs-list]");
     const toolbarEl = contentEl.querySelector("[data-toolbar]");
@@ -342,9 +379,12 @@
     if (!contentEl || !payload) return;
     if (!shellReady) {
       contentEl.innerHTML = `
-        <div data-hs-summary class="hs-overall-summary-wrap"></div>
-        ${toolbarHtml(filters)}
-        <div class="si-v1-list" data-hs-list></div>`;
+        <div data-hs-portfolio class="hs-portfolio-fixed"></div>
+        <section class="hs-section hs-section--sellers">
+          <h2 class="hs-section-title">${escapeHtml(i18n("historicalSob.sectionSellers", "Seller Level Historical SOB"))}</h2>
+          ${toolbarHtml(filters)}
+          <div class="si-v1-list" data-hs-list></div>
+        </section>`;
 
       const onToolbar = (ev) => {
         if (ev?.reset) {
@@ -352,24 +392,24 @@
         } else {
           filters = readFiltersFromToolbar(contentEl.querySelector("[data-toolbar]"));
         }
-        contentEl.querySelector("[data-toolbar]").outerHTML = toolbarHtml(filters);
-        bindToolbar(contentEl.querySelector("[data-toolbar]"), onToolbar);
-        paintSellerList();
+        const sellerSection = contentEl.querySelector(".hs-section--sellers");
+        const toolbar = sellerSection.querySelector("[data-toolbar]");
+        toolbar.outerHTML = toolbarHtml(filters);
+        bindToolbar(sellerSection.querySelector("[data-toolbar]"), onToolbar);
+        paintSellerSection();
       };
       bindToolbar(contentEl.querySelector("[data-toolbar]"), onToolbar);
       shellReady = true;
     }
-    paintSummary();
-    paintSellerList();
+    paintPortfolioSection();
+    paintSellerSection();
   }
 
   function updateMeta() {
     if (!metaEl || !payload) return;
-    const s = payload.summary || {};
     metaEl.textContent = [
-      "April 2026 · May 2026",
+      i18n("historicalSob.metaPeriod", "April 2026 · May 2026"),
       payload.ytd_tab,
-      `${s.ytd_matched_count ?? 0}/${s.master_seller_count ?? 0} YTD matched`,
     ]
       .filter(Boolean)
       .join(" · ");
