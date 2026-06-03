@@ -58,8 +58,36 @@
   function businessSheetFilters(data) {
     return {
       rm: data?.rm_filter || data?.sheet_filters?.rm_filter || { options: [{ value: "all", label: "All RM" }], by_rm: {} },
-      gp: data?.gp_filter || data?.sheet_filters?.gp_filter || { options: [{ value: "all", label: "All GP" }], by_gp: {} },
+      gp: data?.gp_filter || data?.sheet_filters?.gp_filter || {
+        options: [{ value: "all", label: "All GP" }],
+        by_gp: {},
+        gp_names_by_rm: {},
+      },
     };
+  }
+
+  function businessGpFilterForRm(gpFilter, rmValue) {
+    const base = gpFilter || { options: [{ value: "all", label: "All GP" }], by_gp: {} };
+    if (!rmValue || rmValue === "all") return base;
+    const names = base.gp_names_by_rm?.[rmValue] || [];
+    return {
+      ...base,
+      options: [
+        { value: "all", label: "All GP" },
+        ...names.map((gp) => ({ value: gp, label: gp })),
+      ],
+    };
+  }
+
+  function coerceBusinessGpForRm(filters, sheetFilters) {
+    const rm = filters.rm || "all";
+    const gp = filters.gp || "all";
+    if (rm === "all" || gp === "all") return filters;
+    const allowed = sheetFilters.gp?.gp_names_by_rm?.[rm] || [];
+    if (!allowed.includes(gp)) {
+      return { ...filters, gp: "all" };
+    }
+    return filters;
   }
 
   function normalizeShopKey(value) {
@@ -828,6 +856,7 @@
 
   function businessToolbarFieldsHtml(f, sheetFilters) {
     const sf = sheetFilters || {};
+    const gpFilterDef = businessGpFilterForRm(sf.gp, f.rm);
     return `
           <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
             <label for="siBizSearch">Seller search</label>
@@ -839,7 +868,7 @@
           </div>
           <div class="si-v1-toolbar-field">
             <label for="siBizGp">GP</label>
-            <select id="siBizGp" data-f="gp">${filterSelectOptionsHtml(sf.gp, f.gp, "All GP")}</select>
+            <select id="siBizGp" data-f="gp">${filterSelectOptionsHtml(gpFilterDef, f.gp, "All GP")}</select>
           </div>
           <div class="si-v1-toolbar-field">
             <label for="siBizStatus">Status</label>
@@ -885,8 +914,9 @@
   function syncBusinessFilterControls(el) {
     const toolbar = el.querySelector("[data-toolbar='business']");
     if (!toolbar) return;
-    const f = state.business.filters;
     const sheetFilters = businessSheetFilters(state.business.raw || {});
+    state.business.filters = coerceBusinessGpForRm(state.business.filters, sheetFilters);
+    const f = state.business.filters;
     const q = toolbar.querySelector("[data-f='q']");
     if (q) q.value = f.q || "";
     const map = { rm: "siBizRm", gp: "siBizGp", status: "siBizStatus", risk: "siBizRisk", sort: "siBizSort" };
@@ -897,7 +927,13 @@
     const rmSel = toolbar.querySelector("#siBizRm");
     if (rmSel) rmSel.innerHTML = filterSelectOptionsHtml(sheetFilters.rm, f.rm, "All RM");
     const gpSel = toolbar.querySelector("#siBizGp");
-    if (gpSel) gpSel.innerHTML = filterSelectOptionsHtml(sheetFilters.gp, f.gp, "All GP");
+    if (gpSel) {
+      gpSel.innerHTML = filterSelectOptionsHtml(
+        businessGpFilterForRm(sheetFilters.gp, f.rm),
+        f.gp,
+        "All GP"
+      );
+    }
   }
 
   function assortmentTabsHtml(f) {
@@ -1366,6 +1402,10 @@
           state.business.filters = readFiltersFromToolbar(
             el.querySelector("[data-toolbar='business']"),
             defaultBusinessFilters()
+          );
+          state.business.filters = coerceBusinessGpForRm(
+            state.business.filters,
+            businessSheetFilters(state.business.raw || {})
           );
         }
         state.business.page = 1;

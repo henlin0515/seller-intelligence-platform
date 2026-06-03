@@ -69,6 +69,7 @@ class GpShopRmIndex:
     by_rm: dict[str, set[str]] = field(default_factory=dict)
     by_gp: dict[str, set[str]] = field(default_factory=dict)
     gp_names_column_b: set[str] = field(default_factory=set)
+    gp_names_by_rm: dict[str, set[str]] = field(default_factory=dict)
     all_keys: set[str] = field(default_factory=set)
 
     @property
@@ -98,6 +99,9 @@ class GpShopRmIndex:
                 *[{"value": gp, "label": gp} for gp in self.gp_options],
             ],
             "by_gp": {gp: sorted(names) for gp, names in self.by_gp.items()},
+            "gp_names_by_rm": {
+                rm: sorted(gps) for rm, gps in self.gp_names_by_rm.items()
+            },
         }
 
 
@@ -113,11 +117,13 @@ def parse_gp_shop_rm_rows(
     - GP (B): starts a group; forward-fill to following shop rows until the next
       GP name in B or a fully blank separator row.
     - Shops (C): only rows with a shop name; never treat blank rows as shops.
-    - GP dropdown options: unique non-empty values from Column B only.
+    - GP dropdown (all RM): unique non-empty values from Column B only.
+    - GP dropdown (one RM): Column B GP names in that RM's block (A filled until next A).
     """
     by_rm: dict[str, set[str]] = {}
     by_gp: dict[str, set[str]] = {}
     gp_names_column_b: set[str] = set()
+    gp_names_by_rm: dict[str, set[str]] = {}
     all_keys: set[str] = set()
     current_rm = ""
     current_gp = ""
@@ -137,6 +143,8 @@ def parse_gp_shop_rm_rows(
         if gp_cell:
             current_gp = gp_cell
             gp_names_column_b.add(gp_cell)
+            if current_rm:
+                gp_names_by_rm.setdefault(current_rm, set()).add(gp_cell)
 
         if not shop_cell:
             continue
@@ -166,6 +174,7 @@ def parse_gp_shop_rm_rows(
         by_rm=by_rm,
         by_gp=by_gp,
         gp_names_column_b=gp_names_column_b,
+        gp_names_by_rm=gp_names_by_rm,
         all_keys=all_keys,
     )
 
@@ -303,6 +312,7 @@ def _empty_sheet_filters_payload(*, error: str | None = None) -> dict[str, Any]:
         "default": ALL_GP_VALUE,
         "options": [{"value": ALL_GP_VALUE, "label": "All GP"}],
         "by_gp": {},
+        "gp_names_by_rm": {},
     }
     return {
         "tab": gp_shop_rm_tab_name(),

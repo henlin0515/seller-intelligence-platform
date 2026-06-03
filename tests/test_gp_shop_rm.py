@@ -153,6 +153,24 @@ class GpShopRmTests(unittest.TestCase):
         values = [o["value"] for o in payload["options"]]
         self.assertEqual(values[0], ALL_GP_VALUE)
         self.assertIn("GP A", values)
+        self.assertEqual(payload["gp_names_by_rm"]["rm"], ["GP A"])
+
+    def test_gp_names_scoped_to_rm_block(self):
+        rows = [
+            ["RM", "GP NAME", "SHOP NAME"],
+            ["frida@shopee.com", "Mumu PH", "Mumu PH"],
+            ["", "", "MUMUSELECT PH"],
+            ["", "", ""],
+            ["", "UISN Mall", "UISN Mall"],
+            ["eric@shopee.com", "Skyer", "Skyer"],
+            ["", "Lala Shoes PH", "Lala Shop"],
+        ]
+        index = parse_gp_shop_rm_rows(rows)
+        frida_gps = index.gp_names_by_rm["frida@shopee.com"]
+        self.assertEqual(frida_gps, {"Mumu PH", "UISN Mall"})
+        eric_gps = index.gp_names_by_rm["eric@shopee.com"]
+        self.assertEqual(eric_gps, {"Skyer", "Lala Shoes PH"})
+        self.assertNotIn("Skyer", frida_gps)
 
     def test_seller_matches_gp_specific(self):
         index = GpShopRmIndex(
