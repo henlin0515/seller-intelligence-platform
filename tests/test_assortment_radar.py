@@ -195,3 +195,16 @@ def test_validation_block_statuses():
         fetch_meta={"shops_scanned": 0, "shop_errors": []},
     )
     assert source_err["data_status"] == "source_error"
+    assert "no rows found" in (source_err.get("message") or "").lower()
+
+    pending = _validation_block(
+        seller_master_rows=10,
+        approved_shop_count=3,
+        raw_api_rows=0,
+        mapped_count=0,
+        shop_count=3,
+        category_count=0,
+        fetch_meta={"shops_scanned": 0},
+        fastmoss_loaded=False,
+    )
+    assert pending["data_status"] == "pending_catalog"

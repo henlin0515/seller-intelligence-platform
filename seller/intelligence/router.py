@@ -129,12 +129,35 @@ async def intelligence_v1_business():
 
 
 @router.get("/assortment")
-async def intelligence_v1_assortment():
-    master = _load_master()
-    from seller.intelligence.assortment.radar import clear_tiktok_radar_cache
+async def intelligence_v1_assortment(refresh: bool = False):
+    """Fast sheet-aligned payload by default; FastMoss catalog only when refresh=true."""
+    import asyncio
 
-    clear_tiktok_radar_cache()
-    return get_assortment_intelligence(master, force_refresh=True)
+    master = _load_master()
+    try:
+        return await asyncio.to_thread(
+            get_assortment_intelligence,
+            master,
+            force_refresh=refresh,
+            fetch_fastmoss=refresh,
+        )
+    except Exception as exc:
+        logger.exception("TikTok Product Radar load failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Could not load TikTok Product Radar.",
+        ) from exc
+
+
+@router.post("/assortment/refresh-products")
+async def intelligence_v1_assortment_refresh_products():
+    """Kick off background FastMoss product catalog refresh (non-blocking)."""
+    import asyncio
+
+    from seller.intelligence.assortment.radar import start_radar_fastmoss_refresh_background
+
+    master = _load_master()
+    return await asyncio.to_thread(start_radar_fastmoss_refresh_background, master)
 
 
 @router.get("/voucher")
@@ -194,10 +217,9 @@ def _refresh_all_sheet_caches() -> dict:
     ai_status = refresh_ai_data(force=True)
     adgmv = get_shopee_adgmv(force_refresh=True)
 
-    from seller.intelligence.assortment.service import get_assortment_intelligence
+    from seller.intelligence.assortment.radar import start_radar_fastmoss_refresh_background
 
-    radar_payload = get_assortment_intelligence(master, force_refresh=True)
-    radar_validation = radar_payload.get("validation") or {}
+    radar_refresh = start_radar_fastmoss_refresh_background(master)
 
     sync_status = get_seller_master_sync_status()
     refreshed_at = sync_status.get("last_sync_at") or datetime.now(timezone.utc).isoformat()
@@ -209,11 +231,8 @@ def _refresh_all_sheet_caches() -> dict:
         "ai_data_count": int(ai_status.get("seller_count") or 0),
         "shopee_adgmv_count": adgmv.stats.total_loaded,
         "tiktok_product_radar": {
-            "raw_record_count": radar_validation.get("raw_record_count"),
-            "mapped_product_count": radar_validation.get("mapped_product_count"),
-            "shop_count": radar_validation.get("shop_count"),
-            "category_count": radar_validation.get("category_count"),
-            "data_status": radar_validation.get("data_status"),
+            "refresh_started": radar_refresh.get("started"),
+            "refresh_running": radar_refresh.get("running"),
         },
     }
 

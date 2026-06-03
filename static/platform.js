@@ -203,7 +203,12 @@
       updatePlatformLastSync(data.refreshed_at || data.sheets?.refreshed_at);
       showPlatformToast(i18n("platform.refreshSuccess", "Data updated"));
       window.ShpHistoricalSob?.clearCache?.();
-      await reloadCurrentViewAfterRefresh(data);
+      if (currentView === "siAssortment" && window.ShpIntelligenceV1?.refreshRadarProducts) {
+        window.ShpIntelligenceV1.clearCache?.();
+        await window.ShpIntelligenceV1.refreshRadarProducts();
+      } else {
+        await reloadCurrentViewAfterRefresh(data);
+      }
       window.ShpMappingCenter?.load?.();
       return data;
     } catch (err) {

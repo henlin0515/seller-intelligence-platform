@@ -6,8 +6,13 @@
     dashboard: "/api/intelligence/v1/dashboard",
     business: "/api/intelligence/v1/business",
     assortment: "/api/intelligence/v1/assortment",
+    assortmentRefreshProducts: "/api/intelligence/v1/assortment/refresh-products",
     voucher: "/api/intelligence/v1/voucher",
   };
+
+  const RADAR_LOAD_TIMEOUT_MS = 45000;
+  const RADAR_POLL_INTERVAL_MS = 8000;
+  const RADAR_POLL_MAX_MS = 900000;
 
   const containers = {
     siDashboard: document.getElementById("siDashboardContent"),
@@ -71,13 +76,87 @@
       );
     }
     const v = raw?.validation || {};
+    if (v.data_status === "refreshing" || v.refresh_running) {
+      return escapeHtml(v.message || "Product catalog refresh in progress…");
+    }
+    if (v.data_status === "pending_catalog") {
+      return escapeHtml(
+        v.message ||
+          "Seller list loaded from Google Sheet. Click Update Data to refresh the product catalog."
+      );
+    }
     if (v.data_status === "mapping_error") {
-      return escapeHtml(v.message || "Mapping error: sheet rows could not be mapped to products.");
+      return escapeHtml(v.message || "Column mapping error. Check headers.");
     }
     if (v.data_status === "source_error") {
-      return escapeHtml(v.message || "Data source error: no TikTok product catalog available.");
+      return escapeHtml(v.message || "Sheet source loaded but no rows found. Check tab/range.");
     }
     return i18n("si.radarEmptyCatalog", "No shop catalog data available.");
+  }
+
+  function logRadarDebug(data, label = "load") {
+    const v = data?.validation || {};
+    const portfolio = data?.portfolio || {};
+    const shops = data?.filters?.shops || [];
+    const categories = data?.category_dashboard?.categories || [];
+    const shopView = data?.shop_view?.shops || [];
+    console.log(`[TikTok Product Radar] ${label}`);
+    console.log("Radar raw rows:", v.raw_record_count ?? v.sheet_row_count ?? 0);
+    console.log("Radar mapped products:", v.mapped_product_count ?? portfolio.total_products ?? 0);
+    console.log("Radar shops:", v.shop_count ?? shops.length ?? shopView.length);
+    console.log("Radar categories:", v.category_count ?? categories.length);
+    console.log("Radar data_status:", v.data_status);
+    if (v.message) console.log("Radar message:", v.message);
+  }
+
+  async function loadWithTimeout(path, options = {}, timeoutMs = RADAR_LOAD_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetchApi(path, { ...options, signal: controller.signal });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Request failed (${res.status})`);
+      }
+      return res.json();
+    } catch (err) {
+      if (err.name === "AbortError") {
+        throw new Error(`Request timed out after ${Math.round(timeoutMs / 1000)}s`);
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async function pollRadarUntilReady() {
+    const deadline = Date.now() + RADAR_POLL_MAX_MS;
+    while (Date.now() < deadline) {
+      const data = await loadWithTimeout(API.assortment, {}, RADAR_LOAD_TIMEOUT_MS);
+      logRadarDebug(data, "poll");
+      const v = data?.validation || {};
+      const refresh = data?.refresh_status || {};
+      if (!refresh.running && !v.refresh_running) {
+        if ((v.mapped_product_count || 0) > 0 || v.data_status !== "refreshing") {
+          return data;
+        }
+      }
+      await sleep(RADAR_POLL_INTERVAL_MS);
+    }
+    throw new Error("Product catalog refresh timed out. Try Update Data again.");
+  }
+
+  async function startRadarProductRefresh() {
+    const res = await fetchApi(API.assortmentRefreshProducts, { method: "POST" });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Refresh failed (${res.status})`);
+    }
+    return res.json();
   }
 
   function fetchApi(path, options = {}) {
@@ -1324,6 +1403,7 @@
   function setupAssortment(data) {
     const el = containers.siAssortment;
     if (!el) return;
+    logRadarDebug(data, "render");
     state.assortment.raw = data;
     if (state.assortment.filters.shop === "all") {
       state.assortment.filters.shop = resolveDefaultShopId(data);
@@ -1560,6 +1640,36 @@
     if (el) el.innerHTML = `<p class="si-v1-error">${escapeHtml(message)}</p>`;
   }
 
+  function showRadarLoading(message = "Loading…") {
+    const el = containers.siAssortment;
+    if (!el) return;
+    el.innerHTML = `<p class="si-v1-loading">${escapeHtml(message)}</p>`;
+    state.assortment.shellReady = false;
+  }
+
+  async function loadAssortmentView({ refreshProducts = false } = {}) {
+    showRadarLoading(
+      refreshProducts
+        ? i18n("si.radarRefreshing", "Refreshing product catalog…")
+        : i18n("si.radarLoading", "Loading TikTok Product Radar…")
+    );
+    try {
+      if (refreshProducts) {
+        await startRadarProductRefresh();
+        cache.siAssortment = await pollRadarUntilReady();
+      } else {
+        cache.siAssortment = await loadWithTimeout(API.assortment, {}, RADAR_LOAD_TIMEOUT_MS);
+      }
+      setupAssortment(cache.siAssortment);
+    } catch (err) {
+      console.error("[TikTok Product Radar] load failed:", err);
+      showError("siAssortment", err.message || "Failed to load TikTok Product Radar");
+      if (metas.siAssortment) {
+        metas.siAssortment.textContent = i18n("si.radarLoadFailed", "Load failed");
+      }
+    }
+  }
+
   async function onShow(view) {
     if (view === "siDashboard") {
       await loadDashboardView();
@@ -1581,18 +1691,19 @@
       return;
     }
 
+    if (view === "siAssortment") {
+      await loadAssortmentView({ refreshProducts: false });
+      return;
+    }
+
     if (!cache[view]) showLoading(view);
 
     try {
-      if (view === "siAssortment") {
-        if (!cache[view]) showLoading(view);
-        cache[view] = await load(path);
-      } else if (!cache[view]) {
+      if (!cache[view]) {
         cache[view] = await load(path);
       }
       const data = cache[view];
       if (view === "siBusiness") setupBusiness(data);
-      else if (view === "siAssortment") setupAssortment(data);
       else if (view === "siVoucher") renderVoucher(data);
     } catch (err) {
       showError(view, err.message || "Failed to load");
@@ -1657,6 +1768,7 @@
   window.ShpIntelligenceV1 = {
     onShow,
     loadDashboardView,
+    loadAssortmentView,
     clearCache: () => {
       Object.keys(cache).forEach((k) => delete cache[k]);
       state.business.shellReady = false;
@@ -1665,5 +1777,6 @@
       state.assortment.expanded.clear();
     },
     refreshBusinessData,
+    refreshRadarProducts: () => loadAssortmentView({ refreshProducts: true }),
   };
 })();

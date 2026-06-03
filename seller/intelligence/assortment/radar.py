@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from datetime import UTC, date, datetime
 from typing import Any
@@ -29,6 +30,13 @@ RADAR_PAGE_SIZE = _clamp_page_size(radar_page_size())
 
 _cache_payload: dict[str, Any] | None = None
 _cache_ts: float = 0.0
+_refresh_lock = threading.Lock()
+_refresh_state: dict[str, Any] = {
+    "running": False,
+    "started_at": None,
+    "finished_at": None,
+    "error": None,
+}
 
 
 def _parse_upload_date(value: str | None) -> date | None:
@@ -483,16 +491,18 @@ def _validation_block(
     shop_count: int,
     category_count: int,
     fetch_meta: dict[str, Any],
+    fastmoss_loaded: bool = True,
+    refresh_running: bool = False,
 ) -> dict[str, Any]:
-    if mapped_count > 0:
+    if refresh_running:
+        status = "refreshing"
+        message = "Product catalog refresh in progress…"
+    elif mapped_count > 0:
         status = "ok"
         message = None
     elif seller_master_rows == 0:
         status = "source_error"
-        message = (
-            "Seller master sheet returned no rows — check Google Sheets connection "
-            "and GOOGLE_SHEET_SELLER_MASTER_TAB, then click Update Data."
-        )
+        message = "Sheet source loaded but no rows found. Check tab/range."
     elif approved_shop_count == 0:
         status = "source_error"
         message = (
@@ -501,9 +511,11 @@ def _validation_block(
         )
     elif raw_api_rows > 0:
         status = "mapping_error"
+        message = "Column mapping error. Check headers."
+    elif not fastmoss_loaded:
+        status = "pending_catalog"
         message = (
-            "FastMoss returned product rows but none could be mapped — "
-            "check product_id / product_link fields."
+            "Seller list loaded from Google Sheet. Click Update Data to refresh the product catalog."
         )
     else:
         status = "source_error"
@@ -515,40 +527,85 @@ def _validation_block(
         "seller_master_row_count": seller_master_rows,
         "approved_shop_count": approved_shop_count,
         "raw_record_count": raw_api_rows,
+        "sheet_row_count": seller_master_rows,
         "mapped_product_count": mapped_count,
         "shop_count": shop_count,
         "category_count": category_count,
         "data_status": status,
         "message": message,
+        "fastmoss_loaded": fastmoss_loaded,
+        "refresh_running": refresh_running,
     }
 
 
-def build_tiktok_product_radar(
-    *,
+def get_radar_refresh_status() -> dict[str, Any]:
+    with _refresh_lock:
+        return dict(_refresh_state)
+
+
+def start_radar_fastmoss_refresh_background(
     master: SellerMasterLoadResult | None = None,
-    force_refresh: bool = False,
 ) -> dict[str, Any]:
-    global _cache_payload, _cache_ts
+    """Start FastMoss product catalog refresh without blocking the HTTP request."""
+    with _refresh_lock:
+        if _refresh_state.get("running"):
+            return {"started": False, "reason": "already_running", **get_radar_refresh_status()}
 
-    if (
-        not force_refresh
-        and _cache_payload is not None
-        and (time.time() - _cache_ts) < RADAR_CACHE_SEC
-    ):
-        return _cache_payload
+    def _worker() -> None:
+        global _refresh_state
+        with _refresh_lock:
+            _refresh_state = {
+                "running": True,
+                "started_at": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+                "finished_at": None,
+                "error": None,
+            }
+        try:
+            from seller.intelligence.seller_master import get_seller_master
 
-    master_shop_ids = None
-    master_tab = seller_master_tab_name()
-    seller_master_rows = 0
-    if master is not None:
-        master_shop_ids = {str(s.shop_id) for s in master.sellers}
-        master_tab = master.tab
-        seller_master_rows = master.stats.total_loaded
+            loaded = master or get_seller_master()
+            build_tiktok_product_radar(master=loaded, force_refresh=True, fetch_fastmoss=True)
+        except Exception as exc:
+            logger.exception("Background TikTok Product Radar refresh failed")
+            with _refresh_lock:
+                _refresh_state["error"] = str(exc)
+        finally:
+            with _refresh_lock:
+                _refresh_state["running"] = False
+                _refresh_state["finished_at"] = (
+                    datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+                )
 
-    mappings = _approved_mappings_for_master(master_shop_ids)
-    raw_products, fetch_meta = _collect_mapped_products(mappings)
-    enriched = enrich_product_metrics(raw_products)
+    threading.Thread(target=_worker, name="tiktok-radar-refresh", daemon=True).start()
+    return {"started": True, **get_radar_refresh_status()}
 
+
+def _empty_fetch_meta() -> dict[str, Any]:
+    return {
+        "endpoints": [],
+        "goods_path": FASTMOSS_GOODS_PATH,
+        "shops_scanned": 0,
+        "shops_with_errors": 0,
+        "shop_errors": [],
+        "raw_api_rows": 0,
+        "products_collected": 0,
+        "max_products_per_shop": RADAR_MAX_PRODUCTS,
+        "page_size": RADAR_PAGE_SIZE,
+        "shop_collections": [],
+    }
+
+
+def _assemble_radar_payload(
+    *,
+    master: SellerMasterLoadResult | None,
+    master_tab: str,
+    seller_master_rows: int,
+    mappings: list[dict[str, Any]],
+    enriched: list[dict[str, Any]],
+    fetch_meta: dict[str, Any],
+    fastmoss_loaded: bool,
+    refresh_running: bool = False,
+) -> dict[str, Any]:
     top_100 = sorted(enriched, key=_sort_key_sales, reverse=True)[:100]
     top_new = sorted(
         [p for p in enriched if p.get("is_new_product")],
@@ -577,6 +634,8 @@ def build_tiktok_product_radar(
         shop_count=len(shop_filters),
         category_count=len(category_dashboard.get("categories") or []),
         fetch_meta=fetch_meta,
+        fastmoss_loaded=fastmoss_loaded,
+        refresh_running=refresh_running,
     )
 
     try:
@@ -586,7 +645,7 @@ def build_tiktok_product_radar(
     except Exception:
         spreadsheet_id = None
 
-    payload = {
+    return {
         "module": "assortment_intelligence",
         "version": "v1",
         "status": "tiktok_product_radar",
@@ -595,6 +654,7 @@ def build_tiktok_product_radar(
         "data_source": {
             "spreadsheet_id": spreadsheet_id,
             "seller_master_tab": master_tab,
+            "seller_master_range": "A:D",
             "seller_master_columns": {
                 "shop_id": "A",
                 "shop_name": "B",
@@ -606,6 +666,10 @@ def build_tiktok_product_radar(
             "product_catalog_path": FASTMOSS_GOODS_PATH,
         },
         "column_mapping": {
+            "shop_id": "A / shop_id",
+            "shop_name": "B / shop_name",
+            "shopee_link": "C / shopee_link",
+            "tiktok_shop_name": "D / tiktok_shop_name",
             "product_id": "product_id",
             "product_name": "title / product_name",
             "product_image": "img",
@@ -615,6 +679,7 @@ def build_tiktok_product_radar(
             "sales_amount": "sale_amount",
             "upload_date": "ctime / listed_date",
             "product_link": "detail_url",
+            "platform": "tiktok",
             "shop_name": "seller_shop_name (from sheet master via mapping)",
         },
         "validation": validation,
@@ -633,10 +698,86 @@ def build_tiktok_product_radar(
         "top_100": [_public_product(p, rank=i + 1) for i, p in enumerate(top_100)],
         "top_new": [_public_product(p, rank=i + 1) for i, p in enumerate(top_new)],
         "top_growth": [_public_product(p, rank=i + 1) for i, p in enumerate(top_growth)],
-        "top_opportunities": [_public_product(p, rank=i + 1) for i, p in enumerate(top_opportunities)],
+        "top_opportunities": [
+            _public_product(p, rank=i + 1) for i, p in enumerate(top_opportunities)
+        ],
         "shop_view": shop_view,
         "category_dashboard": category_dashboard,
+        "refresh_status": get_radar_refresh_status(),
     }
+
+
+def build_tiktok_product_radar(
+    *,
+    master: SellerMasterLoadResult | None = None,
+    force_refresh: bool = False,
+    fetch_fastmoss: bool = True,
+) -> dict[str, Any]:
+    """Build radar payload. FastMoss catalog fetch is optional (slow); sheet shell is always fast."""
+    global _cache_payload, _cache_ts
+
+    refresh_running = bool(get_radar_refresh_status().get("running"))
+
+    if (
+        not force_refresh
+        and fetch_fastmoss
+        and _cache_payload is not None
+        and (time.time() - _cache_ts) < RADAR_CACHE_SEC
+    ):
+        cached = dict(_cache_payload)
+        cached["refresh_status"] = get_radar_refresh_status()
+        if refresh_running:
+            validation = dict(cached.get("validation") or {})
+            validation["refresh_running"] = True
+            validation["data_status"] = "refreshing"
+            validation["message"] = "Product catalog refresh in progress…"
+            cached["validation"] = validation
+        return cached
+
+    master_shop_ids = None
+    master_tab = seller_master_tab_name()
+    seller_master_rows = 0
+    if master is not None:
+        master_shop_ids = {str(s.shop_id) for s in master.sellers}
+        master_tab = master.tab
+        seller_master_rows = master.stats.total_loaded
+
+    mappings = _approved_mappings_for_master(master_shop_ids)
+
+    if not fetch_fastmoss:
+        shell = _assemble_radar_payload(
+            master=master,
+            master_tab=master_tab,
+            seller_master_rows=seller_master_rows,
+            mappings=mappings,
+            enriched=[],
+            fetch_meta=_empty_fetch_meta(),
+            fastmoss_loaded=bool(_cache_payload),
+            refresh_running=refresh_running,
+        )
+        if _cache_payload is not None and not force_refresh:
+            cached = dict(_cache_payload)
+            cached["filters"] = shell["filters"]
+            cached["data_source"] = shell["data_source"]
+            cached["column_mapping"] = shell["column_mapping"]
+            cached["validation"] = shell["validation"]
+            cached["refresh_status"] = shell["refresh_status"]
+            return cached
+        return shell
+
+    raw_products, fetch_meta = _collect_mapped_products(mappings)
+    enriched = enrich_product_metrics(raw_products)
+
+    payload = _assemble_radar_payload(
+        master=master,
+        master_tab=master_tab,
+        seller_master_rows=seller_master_rows,
+        mappings=mappings,
+        enriched=enriched,
+        fetch_meta=fetch_meta,
+        fastmoss_loaded=True,
+        refresh_running=False,
+    )
 
     _cache_payload = payload
     _cache_ts = time.time()
@@ -648,3 +789,13 @@ def clear_tiktok_radar_cache() -> None:
     global _cache_payload, _cache_ts
     _cache_payload = None
     _cache_ts = 0.0
+
+
+def clear_radar_refresh_state() -> None:
+    with _refresh_lock:
+        _refresh_state.update(
+            running=False,
+            started_at=None,
+            finished_at=None,
+            error=None,
+        )

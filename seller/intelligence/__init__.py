@@ -35,7 +35,10 @@ def get_seller_intelligence_v1_snapshot(
         "data_source": master.data_source,
         "import": master.stats.as_dict(),
         "business_intelligence": business,
-        "assortment_intelligence": get_assortment_intelligence(master),
+        "assortment_intelligence": get_assortment_intelligence(
+            master,
+            fetch_fastmoss=False,
+        ),
         "voucher_intelligence": build_voucher_intelligence_placeholder(shops),
     }
 
