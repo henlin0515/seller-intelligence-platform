@@ -40,6 +40,8 @@
       filters: defaultBusinessFilters(),
       expanded: new Set(),
       shellReady: false,
+      page: 1,
+      pageSize: 20,
     },
     assortment: {
       raw: null,
@@ -1146,7 +1148,6 @@
             <span class="si-sla-shop-name">${escapeHtml(s.shop_name)}</span>
             <span class="si-sla-shop-meta">ID ${escapeHtml(s.shop_id)} · ${escapeHtml(s.tiktok_shop_name || "—")}</span>
             <span class="si-sla-shop-meta">${mappingReviewBadge(s)}</span>
-            <span class="si-sla-shop-meta si-sla-shop-meta--mom">TikTok MoM ${tkMom}</span>
           </td>
           <td class="si-v1-num">${fmtShopeeUsd(s.shopee_mtd_adgmv_usd, shReason)}</td>
           <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_mtd_adgmv_usd, s.tiktok_mtd_gmv_php, tkReason)}</td>
@@ -1155,6 +1156,7 @@
           <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_m1_adgmv_usd, s.tiktok_m1_gmv_php, tkReason)}</td>
           ${m1Sob}
           <td class="si-v1-num">${shMom}</td>
+          <td class="si-v1-num">${tkMom}</td>
         </tr>`;
   }
 
@@ -1173,12 +1175,61 @@
                 <th class="si-v1-num">TikTok M-1 ADGMV</th>
                 <th class="si-sla-th-sob">M-1 SOB</th>
                 <th class="si-v1-num">Shopee MoM %</th>
+                <th class="si-v1-num">TikTok MoM %</th>
               </tr>
             </thead>
             <tbody>${sellers.map((s) => renderBusinessTableRow(s)).join("")}</tbody>
           </table>
         </div>
       </div>`;
+  }
+
+  function renderBusinessPagination(total, page, pageSize) {
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(Math.max(1, page), totalPages);
+    const start = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
+    const end = Math.min(safePage * pageSize, total);
+    const prevDisabled = safePage <= 1 ? " disabled" : "";
+    const nextDisabled = safePage >= totalPages ? " disabled" : "";
+    return `
+      <div class="si-sla-pagination" data-sla-pagination>
+        <label class="si-sla-pagination__size">
+          <span>${escapeHtml(i18n("si.rowsPerPage", "Rows per page"))}</span>
+          <select data-sla-page-size>
+            <option value="20"${pageSize === 20 ? " selected" : ""}>20</option>
+            <option value="50"${pageSize === 50 ? " selected" : ""}>50</option>
+            <option value="100"${pageSize === 100 ? " selected" : ""}>100</option>
+          </select>
+        </label>
+        <span class="si-sla-pagination__range">${start}–${end} ${escapeHtml(i18n("si.ofTotal", "of"))} ${total}</span>
+        <div class="si-sla-pagination__nav">
+          <button type="button" class="si-sla-pagination__btn" data-sla-page="prev"${prevDisabled}>‹</button>
+          <button type="button" class="si-sla-pagination__btn" data-sla-page="next"${nextDisabled}>›</button>
+        </div>
+      </div>`;
+  }
+
+  function bindBusinessPagination(root, st, filteredLength) {
+    const pager = root.querySelector("[data-sla-pagination]");
+    if (!pager) return;
+    pager.querySelector("[data-sla-page-size]")?.addEventListener("change", (ev) => {
+      st.pageSize = parseInt(ev.target.value, 10) || 20;
+      st.page = 1;
+      paintBusinessList();
+    });
+    pager.querySelector('[data-sla-page="prev"]')?.addEventListener("click", () => {
+      if (st.page > 1) {
+        st.page -= 1;
+        paintBusinessList();
+      }
+    });
+    pager.querySelector('[data-sla-page="next"]')?.addEventListener("click", () => {
+      const totalPages = Math.max(1, Math.ceil(filteredLength / st.pageSize));
+      if (st.page < totalPages) {
+        st.page += 1;
+        paintBusinessList();
+      }
+    });
   }
 
   function paintBusinessList() {
@@ -1188,15 +1239,24 @@
     const listEl = el.querySelector("[data-si-list]");
     if (!listEl) return;
     const filtered = filterBusinessSellers(st.raw.sellers || [], st.filters);
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / st.pageSize));
+    if (st.page > totalPages) st.page = totalPages;
+    if (st.page < 1) st.page = 1;
+    const start = (st.page - 1) * st.pageSize;
+    const pageRows = filtered.slice(start, start + st.pageSize);
+
     const countEl = el.querySelector("[data-result-count]");
     if (countEl) {
-      countEl.textContent = `Showing ${filtered.length} of ${(st.raw.sellers || []).length} sellers`;
+      countEl.textContent = `Showing ${total} of ${(st.raw.sellers || []).length} sellers`;
     }
     if (!filtered.length) {
       listEl.innerHTML = '<p class="si-v1-empty">No sellers match the current filters.</p>';
       return;
     }
-    listEl.innerHTML = renderBusinessTable(filtered);
+    listEl.innerHTML =
+      renderBusinessTable(pageRows) + renderBusinessPagination(total, st.page, st.pageSize);
+    bindBusinessPagination(listEl, st, total);
     animateSobBars(listEl);
   }
 
@@ -1218,12 +1278,15 @@
     if (!state.business.shellReady) {
       el.innerHTML = `<div class="si-sla-shell">${businessToolbarHtml(state.business.filters)}<div class="si-sla-list" data-si-list></div></div>`;
       const onToolbar = (ev) => {
-        if (ev?.reset) state.business.filters = defaultBusinessFilters();
-        else {
+        if (ev?.reset) {
+          state.business.filters = defaultBusinessFilters();
+          state.business.page = 1;
+        } else {
           state.business.filters = readFiltersFromToolbar(
             el.querySelector("[data-toolbar]"),
             defaultBusinessFilters()
           );
+          state.business.page = 1;
         }
         el.querySelector("[data-toolbar]").outerHTML = businessToolbarHtml(state.business.filters);
         bindToolbar(el.querySelector("[data-toolbar]"), onToolbar);
