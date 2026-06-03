@@ -2293,3 +2293,68 @@
 .hs-inline-sob-bar .si-sob-stack-seg {
   min-width: 0;
 }
+
+/* Seller Level Analysis — Update Data progress */
+.si-sla-refresh {
+  margin: 0.75rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 106, 0, 0.35);
+  background: rgba(12, 14, 22, 0.85);
+}
+
+.si-sla-refresh__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.si-sla-refresh__step {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ffb347;
+}
+
+.si-sla-refresh__pct {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.si-sla-refresh__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-bottom: 0.6rem;
+}
+
+.si-sla-refresh__bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #ff6a00, #ffb347);
+  transition: width 0.35s ease;
+}
+
+.si-sla-refresh__stats {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.5;
+}
+
+.si-sla-refresh__time {
+  margin: 0.4rem 0 0;
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.si-sla-refresh__error {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: #ff8a8a;
+}

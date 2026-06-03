@@ -5,10 +5,15 @@
   const API = {
     dashboard: "/api/intelligence/v1/dashboard",
     business: "/api/intelligence/v1/business",
+    businessRefreshData: "/api/intelligence/v1/business/refresh-data",
+    businessRefreshStatus: "/api/intelligence/v1/business/refresh-status",
     assortment: "/api/intelligence/v1/assortment",
     assortmentRefreshProducts: "/api/intelligence/v1/assortment/refresh-products",
     voucher: "/api/intelligence/v1/voucher",
   };
+
+  const SLA_POLL_INTERVAL_MS = 1500;
+  const SLA_POLL_MAX_MS = 3600000;
 
   const RADAR_LOAD_TIMEOUT_MS = 45000;
   const RADAR_POLL_INTERVAL_MS = 8000;
@@ -166,6 +171,111 @@
 
   function i18n(key, fallback = "") {
     return window.SipI18n?.t?.(key, fallback) ?? fallback ?? key;
+  }
+
+  const slaRefreshUi = {
+    panel: document.getElementById("siBusinessRefreshProgress"),
+    stepLabel: document.getElementById("siBusinessRefreshStepLabel"),
+    percent: document.getElementById("siBusinessRefreshPercent"),
+    barFill: document.getElementById("siBusinessRefreshBarFill"),
+    stats: document.getElementById("siBusinessRefreshStats"),
+    time: document.getElementById("siBusinessRefreshTime"),
+    error: document.getElementById("siBusinessRefreshError"),
+  };
+
+  function formatElapsedSeconds(sec) {
+    const n = Math.max(0, Math.floor(Number(sec) || 0));
+    const m = Math.floor(n / 60);
+    const s = n % 60;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  }
+
+  function formatSlaCompletionSummary(result) {
+    const mapping = result?.mapping || {};
+    const summary = mapping.summary || {};
+    const mapped = summary.mapped ?? "—";
+    const pending = summary.need_review ?? mapping.pending_review_count ?? "—";
+    const notFound = summary.not_found ?? mapping.still_not_found_count ?? "—";
+    const newly = mapping.newly_mapped_count ?? 0;
+    const at = result?.refreshed_at || "—";
+    return (
+      `FastMoss mapped: ${mapped} · Pending review: ${pending} · ` +
+      `Not found: ${notFound} · Newly mapped: ${newly} · Updated at: ${at}`
+    );
+  }
+
+  function setSlaProgressVisible(visible) {
+    slaRefreshUi.panel?.classList.toggle("hidden", !visible);
+  }
+
+  function renderSlaProgress(status) {
+    if (!slaRefreshUi.panel) return;
+    const pct = Math.min(100, Math.max(0, Number(status.percent) || 0));
+    if (slaRefreshUi.stepLabel) {
+      slaRefreshUi.stepLabel.textContent = status.step_label || "—";
+    }
+    if (slaRefreshUi.percent) {
+      slaRefreshUi.percent.textContent = `${pct.toFixed(0)}%`;
+    }
+    if (slaRefreshUi.barFill) {
+      slaRefreshUi.barFill.style.width = `${pct}%`;
+    }
+    const lines = [
+      `Shops processed: ${status.shops_processed ?? 0} / ${status.shops_total ?? 0}`,
+      `Newly mapped: ${status.newly_mapped_count ?? 0}`,
+      `Pending review: ${status.pending_review_count ?? 0}`,
+      `Still not found: ${status.still_not_found_count ?? 0}`,
+      `Failed: ${status.failed_count ?? 0}`,
+    ];
+    if (status.changed_tiktok_count != null) {
+      lines.push(`TikTok names changed: ${status.changed_tiktok_count}`);
+    }
+    if (status.preserved_mapped_count != null) {
+      lines.push(`MAPPED preserved: ${status.preserved_mapped_count}`);
+    }
+    if (slaRefreshUi.stats) {
+      slaRefreshUi.stats.innerHTML = lines.map((t) => `<li>${escapeHtml(t)}</li>`).join("");
+    }
+    if (slaRefreshUi.time) {
+      const elapsed = formatElapsedSeconds(status.elapsed_sec);
+      const est =
+        pct > 2 && pct < 100
+          ? formatElapsedSeconds((Number(status.elapsed_sec) || 0) * (100 / pct - 1))
+          : "—";
+      slaRefreshUi.time.textContent = `Elapsed: ${elapsed} · Est. remaining: ${est}`;
+    }
+    slaRefreshUi.error?.classList.add("hidden");
+  }
+
+  function showSlaProgressError(status) {
+    if (!slaRefreshUi.error) return;
+    const step = status.failed_step_label || status.step_label || "Update Data";
+    const msg = status.error || "Refresh failed";
+    slaRefreshUi.error.textContent = `${step}: ${msg}`;
+    slaRefreshUi.error.classList.remove("hidden");
+    if (slaRefreshUi.stepLabel) {
+      slaRefreshUi.stepLabel.textContent = i18n("si.refreshFailedStep", "Update failed");
+    }
+  }
+
+  async function pollSlaRefreshUntilDone() {
+    const deadline = Date.now() + SLA_POLL_MAX_MS;
+    while (Date.now() < deadline) {
+      const res = await fetchApi(API.businessRefreshStatus);
+      const status = await res.json();
+      if (!res.ok) throw new Error(status.detail || "Could not read refresh status");
+      renderSlaProgress(status);
+      if (!status.running) {
+        if (status.error) {
+          showSlaProgressError(status);
+          throw new Error(status.error);
+        }
+        return status.result || {};
+      }
+      await sleep(SLA_POLL_INTERVAL_MS);
+    }
+    throw new Error(i18n("si.refreshTimeout", "Update timed out. Try again."));
   }
 
   function formatMappingSummary(data) {
@@ -1724,42 +1834,53 @@
   async function refreshBusinessData() {
     const btn = document.getElementById("siBusinessRefreshDataBtn");
     const summaryEl = document.getElementById("siBusinessActionSummary");
-    const defaultLabel = i18n("si.refreshData", "Refresh Data");
+    const defaultLabel = i18n("si.refreshData", "Update Data");
     if (btn) {
       btn.disabled = true;
       btn.classList.add("is-loading");
-      btn.textContent = i18n("si.dataRefreshing", "Refreshing…");
+      btn.textContent = i18n("si.dataRefreshing", "Updating…");
     }
+    setSlaProgressVisible(true);
+    renderSlaProgress({
+      step_label: i18n("si.refreshStarting", "Starting update…"),
+      percent: 0,
+      shops_processed: 0,
+      shops_total: 0,
+      elapsed_sec: 0,
+    });
     try {
-      if (window.ShpPlatform?.refreshAllSheetData) {
-        const data = await window.ShpPlatform.refreshAllSheetData();
-        if (summaryEl) {
-          summaryEl.textContent = formatMappingSummary(data);
-          summaryEl.classList.remove("hidden");
-        }
-        delete cache.siBusiness;
-        delete cache.siDashboard;
-        delete cache.siAssortment;
-        state.business.shellReady = false;
-        await onShow("siBusiness");
-        return data;
+      const startRes = await fetchApi(API.businessRefreshData, { method: "POST" });
+      const started = await startRes.json();
+      if (!startRes.ok) {
+        throw new Error(started.detail || "Could not start update");
       }
-      const res = await fetchApi("/api/intelligence/v1/refresh-data", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "refresh failed");
+      if (started.running || started.step_label) {
+        renderSlaProgress(started);
+      }
+      const result = await pollSlaRefreshUntilDone();
+      const completion =
+        result.completion_message || formatSlaCompletionSummary(result);
       window.ShpPlatform?.showPlatformToast?.(
-        i18n("si.dataRefreshSuccess", "Data updated")
+        i18n("si.dataRefreshSuccess", "Seller Level Analysis updated")
       );
       if (summaryEl) {
-        summaryEl.textContent = formatMappingSummary(data);
+        summaryEl.textContent = completion;
         summaryEl.classList.remove("hidden");
       }
+      const mapSum = result.mapping?.summary || {};
+      renderSlaProgress({
+        step_label: i18n("si.refreshComplete", "Completed"),
+        percent: 100,
+        shops_processed: mapSum.total ?? 0,
+        shops_total: mapSum.total ?? 0,
+        newly_mapped_count: result.mapping?.newly_mapped_count ?? 0,
+        pending_review_count: mapSum.need_review ?? 0,
+        still_not_found_count: mapSum.not_found ?? 0,
+      });
       delete cache.siBusiness;
-      delete cache.siDashboard;
-      delete cache.siAssortment;
       state.business.shellReady = false;
       await onShow("siBusiness");
-      return data;
+      return result;
     } catch (err) {
       window.ShpPlatform?.showPlatformToast?.(err.message || "Refresh failed", "error");
       throw err;

@@ -100,6 +100,22 @@ async def intelligence_v1_dashboard():
     }
 
 
+@router.post("/business/refresh-data")
+async def intelligence_v1_business_refresh_data():
+    """Start Seller Level Analysis Update Data (background, progress via refresh-status)."""
+    from seller.intelligence.business.sla_refresh import start_sla_refresh_background
+
+    return await asyncio.to_thread(start_sla_refresh_background)
+
+
+@router.get("/business/refresh-status")
+async def intelligence_v1_business_refresh_status():
+    """Poll Seller Level Analysis Update Data progress."""
+    from seller.intelligence.business.sla_refresh import get_sla_refresh_status
+
+    return get_sla_refresh_status()
+
+
 @router.get("/business")
 async def intelligence_v1_business():
     today = date.today()
