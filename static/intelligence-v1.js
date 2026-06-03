@@ -52,7 +52,35 @@
   };
 
   function defaultBusinessFilters() {
-    return { q: "", status: "all", risk: "all", sort: "shop_name" };
+    return { q: "", rm: "all", status: "all", risk: "all", sort: "shop_name" };
+  }
+
+  function normalizeShopKey(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+  }
+
+  function matchesRmFilter(s, rmValue, rmFilter) {
+    if (!rmValue || rmValue === "all") return true;
+    const allowed = rmFilter?.by_rm?.[rmValue];
+    if (!allowed || !allowed.length) return false;
+    const set = new Set(allowed);
+    const keys = [normalizeShopKey(s.shop_name), normalizeShopKey(s.tiktok_shop_name)].filter(
+      Boolean
+    );
+    return keys.some((k) => set.has(k));
+  }
+
+  function businessRmOptionsHtml(rmFilter, selected) {
+    const options = rmFilter?.options || [{ value: "all", label: "All RM" }];
+    return options
+      .map(
+        (opt) =>
+          `<option value="${escapeHtml(opt.value)}"${opt.value === selected ? " selected" : ""}>${escapeHtml(opt.label)}</option>`
+      )
+      .join("");
   }
 
   function defaultAssortmentFilters() {
@@ -474,9 +502,10 @@
     return "medium";
   }
 
-  function filterBusinessSellers(sellers, f) {
+  function filterBusinessSellers(sellers, f, rmFilter) {
     let list = sellers.filter((s) => {
       if (!matchesQuery(s, f.q)) return false;
+      if (!matchesRmFilter(s, f.rm, rmFilter)) return false;
       if (f.status !== "all" && deriveBusinessStatus(s) !== f.status) return false;
       if (f.risk !== "all" && deriveBusinessRisk(s) !== f.risk) return false;
       return true;
@@ -777,13 +806,17 @@
     });
   }
 
-  function businessToolbarHtml(f) {
+  function businessToolbarHtml(f, rmFilter) {
     return `
       <div class="si-sla-filter-card">
         <div class="si-v1-toolbar si-sla-toolbar" data-toolbar="business">
           <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
             <label for="siBizSearch">Seller search</label>
             <input id="siBizSearch" type="search" placeholder="Shop ID, name, Shopee link, TikTok shop…" value="${escapeHtml(f.q)}" data-f="q" />
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="siBizRm">RM</label>
+            <select id="siBizRm" data-f="rm">${businessRmOptionsHtml(rmFilter, f.rm)}</select>
           </div>
           <div class="si-v1-toolbar-field">
             <label for="siBizStatus">Status</label>
@@ -1238,7 +1271,7 @@
     if (!el || !st.raw) return;
     const listEl = el.querySelector("[data-si-list]");
     if (!listEl) return;
-    const filtered = filterBusinessSellers(st.raw.sellers || [], st.filters);
+    const filtered = filterBusinessSellers(st.raw.sellers || [], st.filters, st.raw.rm_filter);
     const total = filtered.length;
     const totalPages = Math.max(1, Math.ceil(total / st.pageSize));
     if (st.page > totalPages) st.page = totalPages;
@@ -1276,7 +1309,7 @@
       metas.siBusiness.textContent = `${src}${collected} · USD/PHP ${data.usd_php_rate}`;
     }
     if (!state.business.shellReady) {
-      el.innerHTML = `<div class="si-sla-shell">${businessToolbarHtml(state.business.filters)}<div class="si-sla-list" data-si-list></div></div>`;
+      el.innerHTML = `<div class="si-sla-shell">${businessToolbarHtml(state.business.filters, data.rm_filter)}<div class="si-sla-list" data-si-list></div></div>`;
       const onToolbar = (ev) => {
         if (ev?.reset) {
           state.business.filters = defaultBusinessFilters();
@@ -1288,7 +1321,10 @@
           );
           state.business.page = 1;
         }
-        el.querySelector("[data-toolbar]").outerHTML = businessToolbarHtml(state.business.filters);
+        el.querySelector("[data-toolbar]").outerHTML = businessToolbarHtml(
+          state.business.filters,
+          state.business.raw?.rm_filter
+        );
         bindToolbar(el.querySelector("[data-toolbar]"), onToolbar);
         paintBusinessList();
       };

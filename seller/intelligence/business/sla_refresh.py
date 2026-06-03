@@ -247,8 +247,11 @@ def run_sla_refresh_job() -> dict[str, Any]:
 
     try:
         _begin_step("seller_master")
+        from seller.intelligence.gp_shop_rm import clear_gp_shop_rm_cache
+
         clear_seller_master_cache()
         clear_shopee_adgmv_cache()
+        clear_gp_shop_rm_cache()
         master = get_seller_master(force_refresh=True)
         get_shopee_adgmv(force_refresh=True)
         _set_state(shops_total=len(master.sellers), shops_processed=len(master.sellers))

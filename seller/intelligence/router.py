@@ -118,6 +118,8 @@ async def intelligence_v1_business_refresh_status():
 
 @router.get("/business")
 async def intelligence_v1_business():
+    from seller.intelligence.gp_shop_rm import get_rm_filter_payload
+
     today = date.today()
     master = _load_master()
     fastmoss_meta = get_business_intelligence_meta()
@@ -131,6 +133,7 @@ async def intelligence_v1_business():
         "periods": resolve_periods(today).as_dict(),
         "usd_php_rate": USD_PHP_RATE,
         "fastmoss": fastmoss_meta,
+        "rm_filter": get_rm_filter_payload(),
         "summary": {
             "seller_count": len(sellers),
             "tiktok_available": tiktok_available,
@@ -222,8 +225,11 @@ def _refresh_all_sheet_caches() -> dict:
     from seller.intelligence.business.shopee_adgmv import clear_shopee_adgmv_cache, get_shopee_adgmv
     from seller.sheets_cache import refresh as refresh_ai_data
 
+    from seller.intelligence.gp_shop_rm import clear_gp_shop_rm_cache
+
     clear_seller_master_cache()
     clear_shopee_adgmv_cache()
+    clear_gp_shop_rm_cache()
     clear_tiktok_radar_cache()
     from seller.intelligence.historical_sob.ytd_monthly import clear_ytd_monthly_cache
 
