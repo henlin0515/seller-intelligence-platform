@@ -16,7 +16,7 @@
   let filters = defaultFilters();
 
   function defaultFilters() {
-    return { q: "", rm: "all", gp: "all", mapped: "all", category: "all", sort: "shop_name" };
+    return { q: "", rm: "all", gp: "all", status: "all", category: "all", sort: "shop_name" };
   }
 
   function sheetFilters() {
@@ -65,6 +65,9 @@
 
   function matchesRmFilter(s, rmValue, rmFilter) {
     if (!rmValue || rmValue === "all") return true;
+    const rmNeedle = String(rmValue).trim().toLowerCase();
+    const rowRm = String(s.rm || "").trim().toLowerCase();
+    if (rowRm && rmNeedle && rowRm === rmNeedle) return true;
     const allowed = rmFilter?.by_rm?.[rmValue];
     if (!allowed || !allowed.length) return false;
     const set = new Set(allowed);
@@ -74,11 +77,33 @@
 
   function matchesGpFilter(s, gpValue, gpFilter) {
     if (!gpValue || gpValue === "all") return true;
+    const gpNeedle = normalizeShopKey(gpValue);
+    if (gpNeedle && normalizeShopKey(s.gp_shop_name) === gpNeedle) return true;
     const allowed = gpFilter?.by_gp?.[gpValue];
     if (!allowed || !allowed.length) return false;
     const set = new Set(allowed);
     const keys = [normalizeShopKey(s.shop_name), normalizeShopKey(s.tiktok_shop_name)].filter(Boolean);
     return keys.some((k) => set.has(k));
+  }
+
+  function matchesStatusFilter(row, statusValue) {
+    if (!statusValue || statusValue === "all") return true;
+    const ps = String(row.platform_source || "NORMAL").toUpperCase();
+    const fm = String(row.fastmoss_match_status || "").toUpperCase();
+    switch (statusValue) {
+      case "shopee_only":
+        return ps === "SHOPEE_ONLY";
+      case "tiktok_only":
+        return ps === "TIKTOK_ONLY";
+      case "mapped":
+        return ps === "NORMAL" && fm === "MAPPED";
+      case "need_review":
+        return ps === "NORMAL" && fm === "NEED_REVIEW";
+      case "not_found":
+        return ps === "NORMAL" && fm === "NOT_FOUND";
+      default:
+        return true;
+    }
   }
 
   function filterSelectOptionsHtml(filterDef, selected, fallbackLabel) {
@@ -179,14 +204,18 @@
   }
 
   function sellerSearchBlob(row) {
-    return [row.shop_id, row.shop_name, row.tiktok_shop_name, row.fastmoss_shop_name]
+    return [
+      row.shop_id,
+      row.shop_name,
+      row.tiktok_shop_name,
+      row.fastmoss_shop_name,
+      row.gp_shop_id,
+      row.gp_shop_name,
+      row.rm,
+    ]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
-  }
-
-  function isMapped(row) {
-    return String(row.fastmoss_match_status || row.mapping_status || "").toUpperCase() === "MAPPED";
   }
 
   function filterSellers(rows) {
@@ -197,8 +226,7 @@
         if (q && !sellerSearchBlob(row).includes(q)) return false;
         if (!matchesRmFilter(row, filters.rm, sf.rm)) return false;
         if (!matchesGpFilter(row, filters.gp, sf.gp)) return false;
-        if (filters.mapped === "mapped" && !isMapped(row)) return false;
-        if (filters.mapped === "not_mapped" && isMapped(row)) return false;
+        if (!matchesStatusFilter(row, filters.status)) return false;
         const cat = row.category || i18n("historicalSob.uncategorized", "Uncategorized");
         if (filters.category !== "all" && cat !== filters.category) return false;
         return true;
@@ -249,6 +277,215 @@
     const key = String(status || "").toUpperCase();
     const [cls, label] = map[key] || ["si-v1-badge--muted", status || "—"];
     return `<span class="si-v1-badge ${cls}">${escapeHtml(label)}</span>`;
+  }
+
+  function platformSourceBadge(row) {
+    const source = String(row.platform_source || "NORMAL").toUpperCase();
+    if (source === "SHOPEE_ONLY") {
+      return `<span class="si-v1-badge si-v1-badge--shopee">Shopee only</span>`;
+    }
+    if (source === "TIKTOK_ONLY") {
+      return `<span class="si-v1-badge si-v1-badge--tiktok">TikTok only</span>`;
+    }
+    return fastmossStatusBadge(row.fastmoss_match_status);
+  }
+
+  function mappingReviewBadge(row) {
+    const source = String(row.platform_source || "NORMAL").toUpperCase();
+    if (source === "SHOPEE_ONLY" || source === "TIKTOK_ONLY") {
+      return platformSourceBadge(row);
+    }
+    const review = String(row.fastmoss_review_status || "").toUpperCase();
+    if (review === "APPROVED") {
+      return platformSourceBadge(row);
+    }
+    const map = {
+      PENDING_REVIEW: ["si-v1-badge--warn", "Pending review"],
+      REJECTED: ["si-v1-badge--risk", "Rejected"],
+    };
+    if (map[review]) {
+      const [cls, label] = map[review];
+      return `<span class="si-v1-badge ${cls}">${escapeHtml(label)}</span>`;
+    }
+    return platformSourceBadge(row);
+  }
+
+  function hsPeriodGmvUsd(row, period, platform) {
+    const shpField = period === "april" ? "april_shopee_gmv" : "may_shopee_gmv";
+    const tkField = period === "april" ? "april_tiktok_gmv" : "may_tiktok_gmv";
+    const field = platform === "shp" ? shpField : tkField;
+    const v = row[field];
+    if (v == null || v === "" || Number.isNaN(Number(v))) return 0;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }
+
+  /** Summary SOB from summed monthly GMV — never averages row SOB %. */
+  function computeHsSummarySob(sellers, period) {
+    let shopeeGmv = 0;
+    let tiktokGmv = 0;
+    for (const s of sellers || []) {
+      shopeeGmv += hsPeriodGmvUsd(s, period, "shp");
+      tiktokGmv += hsPeriodGmvUsd(s, period, "tk");
+    }
+    const total = shopeeGmv + tiktokGmv;
+    if (total <= 0) return { kind: "na" };
+    return {
+      kind: "values",
+      shpPct: (shopeeGmv / total) * 100,
+      tkPct: (tiktokGmv / total) * 100,
+    };
+  }
+
+  function renderHsSobLegendBar(shpPct, tkPct) {
+    const shp = clampSobPct(shpPct);
+    const tk = clampSobPct(tkPct);
+    if (shp == null || tk == null) return "";
+    return `
+        <div class="hs-inline-sob-legend">
+          <span class="hs-inline-sob-tag hs-inline-sob-tag--shp">
+            <span class="hs-inline-sob-dot" aria-hidden="true"></span>SHP ${fmtPct(shp)}
+          </span>
+          <span class="hs-inline-sob-tag hs-inline-sob-tag--tk">
+            <span class="hs-inline-sob-dot" aria-hidden="true"></span>TK ${fmtPct(tk)}
+          </span>
+        </div>
+        <div class="si-sob-stack-bar hs-inline-sob-bar si-sla-summary-sob-bar" data-shp="${shp}" data-tk="${tk}">
+          <div class="si-sob-stack-seg si-sob-stack-seg--shp" style="width:${shp}%"></div>
+          <div class="si-sob-stack-seg si-sob-stack-seg--tk" style="width:${tk}%"></div>
+        </div>`;
+  }
+
+  function renderHsSummaryCard(title, { prompt, selection, aprilSob, maySob }) {
+    const head = `<h3 class="si-sla-summary-card__title">${escapeHtml(title)}</h3>`;
+    if (prompt) {
+      return `<article class="si-sla-summary-card">${head}<p class="si-sla-summary-card__prompt">${escapeHtml(prompt)}</p></article>`;
+    }
+    const sel = selection ? `<p class="si-sla-summary-card__sel">${escapeHtml(selection)}</p>` : "";
+    const periodBlock = (label, sob) => {
+      if (sob?.kind !== "values") {
+        return `<div class="hs-summary-period"><span class="hs-summary-period-label">${escapeHtml(label)}</span>${fmtNa("SOB N/A")}</div>`;
+      }
+      return `<div class="hs-summary-period"><span class="hs-summary-period-label">${escapeHtml(label)}</span>${renderHsSobLegendBar(sob.shpPct, sob.tkPct)}</div>`;
+    };
+    return `<article class="si-sla-summary-card">
+      ${head}${sel}
+      <div class="hs-summary-periods">
+        ${periodBlock("April", aprilSob)}
+        ${periodBlock("May", maySob)}
+      </div>
+    </article>`;
+  }
+
+  function renderHsCategorySobCard(categoryName, matchedCount, aprilSob, maySob) {
+    const head = `<h4 class="si-sla-summary-card__title">${escapeHtml(categoryName)}</h4>`;
+    const countLine = `<p class="si-sla-summary-card__count">${fmtNum(matchedCount)} shops in scope</p>`;
+    const periodBlock = (label, sob) => {
+      if (sob?.kind !== "values") {
+        return `<div class="hs-summary-period hs-summary-period--compact"><span>${escapeHtml(label)}</span> ${fmtNa("N/A")}</div>`;
+      }
+      return `<div class="hs-summary-period hs-summary-period--compact"><span>${escapeHtml(label)}</span> SHP ${fmtPct(sob.shpPct)} · TK ${fmtPct(sob.tkPct)}</div>`;
+    };
+    return `<article class="si-sla-summary-card si-sla-summary-card--category">
+      ${head}${countLine}
+      ${periodBlock("Apr", aprilSob)}
+      ${periodBlock("May", maySob)}
+    </article>`;
+  }
+
+  function hsFilteredScopeLabel(filtered, f) {
+    const n = filtered.length;
+    const bits = [`${n} shop${n === 1 ? "" : "s"}`];
+    if (f.gp && f.gp !== "all") bits.push(`GP: ${f.gp}`);
+    if (f.rm && f.rm !== "all") bits.push(`RM: ${f.rm}`);
+    if (f.category && f.category !== "all") bits.push(f.category);
+    if (f.status && f.status !== "all") bits.push(f.status.replace(/_/g, " "));
+    if (f.q?.trim()) bits.push("search");
+    return bits.join(" · ");
+  }
+
+  function businessCategoryMapping() {
+    return payload?.category_mapping || { categories: [], loaded: false };
+  }
+
+  function sellersForCategoryKeys(sellers, shopKeys) {
+    const set = new Set(shopKeys || []);
+    if (!set.size) return [];
+    return (sellers || []).filter((s) => {
+      const keys = [normalizeShopKey(s.shop_name), normalizeShopKey(s.tiktok_shop_name)].filter(Boolean);
+      return keys.some((k) => set.has(k));
+    });
+  }
+
+  function paintHistoricalSummarySob() {
+    const summaryEl = contentEl?.querySelector("[data-hs-summary-sob]");
+    if (!summaryEl || !payload) return;
+
+    const sellers = payload.sellers || [];
+    const f = filters;
+    const filtered = filterSellers(sellers);
+    const scopeLabel = hsFilteredScopeLabel(filtered, f);
+    const aprilScope = computeHsSummarySob(filtered, "april");
+    const mayScope = computeHsSummarySob(filtered, "may");
+
+    const overallCard = renderHsSummaryCard("Overall SOB", {
+      selection: scopeLabel,
+      aprilSob: aprilScope,
+      maySob: mayScope,
+    });
+
+    let gpCard;
+    if (!f.gp || f.gp === "all") {
+      gpCard = renderHsSummaryCard("GP SOB", { prompt: "Select GP to view GP SOB" });
+    } else {
+      gpCard = renderHsSummaryCard("GP SOB", {
+        selection: `${f.gp} · ${scopeLabel}`,
+        aprilSob: aprilScope,
+        maySob: mayScope,
+      });
+    }
+
+    let rmCard;
+    if (!f.rm || f.rm === "all") {
+      rmCard = renderHsSummaryCard("RM SOB", { prompt: "Select RM to view RM SOB" });
+    } else {
+      rmCard = renderHsSummaryCard("RM SOB", {
+        selection: `${f.rm} · ${scopeLabel}`,
+        aprilSob: aprilScope,
+        maySob: mayScope,
+      });
+    }
+
+    const categories = businessCategoryMapping().categories || [];
+    const filteredIds = new Set(filtered.map((s) => String(s.shop_id)));
+    let categorySection = "";
+    if (!categories.length) {
+      categorySection = `<section class="si-sla-category-sob" data-hs-category-sob>
+        <h3 class="si-sla-category-sob__heading">Category SOB</h3>
+        <p class="si-sla-category-sob__empty">Category mapping not loaded from sheet.</p>
+      </section>`;
+    } else {
+      const categoryCards = categories
+        .map((cat) => {
+          const matched = sellersForCategoryKeys(sellers, cat.shop_keys).filter((s) =>
+            filteredIds.has(String(s.shop_id))
+          );
+          return renderHsCategorySobCard(
+            cat.name,
+            matched.length,
+            computeHsSummarySob(matched, "april"),
+            computeHsSummarySob(matched, "may")
+          );
+        })
+        .join("");
+      categorySection = `<section class="si-sla-category-sob" data-hs-category-sob>
+        <h3 class="si-sla-category-sob__heading">Category SOB</h3>
+        <div class="si-sla-category-grid">${categoryCards}</div>
+      </section>`;
+    }
+
+    summaryEl.innerHTML = `${categorySection}<div class="si-sla-summary-grid hs-summary-grid">${overallCard}${gpCard}${rmCard}</div>`;
+    animateSobBars(summaryEl);
   }
 
   function renderPortfolioKpi(label, value, sub, accent) {
@@ -480,10 +717,10 @@
         <div class="hs-inline-sob">
           <div class="hs-inline-sob-legend">
             <span class="hs-inline-sob-tag hs-inline-sob-tag--shp">
-              <span class="hs-inline-sob-dot" aria-hidden="true"></span>Shopee ${fmtPct(shp)}
+              <span class="hs-inline-sob-dot" aria-hidden="true"></span>SHP ${fmtPct(shp)}
             </span>
             <span class="hs-inline-sob-tag hs-inline-sob-tag--tk">
-              <span class="hs-inline-sob-dot" aria-hidden="true"></span>TikTok ${fmtPct(tk)}
+              <span class="hs-inline-sob-dot" aria-hidden="true"></span>TK ${fmtPct(tk)}
             </span>
           </div>
           <div class="si-sob-stack-bar hs-inline-sob-bar" data-sob-animate="1" data-shp="${shp}" data-tk="${tk}">
@@ -502,7 +739,7 @@
           <td class="si-biz-toggle-cell"><span class="si-biz-toggle" aria-hidden="true">▶</span></td>
           <td>${escapeHtml(row.shop_id)}</td>
           <td class="si-biz-name">${escapeHtml(row.shop_name)}</td>
-          <td>${fastmossStatusBadge(row.fastmoss_match_status)}</td>
+          <td>${mappingReviewBadge(row)}</td>
           ${renderInlineSobBarCell(row.april_shopee_sob_percent, row.april_tiktok_sob_percent)}
           ${renderInlineSobBarCell(row.may_shopee_sob_percent, row.may_tiktok_sob_percent)}
           <td class="si-v1-num">${escapeHtml(fmtChange(row.sob_change_pp))}</td>
@@ -572,11 +809,14 @@
             <select id="hsFilterGp" data-f="gp">${filterSelectOptionsHtml(gpDef, f.gp, "All GP")}</select>
           </div>
           <div class="si-v1-toolbar-field">
-            <label for="hsFilterMapped">${escapeHtml(i18n("historicalSob.filterStatus", "Status"))}</label>
-            <select id="hsFilterMapped" data-f="mapped">
-              <option value="all"${f.mapped === "all" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusAll", "All"))}</option>
-              <option value="mapped"${f.mapped === "mapped" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusMapped", "Mapped"))}</option>
-              <option value="not_mapped"${f.mapped === "not_mapped" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusNotMapped", "Not Mapped"))}</option>
+            <label for="hsFilterStatus">${escapeHtml(i18n("historicalSob.filterStatus", "Status"))}</label>
+            <select id="hsFilterStatus" data-f="status">
+              <option value="all"${f.status === "all" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusAll", "All"))}</option>
+              <option value="mapped"${f.status === "mapped" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusMapped", "Mapped"))}</option>
+              <option value="need_review"${f.status === "need_review" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusNeedReview", "Need review"))}</option>
+              <option value="not_found"${f.status === "not_found" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusNotFound", "Not found"))}</option>
+              <option value="shopee_only"${f.status === "shopee_only" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusShopeeOnly", "Shopee only"))}</option>
+              <option value="tiktok_only"${f.status === "tiktok_only" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusTiktokOnly", "TikTok only"))}</option>
             </select>
           </div>
           <div class="si-v1-toolbar-field">
@@ -616,7 +856,7 @@
     const map = {
       rm: "hsFilterRm",
       gp: "hsFilterGp",
-      mapped: "hsFilterMapped",
+      status: "hsFilterStatus",
       category: "hsFilterCategory",
       sort: "hsFilterSort",
     };
@@ -688,6 +928,8 @@
     const kpiEl = contentEl.querySelector("[data-hs-kpis]");
     if (kpiEl) kpiEl.innerHTML = renderKpiGrid();
 
+    paintHistoricalSummarySob();
+
     const listEl = contentEl.querySelector("[data-hs-list]");
     const countEl = contentEl.querySelector("[data-result-count]");
     if (!listEl) return;
@@ -713,6 +955,7 @@
         <div class="hs-shell">
           <div data-hs-kpis class="hs-page-kpis-wrap">${renderKpiGrid()}</div>
           ${filterCardHtml(filters)}
+          <div class="si-sla-summary-sob" data-hs-summary-sob aria-live="polite"></div>
           <div class="si-v1-list" data-hs-list></div>
         </div>`;
 

@@ -2636,6 +2636,39 @@
   margin-top: 0.35rem;
 }
 
+.hs-summary-periods {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+}
+
+.hs-summary-period {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.hs-summary-period-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7a7a7e;
+}
+
+.hs-summary-period--compact {
+  font-size: 0.72rem;
+  color: #b8b8bc;
+  line-height: 1.35;
+}
+
+.hs-summary-period--compact span:first-child {
+  font-weight: 600;
+  color: #9a9a9e;
+  margin-right: 0.25rem;
+}
+
 .si-radar-shell {
   display: flex;
   flex-direction: column;

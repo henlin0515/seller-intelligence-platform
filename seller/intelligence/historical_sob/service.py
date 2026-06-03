@@ -21,9 +21,10 @@ from seller.intelligence.historical_sob.collector import fetch_shop_historical_t
 from seller.intelligence.historical_sob.portfolio import build_portfolio_historical_sob
 from seller.intelligence.historical_sob.store import (
     load_historical_sob_cache,
+    resolve_tiktok_cache_row,
     save_historical_sob_cache,
-    shop_tiktok_cache_row,
 )
+from seller.intelligence.platform_extra_shops import PlatformSource, try_load_platform_extra_shops
 from seller.intelligence.historical_sob.ytd_monthly import (
     YtdMonthlyLoadResult,
     get_ytd_monthly,
@@ -134,6 +135,25 @@ def _shop_category(
     return "Uncategorized"
 
 
+def _historical_period_sob(
+    shopee_usd: float | None,
+    tiktok_usd: float | None,
+    *,
+    platform_source: PlatformSource,
+) -> tuple[float | None, float | None]:
+    if platform_source == "SHOPEE_ONLY":
+        if shopee_usd is None or shopee_usd <= 0:
+            return None, None
+        return 100.0, 0.0
+    if platform_source == "TIKTOK_ONLY":
+        if tiktok_usd is None or tiktok_usd <= 0:
+            return None, None
+        return 0.0, 100.0
+    if shopee_usd is None or tiktok_usd is None:
+        return None, None
+    return sob_pair(float(shopee_usd), float(tiktok_usd))
+
+
 def _shop_sob_row(
     *,
     shop_id: str,
@@ -143,6 +163,10 @@ def _shop_sob_row(
     review_status: str,
     fastmoss_match_status: str,
     category: str,
+    platform_source: PlatformSource,
+    gp_shop_id: str | None = None,
+    gp_shop_name: str | None = None,
+    rm: str | None = None,
     ytd_row: Any | None,
     tiktok_cache: dict[str, Any] | None,
 ) -> dict[str, Any]:
@@ -164,7 +188,21 @@ def _shop_sob_row(
     tiktok_status = "na"
     tiktok_na_reason = None
 
-    if allows_tiktok_data(review_status) and mapping_row:
+    if platform_source == "SHOPEE_ONLY":
+        tiktok_na_reason = "Shopee-only shop — no TikTok historical GMV"
+    elif platform_source == "TIKTOK_ONLY":
+        shopee_na_reason = "TikTok-only shop — no Shopee historical GMV"
+        if mapping_row and tiktok_cache and tiktok_cache.get("status") == "success":
+            april_tiktok = _tiktok_gmv_usd(tiktok_cache.get("april_gmv_php"))
+            may_tiktok = _tiktok_gmv_usd(tiktok_cache.get("may_gmv_php"))
+            if april_tiktok is not None or may_tiktok is not None:
+                tiktok_status = "available"
+                tiktok_na_reason = None
+        elif mapping_row:
+            tiktok_na_reason = str(tiktok_cache.get("error") if tiktok_cache else "TikTok historical data not cached")
+        else:
+            tiktok_na_reason = "FastMoss shop not mapped"
+    elif allows_tiktok_data(review_status) and mapping_row:
         fastmoss_id = str(mapping_row.get("fastmoss_shop_id") or "").strip()
         if fastmoss_id and tiktok_cache and tiktok_cache.get("status") == "success":
             april_tiktok = _tiktok_gmv_usd(tiktok_cache.get("april_gmv_php"))
@@ -188,25 +226,19 @@ def _shop_sob_row(
     else:
         tiktok_na_reason = "FastMoss shop not mapped"
 
-    april_total = (
-        (april_shopee + april_tiktok)
-        if april_shopee is not None and april_tiktok is not None
-        else None
+    april_shopee_sob, april_tiktok_sob = _historical_period_sob(
+        april_shopee, april_tiktok, platform_source=platform_source
     )
-    may_total = (
-        (may_shopee + may_tiktok) if may_shopee is not None and may_tiktok is not None else None
+    may_shopee_sob, may_tiktok_sob = _historical_period_sob(
+        may_shopee, may_tiktok, platform_source=platform_source
     )
 
-    april_shopee_sob, april_tiktok_sob = (
-        sob_pair(float(april_shopee), float(april_tiktok))
-        if april_shopee is not None and april_tiktok is not None
-        else (None, None)
-    )
-    may_shopee_sob, may_tiktok_sob = (
-        sob_pair(float(may_shopee), float(may_tiktok))
-        if may_shopee is not None and may_tiktok is not None
-        else (None, None)
-    )
+    april_total = None
+    if april_shopee is not None or april_tiktok is not None:
+        april_total = (april_shopee or 0) + (april_tiktok or 0)
+    may_total = None
+    if may_shopee is not None or may_tiktok is not None:
+        may_total = (may_shopee or 0) + (may_tiktok or 0)
 
     sob_change_pp = None
     if april_tiktok_sob is not None and may_tiktok_sob is not None:
@@ -216,6 +248,10 @@ def _shop_sob_row(
         "shop_id": shop_id,
         "shop_name": shop_name,
         "tiktok_shop_name": tiktok_shop_name,
+        "platform_source": platform_source,
+        "gp_shop_id": gp_shop_id,
+        "gp_shop_name": gp_shop_name,
+        "rm": rm,
         "fastmoss_match_status": fastmoss_match_status,
         "fastmoss_review_status": review_status or None,
         "mapping_status": fastmoss_match_status,
@@ -243,6 +279,92 @@ def _shop_sob_row(
     }
 
 
+def _merge_gp_metadata(record: dict[str, Any], *, gp_shop_id: str, gp_shop_name: str, rm: str) -> None:
+    if gp_shop_id and not record.get("gp_shop_id"):
+        record["gp_shop_id"] = gp_shop_id
+    if gp_shop_name and not record.get("gp_shop_name"):
+        record["gp_shop_name"] = gp_shop_name
+    if rm and not record.get("rm"):
+        record["rm"] = rm
+
+
+def _seller_keys(shop_name: str, tiktok_shop_name: str) -> list[str]:
+    return [k for k in (normalize_shop_key(shop_name), normalize_shop_key(tiktok_shop_name)) if k]
+
+
+def _find_existing_row_id(
+    *,
+    shop_id: str,
+    shop_name: str,
+    tiktok_shop_name: str,
+    by_id: dict[str, dict[str, Any]],
+    by_name_key: dict[str, str],
+) -> str | None:
+    sid = str(shop_id or "").strip()
+    if sid and sid in by_id:
+        return sid
+    for key in _seller_keys(shop_name, tiktok_shop_name):
+        if key in by_name_key:
+            return by_name_key[key]
+    return None
+
+
+def _append_historical_row(
+    rows_by_id: dict[str, dict[str, Any]],
+    by_name_key: dict[str, str],
+    *,
+    shop_id: str,
+    shop_name: str,
+    tiktok_shop_name: str,
+    platform_source: PlatformSource,
+    gp_shop_id: str | None,
+    gp_shop_name: str | None,
+    rm: str | None,
+    ytd: YtdMonthlyLoadResult,
+    cache: dict[str, Any],
+    mapping_by_id: dict[str, dict[str, Any]],
+    mapping_by_name: dict[str, dict[str, Any]],
+    category_by_key: dict[str, str],
+) -> None:
+    mapping_row = resolve_fastmoss_mapping_row(
+        shop_id,
+        shop_name,
+        tiktok_shop_name=tiktok_shop_name,
+        by_id=mapping_by_id,
+        by_name=mapping_by_name,
+    )
+    review_row = get_review_by_shop_id(shop_id)
+    review_status = str((review_row or {}).get("review_status") or "")
+    fastmoss_match_status = str(
+        (mapping_row or {}).get("mapping_status") or MAPPING_NOT_FOUND
+    ).upper()
+    record = _shop_sob_row(
+        shop_id=shop_id,
+        shop_name=shop_name,
+        tiktok_shop_name=tiktok_shop_name,
+        mapping_row=mapping_row,
+        review_status=review_status,
+        fastmoss_match_status=fastmoss_match_status,
+        category=_shop_category(
+            shop_name=shop_name,
+            tiktok_shop_name=tiktok_shop_name,
+            category_by_key=category_by_key,
+        ),
+        platform_source=platform_source,
+        gp_shop_id=gp_shop_id,
+        gp_shop_name=gp_shop_name,
+        rm=rm,
+        ytd_row=lookup_ytd_record(ytd, shop_name=shop_name, shop_id=shop_id),
+        tiktok_cache=resolve_tiktok_cache_row(
+            cache, shop_id=shop_id, tiktok_shop_name=tiktok_shop_name
+        ),
+    )
+    sid = str(record["shop_id"])
+    rows_by_id[sid] = record
+    for key in _seller_keys(shop_name, tiktok_shop_name):
+        by_name_key[key] = sid
+
+
 def build_historical_sob_rows(
     master: SellerMasterLoadResult,
     *,
@@ -250,47 +372,134 @@ def build_historical_sob_rows(
     tiktok_cache: dict[str, Any] | None = None,
     category_mapping: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
+    """Union of shpoee link + shopee shop only + tiktok shop only (same merge rules as SLA)."""
     ytd = ytd or get_ytd_monthly()
-    by_id, by_name = _fastmoss_mapping_indexes()
+    by_id_map, by_name_map = _fastmoss_mapping_indexes()
     category_by_key = _category_by_shop_key(category_mapping)
     cache = tiktok_cache if tiktok_cache is not None else load_historical_sob_cache()
-    rows: list[dict[str, Any]] = []
+    shopee_only, tiktok_only = try_load_platform_extra_shops()
+
+    rows_by_id: dict[str, dict[str, Any]] = {}
+    by_name_key: dict[str, str] = {}
 
     for seller in master.sellers:
-        shop_id = str(seller.shop_id)
-        mapping_row = resolve_fastmoss_mapping_row(
-            shop_id,
-            seller.shop_name,
-            tiktok_shop_name=seller.tiktok_shop_name,
-            by_id=by_id,
-            by_name=by_name,
-        )
-        review_row = get_review_by_shop_id(shop_id)
-        review_status = str((review_row or {}).get("review_status") or "")
-        fastmoss_match_status = str(
-            (mapping_row or {}).get("mapping_status") or MAPPING_NOT_FOUND
-        ).upper()
-        category = _shop_category(
+        _append_historical_row(
+            rows_by_id,
+            by_name_key,
+            shop_id=str(seller.shop_id),
             shop_name=seller.shop_name,
             tiktok_shop_name=seller.tiktok_shop_name,
+            platform_source="NORMAL",
+            gp_shop_id=None,
+            gp_shop_name=None,
+            rm=None,
+            ytd=ytd,
+            cache=cache,
+            mapping_by_id=by_id_map,
+            mapping_by_name=by_name_map,
             category_by_key=category_by_key,
         )
-        ytd_row = lookup_ytd_record(ytd, shop_name=seller.shop_name, shop_id=shop_id)
-        tiktok_row = shop_tiktok_cache_row(cache, shop_id)
-        rows.append(
-            _shop_sob_row(
-                shop_id=shop_id,
-                shop_name=seller.shop_name,
-                tiktok_shop_name=seller.tiktok_shop_name,
-                mapping_row=mapping_row,
-                review_status=review_status,
-                fastmoss_match_status=fastmoss_match_status,
-                category=category,
-                ytd_row=ytd_row,
-                tiktok_cache=tiktok_row,
+
+    for extra in shopee_only.rows:
+        existing_id = _find_existing_row_id(
+            shop_id=extra.shop_id,
+            shop_name=extra.shop_name,
+            tiktok_shop_name="",
+            by_id=rows_by_id,
+            by_name_key=by_name_key,
+        )
+        if existing_id:
+            _merge_gp_metadata(
+                rows_by_id[existing_id],
+                gp_shop_id=extra.gp_shop_id,
+                gp_shop_name=extra.gp_shop_name,
+                rm=extra.rm,
             )
+            continue
+        _append_historical_row(
+            rows_by_id,
+            by_name_key,
+            shop_id=extra.shop_id,
+            shop_name=extra.shop_name,
+            tiktok_shop_name="",
+            platform_source="SHOPEE_ONLY",
+            gp_shop_id=extra.gp_shop_id,
+            gp_shop_name=extra.gp_shop_name,
+            rm=extra.rm,
+            ytd=ytd,
+            cache=cache,
+            mapping_by_id=by_id_map,
+            mapping_by_name=by_name_map,
+            category_by_key=category_by_key,
         )
 
+    for extra in tiktok_only.rows:
+        sid = extra.synthetic_shop_id
+        existing_id = _find_existing_row_id(
+            shop_id=sid,
+            shop_name="",
+            tiktok_shop_name=extra.tiktok_shop_name,
+            by_id=rows_by_id,
+            by_name_key=by_name_key,
+        )
+        if existing_id:
+            rec = rows_by_id[existing_id]
+            _merge_gp_metadata(
+                rec,
+                gp_shop_id=extra.gp_shop_id,
+                gp_shop_name=extra.gp_shop_name,
+                rm="",
+            )
+            if rec.get("platform_source") == "SHOPEE_ONLY" and not rec.get("tiktok_shop_name"):
+                rec["tiktok_shop_name"] = extra.tiktok_shop_name
+                refreshed = _shop_sob_row(
+                    shop_id=rec["shop_id"],
+                    shop_name=rec.get("shop_name", ""),
+                    tiktok_shop_name=extra.tiktok_shop_name,
+                    mapping_row=resolve_fastmoss_mapping_row(
+                        rec["shop_id"],
+                        rec.get("shop_name", ""),
+                        tiktok_shop_name=extra.tiktok_shop_name,
+                        by_id=by_id_map,
+                        by_name=by_name_map,
+                    ),
+                    review_status=str(rec.get("fastmoss_review_status") or ""),
+                    fastmoss_match_status=str(rec.get("fastmoss_match_status") or MAPPING_NOT_FOUND),
+                    category=rec.get("category", "Uncategorized"),
+                    platform_source="NORMAL",
+                    gp_shop_id=rec.get("gp_shop_id"),
+                    gp_shop_name=rec.get("gp_shop_name"),
+                    rm=rec.get("rm"),
+                    ytd_row=lookup_ytd_record(
+                        ytd, shop_name=rec.get("shop_name", ""), shop_id=str(rec["shop_id"])
+                    ),
+                    tiktok_cache=resolve_tiktok_cache_row(
+                        cache,
+                        shop_id=str(rec["shop_id"]),
+                        tiktok_shop_name=extra.tiktok_shop_name,
+                    ),
+                )
+                rows_by_id[str(rec["shop_id"])] = refreshed
+            continue
+
+        _append_historical_row(
+            rows_by_id,
+            by_name_key,
+            shop_id=sid,
+            shop_name=extra.gp_shop_name or extra.tiktok_shop_name,
+            tiktok_shop_name=extra.tiktok_shop_name,
+            platform_source="TIKTOK_ONLY",
+            gp_shop_id=extra.gp_shop_id,
+            gp_shop_name=extra.gp_shop_name,
+            rm=None,
+            ytd=ytd,
+            cache=cache,
+            mapping_by_id=by_id_map,
+            mapping_by_name=by_name_map,
+            category_by_key=category_by_key,
+        )
+
+    rows = list(rows_by_id.values())
     rows.sort(key=lambda r: str(r.get("shop_name") or "").lower())
     return rows
 
@@ -387,12 +596,27 @@ def refresh_historical_sob_tiktok_cache(
     delay_sec: float = 0.35,
     force: bool = False,
 ) -> dict[str, Any]:
-    """Fetch April/May TikTok GMV for approved mappings; persist cache file."""
-    from seller.fastmoss.review import approved_mapping_rows
-
+    """Fetch April/May TikTok GMV for mapped shops in the merged Historical SOB universe."""
     master = master or get_seller_master()
-    master_ids = {str(s.shop_id) for s in master.sellers}
-    approved = [row for row in approved_mapping_rows() if str(row.get("shop_id")) in master_ids]
+    ytd = get_ytd_monthly()
+    merged_rows = build_historical_sob_rows(master, ytd=ytd)
+    targets: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for row in merged_rows:
+        fastmoss_id = str(row.get("fastmoss_shop_id") or "").strip()
+        shop_id = str(row.get("shop_id") or "").strip()
+        if not fastmoss_id or not shop_id or shop_id in seen:
+            continue
+        if row.get("platform_source") == "SHOPEE_ONLY":
+            continue
+        seen.add(shop_id)
+        targets.append(
+            {
+                "shop_id": shop_id,
+                "fastmoss_shop_id": fastmoss_id,
+                "tiktok_shop_name": row.get("tiktok_shop_name"),
+            }
+        )
 
     cache = load_historical_sob_cache()
     shops: dict[str, Any] = dict(cache.get("shops") or {})
@@ -400,7 +624,7 @@ def refresh_historical_sob_tiktok_cache(
     failed = 0
     skipped = 0
 
-    for index, row in enumerate(approved):
+    for index, row in enumerate(targets):
         shop_id = str(row.get("shop_id") or "")
         fastmoss_id = str(row.get("fastmoss_shop_id") or "").strip()
         if not shop_id or not fastmoss_id:
@@ -442,10 +666,10 @@ def refresh_historical_sob_tiktok_cache(
     save_historical_sob_cache(cache)
     counts = _tiktok_cache_counts(cache)
     return {
-        "approved_count": len(approved),
+        "approved_count": len(targets),
         "fetched_count": fetched,
         "failed_count": failed,
-        "skipped_cached_count": max(0, len(approved) - fetched - failed - skipped),
+        "skipped_cached_count": max(0, len(targets) - fetched - failed - skipped),
         "cache_shop_count": len(shops),
         **counts,
     }

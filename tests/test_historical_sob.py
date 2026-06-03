@@ -7,7 +7,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from seller.intelligence.business.calculations import sob_pair, tiktok_php_to_usd
+from seller.intelligence.business.calculations import aggregate_sob_from_rows, sob_pair, tiktok_php_to_usd
+from seller.intelligence.platform_extra_shops import (
+    ShopeeShopOnlyLoadResult,
+    ShopeeShopOnlyRecord,
+    TiktokShopOnlyLoadResult,
+)
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.historical_sob.portfolio import build_portfolio_historical_sob
 from seller.intelligence.historical_sob.service import build_historical_sob_rows, get_historical_sob_payload
@@ -236,6 +241,75 @@ class HistoricalSobRowTests(unittest.TestCase):
         self.assertEqual(payload["tiktok_source_currency"], "PHP")
         self.assertEqual(payload["usd_php_rate"], USD_PHP_RATE)
 
+
+    def test_shopee_only_row_sob_100_0(self):
+        master = SellerMasterLoadResult(
+            sellers=[],
+            tab="shpoee link",
+            data_source="test",
+            stats=SellerMasterImportStats(),
+        )
+        ytd = _ytd_result([YtdMonthlyRecord("99", "Extra Shop", 10.0, 20.0)])
+        shopee_only = ShopeeShopOnlyLoadResult(
+            rows=[
+                ShopeeShopOnlyRecord(
+                    gp_shop_id="gp1",
+                    gp_shop_name="GP One",
+                    shop_id="99",
+                    shop_name="Extra Shop",
+                    rm="rm@test.com",
+                )
+            ],
+            tab="shopee shop only",
+            data_source="test",
+        )
+        with (
+            patch("seller.intelligence.historical_sob.service.get_ytd_monthly", return_value=ytd),
+            patch("seller.intelligence.historical_sob.service.load_historical_sob_cache", return_value={"shops": {}}),
+            patch("seller.intelligence.historical_sob.service._fastmoss_mapping_indexes", return_value=({}, {})),
+            patch("seller.intelligence.historical_sob.service.get_review_by_shop_id", return_value=None),
+            patch(
+                "seller.intelligence.historical_sob.service.try_load_platform_extra_shops",
+                return_value=(shopee_only, TiktokShopOnlyLoadResult(rows=[], tab="tiktok shop only", data_source="test")),
+            ),
+        ):
+            rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache={"shops": {}})
+        row = next(r for r in rows if r["shop_id"] == "99")
+        self.assertEqual(row["platform_source"], "SHOPEE_ONLY")
+        self.assertEqual(row["april_shopee_sob_percent"], 100.0)
+        self.assertEqual(row["april_tiktok_sob_percent"], 0.0)
+        self.assertEqual(row["may_shopee_sob_percent"], 100.0)
+        self.assertEqual(row["may_tiktok_sob_percent"], 0.0)
+        self.assertIsNone(row["april_tiktok_gmv"])
+
+    def test_summary_aggregate_april_may_from_gmv_totals(self):
+        rows = [
+            {"april_shopee_gmv": 100.0, "april_tiktok_gmv": 100.0, "may_shopee_gmv": 80.0, "may_tiktok_gmv": 120.0},
+            {
+                "platform_source": "SHOPEE_ONLY",
+                "april_shopee_gmv": 50.0,
+                "april_tiktok_gmv": None,
+                "may_shopee_gmv": 50.0,
+                "may_tiktok_gmv": None,
+            },
+            {
+                "platform_source": "TIKTOK_ONLY",
+                "april_shopee_gmv": None,
+                "april_tiktok_gmv": 50.0,
+                "may_shopee_gmv": None,
+                "may_tiktok_gmv": 50.0,
+            },
+        ]
+        april = aggregate_sob_from_rows(
+            rows, shopee_field="april_shopee_gmv", tiktok_field="april_tiktok_gmv"
+        )
+        may = aggregate_sob_from_rows(rows, shopee_field="may_shopee_gmv", tiktok_field="may_tiktok_gmv")
+        self.assertEqual(april["shopee_sob_percent"], 50.0)
+        self.assertEqual(april["tiktok_sob_percent"], 50.0)
+        self.assertEqual(may["shopee_gmv_usd"], 130.0)
+        self.assertEqual(may["tiktok_gmv_usd"], 170.0)
+        self.assertAlmostEqual(may["shopee_sob_percent"], 43.3333, places=3)
+        self.assertAlmostEqual(may["tiktok_sob_percent"], 56.6667, places=3)
 
     def test_fastmoss_mapped_without_review_shows_mapped(self):
         master = self._master()

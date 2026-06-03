@@ -35,3 +35,28 @@ def save_historical_sob_cache(payload: dict[str, Any], path: Path | None = None)
 def shop_tiktok_cache_row(cache: dict[str, Any], shop_id: str) -> dict[str, Any] | None:
     row = (cache.get("shops") or {}).get(str(shop_id))
     return dict(row) if isinstance(row, dict) else None
+
+
+def resolve_tiktok_cache_row(
+    cache: dict[str, Any],
+    *,
+    shop_id: str,
+    tiktok_shop_name: str = "",
+) -> dict[str, Any] | None:
+    """Lookup cached April/May TikTok GMV by shop_id or normalized TikTok shop name."""
+    from seller.intelligence.gp_shop_rm import normalize_shop_key
+
+    shops = cache.get("shops") or {}
+    sid = str(shop_id or "").strip()
+    if sid:
+        row = shops.get(sid)
+        if isinstance(row, dict):
+            return dict(row)
+    key = normalize_shop_key(tiktok_shop_name)
+    if key:
+        for row in shops.values():
+            if not isinstance(row, dict):
+                continue
+            if normalize_shop_key(str(row.get("tiktok_shop_name") or "")) == key:
+                return dict(row)
+    return None
