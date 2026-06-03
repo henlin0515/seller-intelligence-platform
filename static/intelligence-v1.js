@@ -52,7 +52,14 @@
   };
 
   function defaultBusinessFilters() {
-    return { q: "", rm: "all", status: "all", risk: "all", sort: "shop_name" };
+    return { q: "", rm: "all", gp: "all", status: "all", risk: "all", sort: "shop_name" };
+  }
+
+  function businessSheetFilters(data) {
+    return {
+      rm: data?.rm_filter || data?.sheet_filters?.rm_filter || { options: [{ value: "all", label: "All RM" }], by_rm: {} },
+      gp: data?.gp_filter || data?.sheet_filters?.gp_filter || { options: [{ value: "all", label: "All GP" }], by_gp: {} },
+    };
   }
 
   function normalizeShopKey(value) {
@@ -73,8 +80,19 @@
     return keys.some((k) => set.has(k));
   }
 
-  function businessRmOptionsHtml(rmFilter, selected) {
-    const options = rmFilter?.options || [{ value: "all", label: "All RM" }];
+  function matchesGpFilter(s, gpValue, gpFilter) {
+    if (!gpValue || gpValue === "all") return true;
+    const allowed = gpFilter?.by_gp?.[gpValue];
+    if (!allowed || !allowed.length) return false;
+    const set = new Set(allowed);
+    const keys = [normalizeShopKey(s.shop_name), normalizeShopKey(s.tiktok_shop_name)].filter(
+      Boolean
+    );
+    return keys.some((k) => set.has(k));
+  }
+
+  function filterSelectOptionsHtml(filterDef, selected, fallbackLabel) {
+    const options = filterDef?.options || [{ value: "all", label: fallbackLabel }];
     return options
       .map(
         (opt) =>
@@ -502,10 +520,12 @@
     return "medium";
   }
 
-  function filterBusinessSellers(sellers, f, rmFilter) {
+  function filterBusinessSellers(sellers, f, sheetFilters) {
+    const sf = sheetFilters || {};
     let list = sellers.filter((s) => {
       if (!matchesQuery(s, f.q)) return false;
-      if (!matchesRmFilter(s, f.rm, rmFilter)) return false;
+      if (!matchesRmFilter(s, f.rm, sf.rm)) return false;
+      if (!matchesGpFilter(s, f.gp, sf.gp)) return false;
       if (f.status !== "all" && deriveBusinessStatus(s) !== f.status) return false;
       if (f.risk !== "all" && deriveBusinessRisk(s) !== f.risk) return false;
       return true;
@@ -806,17 +826,20 @@
     });
   }
 
-  function businessToolbarHtml(f, rmFilter) {
+  function businessToolbarFieldsHtml(f, sheetFilters) {
+    const sf = sheetFilters || {};
     return `
-      <div class="si-sla-filter-card">
-        <div class="si-v1-toolbar si-sla-toolbar" data-toolbar="business">
           <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
             <label for="siBizSearch">Seller search</label>
             <input id="siBizSearch" type="search" placeholder="Shop ID, name, Shopee link, TikTok shop…" value="${escapeHtml(f.q)}" data-f="q" />
           </div>
           <div class="si-v1-toolbar-field">
             <label for="siBizRm">RM</label>
-            <select id="siBizRm" data-f="rm">${businessRmOptionsHtml(rmFilter, f.rm)}</select>
+            <select id="siBizRm" data-f="rm">${filterSelectOptionsHtml(sf.rm, f.rm, "All RM")}</select>
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="siBizGp">GP</label>
+            <select id="siBizGp" data-f="gp">${filterSelectOptionsHtml(sf.gp, f.gp, "All GP")}</select>
           </div>
           <div class="si-v1-toolbar-field">
             <label for="siBizStatus">Status</label>
@@ -849,10 +872,32 @@
               <option value="fastmoss"${f.sort === "fastmoss" ? " selected" : ""}>FastMoss status</option>
             </select>
           </div>
-          <button type="button" class="si-sla-btn-reset" data-reset>Reset filters</button>
-        </div>
+          <button type="button" class="si-sla-btn-reset" data-reset>Reset filters</button>`;
+  }
+
+  function businessFilterCardHtml(f, sheetFilters) {
+    return `<div class="si-sla-filter-card" data-sla-filter-card>
+        <div class="si-v1-toolbar si-sla-toolbar" data-toolbar="business">${businessToolbarFieldsHtml(f, sheetFilters)}</div>
         <p class="si-sla-result-count" data-result-count></p>
       </div>`;
+  }
+
+  function syncBusinessFilterControls(el) {
+    const toolbar = el.querySelector("[data-toolbar='business']");
+    if (!toolbar) return;
+    const f = state.business.filters;
+    const sheetFilters = businessSheetFilters(state.business.raw || {});
+    const q = toolbar.querySelector("[data-f='q']");
+    if (q) q.value = f.q || "";
+    const map = { rm: "siBizRm", gp: "siBizGp", status: "siBizStatus", risk: "siBizRisk", sort: "siBizSort" };
+    Object.entries(map).forEach(([key, id]) => {
+      const node = toolbar.querySelector(`#${id}`);
+      if (node) node.value = f[key] || "all";
+    });
+    const rmSel = toolbar.querySelector("#siBizRm");
+    if (rmSel) rmSel.innerHTML = filterSelectOptionsHtml(sheetFilters.rm, f.rm, "All RM");
+    const gpSel = toolbar.querySelector("#siBizGp");
+    if (gpSel) gpSel.innerHTML = filterSelectOptionsHtml(sheetFilters.gp, f.gp, "All GP");
   }
 
   function assortmentTabsHtml(f) {
@@ -1271,7 +1316,11 @@
     if (!el || !st.raw) return;
     const listEl = el.querySelector("[data-si-list]");
     if (!listEl) return;
-    const filtered = filterBusinessSellers(st.raw.sellers || [], st.filters, st.raw.rm_filter);
+    const filtered = filterBusinessSellers(
+      st.raw.sellers || [],
+      st.filters,
+      businessSheetFilters(st.raw)
+    );
     const total = filtered.length;
     const totalPages = Math.max(1, Math.ceil(total / st.pageSize));
     if (st.page > totalPages) st.page = totalPages;
@@ -1279,7 +1328,7 @@
     const start = (st.page - 1) * st.pageSize;
     const pageRows = filtered.slice(start, start + st.pageSize);
 
-    const countEl = el.querySelector("[data-result-count]");
+    const countEl = el.querySelector("[data-sla-filter-card] [data-result-count]");
     if (countEl) {
       countEl.textContent = `Showing ${total} of ${(st.raw.sellers || []).length} sellers`;
     }
@@ -1309,27 +1358,24 @@
       metas.siBusiness.textContent = `${src}${collected} · USD/PHP ${data.usd_php_rate}`;
     }
     if (!state.business.shellReady) {
-      el.innerHTML = `<div class="si-sla-shell">${businessToolbarHtml(state.business.filters, data.rm_filter)}<div class="si-sla-list" data-si-list></div></div>`;
+      el.innerHTML = `<div class="si-sla-shell">${businessFilterCardHtml(state.business.filters, businessSheetFilters(data))}<div class="si-sla-list" data-si-list></div></div>`;
       const onToolbar = (ev) => {
         if (ev?.reset) {
           state.business.filters = defaultBusinessFilters();
-          state.business.page = 1;
         } else {
           state.business.filters = readFiltersFromToolbar(
-            el.querySelector("[data-toolbar]"),
+            el.querySelector("[data-toolbar='business']"),
             defaultBusinessFilters()
           );
-          state.business.page = 1;
         }
-        el.querySelector("[data-toolbar]").outerHTML = businessToolbarHtml(
-          state.business.filters,
-          state.business.raw?.rm_filter
-        );
-        bindToolbar(el.querySelector("[data-toolbar]"), onToolbar);
+        state.business.page = 1;
+        syncBusinessFilterControls(el);
         paintBusinessList();
       };
-      bindToolbar(el.querySelector("[data-toolbar]"), onToolbar);
+      bindToolbar(el.querySelector("[data-toolbar='business']"), onToolbar);
       state.business.shellReady = true;
+    } else {
+      syncBusinessFilterControls(el);
     }
     paintBusinessList();
   }

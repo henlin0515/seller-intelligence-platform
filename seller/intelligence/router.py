@@ -118,12 +118,13 @@ async def intelligence_v1_business_refresh_status():
 
 @router.get("/business")
 async def intelligence_v1_business():
-    from seller.intelligence.gp_shop_rm import get_rm_filter_payload
+    from seller.intelligence.gp_shop_rm import get_sla_sheet_filters_payload
 
     today = date.today()
     master = _load_master()
     fastmoss_meta = get_business_intelligence_meta()
     sellers = get_business_intelligence_payload(master)
+    sheet_filters = get_sla_sheet_filters_payload()
     tiktok_available = sum(1 for s in sellers if s.get("tiktok_data_status") == "available")
     shopee_available = sum(1 for s in sellers if s.get("shopee_data_status") == "available")
     return {
@@ -133,7 +134,9 @@ async def intelligence_v1_business():
         "periods": resolve_periods(today).as_dict(),
         "usd_php_rate": USD_PHP_RATE,
         "fastmoss": fastmoss_meta,
-        "rm_filter": get_rm_filter_payload(),
+        "sheet_filters": sheet_filters,
+        "rm_filter": sheet_filters.get("rm_filter"),
+        "gp_filter": sheet_filters.get("gp_filter"),
         "summary": {
             "seller_count": len(sellers),
             "tiktok_available": tiktok_available,
