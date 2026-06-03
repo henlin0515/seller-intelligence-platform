@@ -395,6 +395,38 @@
     return `MTD ${periods.mtd.start} → ${periods.mtd.end} · M-1 ${periods.m1.start} → ${periods.m1.end}`;
   }
 
+  function renderBusinessPeriodChips(periods) {
+    if (!periods?.mtd || !periods?.m1) return "";
+    return `
+      <span class="si-sla-chip">MTD ${escapeHtml(periods.mtd.start)} → ${escapeHtml(periods.mtd.end)}</span>
+      <span class="si-sla-chip">M-1 ${escapeHtml(periods.m1.start)} → ${escapeHtml(periods.m1.end)}</span>`;
+  }
+
+  function renderBusinessInlineSobCell(shpPct, tkPct) {
+    const shp = clampSobPct(shpPct);
+    const tk = clampSobPct(tkPct);
+    if (shp == null || tk == null) {
+      return `<td class="si-sla-sob-cell">${fmtNa("SOB NA")}</td>`;
+    }
+    return `
+      <td class="si-sla-sob-cell">
+        <div class="hs-inline-sob">
+          <div class="hs-inline-sob-legend">
+            <span class="hs-inline-sob-tag hs-inline-sob-tag--shp">
+              <span class="hs-inline-sob-dot" aria-hidden="true"></span>SHP ${fmtPct(shp)}
+            </span>
+            <span class="hs-inline-sob-tag hs-inline-sob-tag--tk">
+              <span class="hs-inline-sob-dot" aria-hidden="true"></span>TK ${fmtPct(tk)}
+            </span>
+          </div>
+          <div class="si-sob-stack-bar hs-inline-sob-bar" data-sob-animate="1" data-shp="${shp}" data-tk="${tk}">
+            <div class="si-sob-stack-seg si-sob-stack-seg--shp" style="width:0%" aria-hidden="true"></div>
+            <div class="si-sob-stack-seg si-sob-stack-seg--tk" style="width:0%" aria-hidden="true"></div>
+          </div>
+        </div>
+      </td>`;
+  }
+
   async function load(path) {
     const res = await fetchApi(path);
     if (!res.ok) {
@@ -745,44 +777,46 @@
 
   function businessToolbarHtml(f) {
     return `
-      <div class="si-v1-toolbar" data-toolbar="business">
-        <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
-          <label for="siBizSearch">Seller search</label>
-          <input id="siBizSearch" type="search" placeholder="Shop ID, name, Shopee link, TikTok shop…" value="${escapeHtml(f.q)}" data-f="q" />
+      <div class="si-sla-filter-card">
+        <div class="si-v1-toolbar si-sla-toolbar" data-toolbar="business">
+          <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
+            <label for="siBizSearch">Seller search</label>
+            <input id="siBizSearch" type="search" placeholder="Shop ID, name, Shopee link, TikTok shop…" value="${escapeHtml(f.q)}" data-f="q" />
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="siBizStatus">Status</label>
+            <select id="siBizStatus" data-f="status">
+              <option value="all"${f.status === "all" ? " selected" : ""}>All</option>
+              <option value="healthy"${f.status === "healthy" ? " selected" : ""}>Healthy</option>
+              <option value="attention"${f.status === "attention" ? " selected" : ""}>Needs attention</option>
+              <option value="at_risk"${f.status === "at_risk" ? " selected" : ""}>At risk</option>
+            </select>
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="siBizRisk">Risk</label>
+            <select id="siBizRisk" data-f="risk">
+              <option value="all"${f.risk === "all" ? " selected" : ""}>All</option>
+              <option value="low"${f.risk === "low" ? " selected" : ""}>Low</option>
+              <option value="medium"${f.risk === "medium" ? " selected" : ""}>Medium</option>
+              <option value="high"${f.risk === "high" ? " selected" : ""}>High</option>
+              <option value="tiktok_leading"${f.risk === "tiktok_leading" ? " selected" : ""}>TikTok SOB lead</option>
+            </select>
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="siBizSort">Sort</label>
+            <select id="siBizSort" data-f="sort">
+              <option value="shop_name"${f.sort === "shop_name" ? " selected" : ""}>Shop name</option>
+              <option value="shopee_mtd"${f.sort === "shopee_mtd" ? " selected" : ""}>Shopee MTD ADGMV</option>
+              <option value="tiktok_mtd"${f.sort === "tiktok_mtd" ? " selected" : ""}>TikTok MTD ADGMV</option>
+              <option value="shopee_mom"${f.sort === "shopee_mom" ? " selected" : ""}>Shopee MoM % (high → low)</option>
+              <option value="shopee_mom_asc"${f.sort === "shopee_mom_asc" ? " selected" : ""}>Shopee MoM % (low → high)</option>
+              <option value="tiktok_mom"${f.sort === "tiktok_mom" ? " selected" : ""}>TikTok MoM</option>
+              <option value="fastmoss"${f.sort === "fastmoss" ? " selected" : ""}>FastMoss status</option>
+            </select>
+          </div>
+          <button type="button" class="si-sla-btn-reset" data-reset>Reset filters</button>
         </div>
-        <div class="si-v1-toolbar-field">
-          <label for="siBizStatus">Status</label>
-          <select id="siBizStatus" data-f="status">
-            <option value="all"${f.status === "all" ? " selected" : ""}>All</option>
-            <option value="healthy"${f.status === "healthy" ? " selected" : ""}>Healthy</option>
-            <option value="attention"${f.status === "attention" ? " selected" : ""}>Needs attention</option>
-            <option value="at_risk"${f.status === "at_risk" ? " selected" : ""}>At risk</option>
-          </select>
-        </div>
-        <div class="si-v1-toolbar-field">
-          <label for="siBizRisk">Risk</label>
-          <select id="siBizRisk" data-f="risk">
-            <option value="all"${f.risk === "all" ? " selected" : ""}>All</option>
-            <option value="low"${f.risk === "low" ? " selected" : ""}>Low</option>
-            <option value="medium"${f.risk === "medium" ? " selected" : ""}>Medium</option>
-            <option value="high"${f.risk === "high" ? " selected" : ""}>High</option>
-            <option value="tiktok_leading"${f.risk === "tiktok_leading" ? " selected" : ""}>TikTok SOB lead</option>
-          </select>
-        </div>
-        <div class="si-v1-toolbar-field">
-          <label for="siBizSort">Sort</label>
-          <select id="siBizSort" data-f="sort">
-            <option value="shop_name"${f.sort === "shop_name" ? " selected" : ""}>Shop name</option>
-            <option value="shopee_mtd"${f.sort === "shopee_mtd" ? " selected" : ""}>Shopee MTD ADGMV</option>
-            <option value="tiktok_mtd"${f.sort === "tiktok_mtd" ? " selected" : ""}>TikTok MTD ADGMV</option>
-            <option value="shopee_mom"${f.sort === "shopee_mom" ? " selected" : ""}>Shopee MoM % (high → low)</option>
-            <option value="shopee_mom_asc"${f.sort === "shopee_mom_asc" ? " selected" : ""}>Shopee MoM % (low → high)</option>
-            <option value="tiktok_mom"${f.sort === "tiktok_mom" ? " selected" : ""}>TikTok MoM</option>
-            <option value="fastmoss"${f.sort === "fastmoss" ? " selected" : ""}>FastMoss status</option>
-          </select>
-        </div>
-        <button type="button" class="si-v1-btn-reset" data-reset>Reset filters</button>
-        <p class="si-v1-result-count" data-result-count></p>
+        <p class="si-sla-result-count" data-result-count></p>
       </div>`;
   }
 
@@ -1093,7 +1127,7 @@
       </div>`;
   }
 
-  function renderBusinessTableRow(s, expanded) {
+  function renderBusinessTableRow(s) {
     const tkReason = s.tiktok_na_reason || "TikTok data unavailable";
     const shReason = s.shopee_na_reason || "Shopee ADGMV not found in Tracker";
     const tkMom =
@@ -1104,47 +1138,46 @@
       s.shopee_data_status === "available"
         ? renderMom(s.shopee_mom_percent, shReason)
         : fmtNa(shReason);
-    const expCls = expanded ? " is-expanded" : "";
+    const mtdSob = renderBusinessInlineSobCell(s.mtd_shopee_sob_percent, s.mtd_tiktok_sob_percent);
+    const m1Sob = renderBusinessInlineSobCell(s.m1_shopee_sob_percent, s.m1_tiktok_sob_percent);
     return `
-      <tbody class="si-biz-group${expCls}" data-shop-id="${escapeHtml(s.shop_id)}">
-        <tr class="si-biz-row-head" data-toggle-row>
-          <td class="si-biz-toggle-cell"><span class="si-biz-toggle" aria-hidden="true">▶</span></td>
-          <td>${escapeHtml(s.shop_id)}</td>
-          <td class="si-biz-name">${escapeHtml(s.shop_name)}</td>
-          <td>${mappingReviewBadge(s)}</td>
-          <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_mtd_adgmv_usd, s.tiktok_mtd_gmv_php, tkReason)}</td>
-          <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_m1_adgmv_usd, s.tiktok_m1_gmv_php, tkReason)}</td>
-          <td class="si-v1-num">${tkMom}</td>
+        <tr class="si-sla-row" data-shop-id="${escapeHtml(s.shop_id)}">
+          <td class="si-sla-shop">
+            <span class="si-sla-shop-name">${escapeHtml(s.shop_name)}</span>
+            <span class="si-sla-shop-meta">ID ${escapeHtml(s.shop_id)} · ${escapeHtml(s.tiktok_shop_name || "—")}</span>
+            <span class="si-sla-shop-meta">${mappingReviewBadge(s)}</span>
+            <span class="si-sla-shop-meta si-sla-shop-meta--mom">TikTok MoM ${tkMom}</span>
+          </td>
           <td class="si-v1-num">${fmtShopeeUsd(s.shopee_mtd_adgmv_usd, shReason)}</td>
+          <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_mtd_adgmv_usd, s.tiktok_mtd_gmv_php, tkReason)}</td>
+          ${mtdSob}
           <td class="si-v1-num">${fmtShopeeUsd(s.shopee_m1_adgmv_usd, shReason)}</td>
+          <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_m1_adgmv_usd, s.tiktok_m1_gmv_php, tkReason)}</td>
+          ${m1Sob}
           <td class="si-v1-num">${shMom}</td>
-        </tr>
-        <tr class="si-biz-row-detail">
-          <td colspan="10">${renderBusinessDetailPanel(s)}</td>
-        </tr>
-      </tbody>`;
+        </tr>`;
   }
 
-  function renderBusinessTable(sellers, expandedSet) {
+  function renderBusinessTable(sellers) {
     return `
-      <div class="si-v1-table-wrap si-v1-table-wrap--wide">
-        <table class="si-v1-table si-v1-table--business">
-          <thead>
-            <tr>
-              <th class="si-biz-toggle-cell" aria-label="Expand row"></th>
-              <th>Shop ID</th>
-              <th>Shop Name</th>
-              <th>FastMoss Match Status</th>
-              <th>TikTok MTD ADGMV USD</th>
-              <th>TikTok M-1 ADGMV USD</th>
-              <th>TikTok MoM %</th>
-              <th>Shopee MTD ADGMV</th>
-              <th>Shopee M-1 ADGMV</th>
-              <th>Shopee MoM %</th>
-            </tr>
-          </thead>
-          ${sellers.map((s) => renderBusinessTableRow(s, expandedSet.has(s.shop_id))).join("")}
-        </table>
+      <div class="si-sla-table-card">
+        <div class="si-v1-table-wrap si-sla-table-wrap">
+          <table class="si-v1-table si-sla-table">
+            <thead>
+              <tr>
+                <th class="si-sla-th-shop">Shop</th>
+                <th class="si-v1-num">Shopee MTD ADGMV</th>
+                <th class="si-v1-num">TikTok MTD ADGMV</th>
+                <th class="si-sla-th-sob">MTD SOB</th>
+                <th class="si-v1-num">Shopee M-1 ADGMV</th>
+                <th class="si-v1-num">TikTok M-1 ADGMV</th>
+                <th class="si-sla-th-sob">M-1 SOB</th>
+                <th class="si-v1-num">Shopee MoM %</th>
+              </tr>
+            </thead>
+            <tbody>${sellers.map((s) => renderBusinessTableRow(s)).join("")}</tbody>
+          </table>
+        </div>
       </div>`;
   }
 
@@ -1163,8 +1196,7 @@
       listEl.innerHTML = '<p class="si-v1-empty">No sellers match the current filters.</p>';
       return;
     }
-    listEl.innerHTML = renderBusinessTable(filtered, st.expanded);
-    bindRowToggles(listEl, st.expanded);
+    listEl.innerHTML = renderBusinessTable(filtered);
     animateSobBars(listEl);
   }
 
@@ -1176,11 +1208,15 @@
     const summary = data.summary || {};
     const src = fm.fastmoss_connected ? "FastMoss TikTok" : "Seller master";
     const collected = fm.summary?.success != null ? ` · ${summary.tiktok_available ?? fm.summary.success} TikTok` : "";
+    const chipsEl = document.getElementById("siBusinessPeriodChips");
+    if (chipsEl) {
+      chipsEl.innerHTML = renderBusinessPeriodChips(data.periods);
+    }
     if (metas.siBusiness) {
-      metas.siBusiness.textContent = `${periodLabel(data.periods)} · ${src}${collected} · USD/PHP ${data.usd_php_rate}`;
+      metas.siBusiness.textContent = `${src}${collected} · USD/PHP ${data.usd_php_rate}`;
     }
     if (!state.business.shellReady) {
-      el.innerHTML = `${businessToolbarHtml(state.business.filters)}<div class="si-v1-list" data-si-list></div>`;
+      el.innerHTML = `<div class="si-sla-shell">${businessToolbarHtml(state.business.filters)}<div class="si-sla-list" data-si-list></div></div>`;
       const onToolbar = (ev) => {
         if (ev?.reset) state.business.filters = defaultBusinessFilters();
         else {

@@ -2358,3 +2358,215 @@
   font-size: 0.75rem;
   color: #ff8a8a;
 }
+
+/* ---------- Seller Level Analysis (SOB Overview parity) ---------- */
+
+.si-sla-view {
+  background: #0d0d0f;
+}
+
+.si-sla-view .si-v1-scroll {
+  background: #0d0d0f;
+  padding: 1.25rem 2rem 2rem;
+}
+
+.si-sla-header {
+  border-bottom-color: rgba(255, 106, 0, 0.15);
+  background: linear-gradient(180deg, #141416 0%, #0d0d0f 100%);
+}
+
+.si-sla-header h1 {
+  font-size: 1.5rem;
+  letter-spacing: 0.02em;
+}
+
+.si-sla-btn-outline {
+  padding: 0.45rem 1.1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ff8a3d;
+  background: transparent;
+  border: 1px solid rgba(255, 106, 0, 0.65);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.si-sla-btn-outline:hover:not(:disabled) {
+  background: rgba(255, 106, 0, 0.12);
+  border-color: #ff6a00;
+  box-shadow: 0 0 16px rgba(255, 106, 0, 0.25);
+}
+
+.si-sla-btn-outline:disabled,
+.si-sla-btn-outline.is-loading {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.si-sla-period-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+.si-sla-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #d4d4d4;
+  background: #141416;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.si-sla-meta {
+  color: #8a8a8e;
+}
+
+.si-sla-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.si-sla-filter-card {
+  padding: 1.1rem 1.25rem;
+  border-radius: 16px;
+  background: #141416;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.si-sla-toolbar {
+  position: static;
+  margin-bottom: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.si-sla-btn-reset {
+  padding: 0.5rem 0.9rem;
+  border: 1px solid rgba(255, 106, 0, 0.55);
+  border-radius: 999px;
+  background: transparent;
+  color: #ff8a3d;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  align-self: flex-end;
+}
+
+.si-sla-btn-reset:hover {
+  background: rgba(255, 106, 0, 0.1);
+}
+
+.si-sla-result-count {
+  margin: 0.65rem 0 0;
+  font-size: 0.72rem;
+  color: #7a7a7e;
+}
+
+.si-sla-table-card {
+  padding: 1.25rem 1.35rem 1.35rem;
+  border-radius: 16px;
+  background: #141416;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.si-sla-table-wrap {
+  border-radius: 12px;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.si-sla-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.si-sla-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9a9a9e;
+  background: #141416;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.si-sla-table thead th.si-v1-num {
+  text-align: right;
+}
+
+.si-sla-table tbody td {
+  padding: 0.85rem;
+  vertical-align: middle;
+  background: #0f0f11;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.si-sla-table tbody tr.si-sla-row:hover td {
+  background: #1a1a1d;
+}
+
+.si-sla-table tbody td.si-v1-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #e8e8ec;
+}
+
+.si-sla-shop {
+  min-width: 200px;
+  text-align: left;
+}
+
+.si-sla-shop-name {
+  display: block;
+  font-weight: 700;
+  color: #f2f2f4;
+  margin-bottom: 0.2rem;
+}
+
+.si-sla-shop-meta {
+  display: block;
+  font-size: 0.68rem;
+  color: #7a7a7e;
+  line-height: 1.35;
+}
+
+.si-sla-shop-meta--mom {
+  margin-top: 0.15rem;
+}
+
+.si-sla-sob-cell {
+  min-width: 168px;
+  max-width: 220px;
+}
+
+.si-sla-th-sob {
+  min-width: 168px;
+}
+
+.si-sla-list .si-v1-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #888;
+}

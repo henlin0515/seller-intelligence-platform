@@ -222,22 +222,23 @@
           <div id="siDashboardContent" class="si-v1-scroll"></div>
         </div>
 
-        <div id="viewSiBusiness" class="app-view hidden si-v1-view">
-          <header class="si-v1-header si-v1-header--actions">
+        <div id="viewSiBusiness" class="app-view hidden si-v1-view si-sla-view">
+          <header class="si-v1-header si-v1-header--actions si-sla-header">
             <div class="si-v1-header-row">
               <h1 data-i18n="si.businessTitle">Seller Level Analysis</h1>
               <div class="si-v1-header-actions">
                 <button
                   type="button"
                   id="siBusinessRefreshDataBtn"
-                  class="btn si-v1-action-btn"
+                  class="btn si-sla-btn-outline"
                   data-i18n="si.refreshData"
                 >
-                  Refresh Data
+                  Update Data
                 </button>
               </div>
             </div>
-            <p class="si-v1-meta" id="siBusinessMeta">—</p>
+            <div class="si-sla-period-chips" id="siBusinessPeriodChips" aria-label="Analysis period"></div>
+            <p class="si-v1-meta si-sla-meta" id="siBusinessMeta">—</p>
             <div
               id="siBusinessRefreshProgress"
               class="si-sla-refresh hidden"
