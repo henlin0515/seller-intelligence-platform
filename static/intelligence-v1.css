@@ -2543,6 +2543,84 @@
   margin-top: 0.35rem;
 }
 
+.si-radar-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.si-radar-filter-card .si-sla-filter-card {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.si-radar-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.si-radar-header-text {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.si-radar-segments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.si-radar-segment {
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #b8b8bc;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.si-radar-segment.is-active {
+  border-color: rgba(255, 106, 0, 0.65);
+  background: rgba(255, 106, 0, 0.14);
+  color: #ff9a4d;
+}
+
+.si-radar-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: #9a9a9e;
+}
+
+.si-radar-table-card {
+  margin-top: 0;
+}
+
+.si-radar-products-table td,
+.si-radar-products-table th {
+  font-size: 0.78rem;
+}
+
+.si-radar-table-link {
+  color: #ff8a3d;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.si-radar-table-link:hover {
+  text-decoration: underline;
+}
+
 .si-sla-table-card {
   padding: 1.25rem 1.35rem 1.35rem;
   border-radius: 16px;

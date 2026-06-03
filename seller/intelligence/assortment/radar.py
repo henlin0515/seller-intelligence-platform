@@ -19,7 +19,9 @@ from seller.intelligence.assortment.config import (
     RADAR_MAX_PRODUCTS,
     RADAR_TOP_GROWTH,
     RADAR_TOP_NEW,
+    RADAR_TOP_NEW_PER_SHOP,
     RADAR_TOP_OPPORTUNITIES,
+    RADAR_TOP_PER_SHOP,
     radar_page_size,
 )
 from seller.intelligence.seller_master import SellerMasterLoadResult, seller_master_tab_name
@@ -68,7 +70,9 @@ def new_product_badge(days: int | None) -> str | None:
         return "7 DAYS"
     if days <= 14:
         return "14 DAYS"
-    return "20 DAYS"
+    if days <= 21:
+        return "21 DAYS"
+    return "30 DAYS"
 
 
 def _percentile_rank(values: list[float], target: float, *, higher_is_better: bool = True) -> float:
@@ -154,6 +158,18 @@ def enrich_product_metrics(products: list[dict[str, Any]], *, today: date | None
         product["opportunity_score"] = opportunity_score
         product["opportunity_label"] = "HIGH OPPORTUNITY" if opportunity_score >= 60 else None
         product["trend_arrow"] = "up" if growth_scores[idx] >= 55 else "flat"
+        inc_sales = float(product.get("inc_sale_amount") or 0)
+        base_sales = float(product.get("sales_amount") or 0)
+        if inc_sales > 0 and base_sales > inc_sales:
+            product["growth_percent"] = round((inc_sales / (base_sales - inc_sales)) * 100, 2)
+        elif growth_scores[idx] >= 55:
+            product["growth_percent"] = round(growth_scores[idx], 2)
+        else:
+            product["growth_percent"] = None
+        inc_sold = float(product.get("inc_sold_count") or 0)
+        product["rank_change"] = (
+            f"+{int(inc_sold)} sold" if inc_sold > 0 else product.get("trend_arrow") or "—"
+        )
     return enriched
 
 
@@ -201,12 +217,14 @@ def _build_shop_view(enriched: list[dict[str, Any]]) -> dict[str, Any]:
     shops: list[dict[str, Any]] = []
     for shop_id in sorted(shop_names, key=lambda sid: shop_names[sid].lower()):
         products = by_shop.get(shop_id) or []
-        top_products = sorted(products, key=_sort_key_sales, reverse=True)
+        top_products = sorted(products, key=_sort_key_sales, reverse=True)[:RADAR_TOP_PER_SHOP]
         new_products = sorted(
             [p for p in products if p.get("is_new_product")],
-            key=_sort_key_sales,
-            reverse=True,
-        )
+            key=lambda p: (
+                p.get("days_since_launch") if p.get("days_since_launch") is not None else 9999,
+                -float(p.get("sales_amount") or 0),
+            ),
+        )[:RADAR_TOP_NEW_PER_SHOP]
         growth_products = sorted(
             products,
             key=lambda p: float(p.get("growth_score") or 0),
@@ -222,9 +240,13 @@ def _build_shop_view(enriched: list[dict[str, Any]]) -> dict[str, Any]:
             {
                 "shop_id": shop_id,
                 "shop_name": shop_names[shop_id],
+                "tiktok_shop_name": next(
+                    (p.get("tiktok_shop_name") for p in products if p.get("tiktok_shop_name")),
+                    "",
+                ),
                 "summary": {
                     "total_products": len(products),
-                    "new_products_20d": len(new_products),
+                    "new_products_30d": len(new_products),
                     "growth_products": len(growth_products),
                     "opportunity_products": len(opportunity_products),
                 },
@@ -349,9 +371,13 @@ def _public_product(row: dict[str, Any], *, rank: int | None = None) -> dict[str
         "upload_date": row.get("upload_date") or row.get("listed_date"),
         "days_since_launch": row.get("days_since_launch"),
         "shop_name": row.get("seller_shop_name") or row.get("shop_name"),
+        "tiktok_shop_name": row.get("tiktok_shop_name") or "",
         "seller_shop_id": row.get("seller_shop_id"),
         "fastmoss_shop_id": row.get("fastmoss_shop_id"),
         "product_link": row.get("product_link"),
+        "growth_percent": row.get("growth_percent"),
+        "rank_change": row.get("rank_change"),
+        "last_updated": row.get("last_updated"),
         "new_badge": row.get("new_badge"),
         "is_new_product": row.get("is_new_product"),
         "growth_score": row.get("growth_score"),
@@ -360,6 +386,29 @@ def _public_product(row: dict[str, Any], *, rank: int | None = None) -> dict[str
         "trend_arrow": row.get("trend_arrow"),
     }
     return out
+
+
+def _enrich_mappings_from_master(
+    mappings: list[dict[str, Any]],
+    master: SellerMasterLoadResult | None,
+) -> list[dict[str, Any]]:
+    if master is None:
+        return mappings
+    by_id = {str(s.shop_id): s for s in master.sellers}
+    enriched: list[dict[str, Any]] = []
+    for row in mappings:
+        sid = str(row.get("shop_id") or "")
+        seller = by_id.get(sid)
+        enriched.append(
+            {
+                **row,
+                "shop_name": (seller.shop_name if seller else None) or row.get("shop_name") or sid,
+                "tiktok_shop_name": (seller.tiktok_shop_name if seller else None)
+                or row.get("tiktok_shop_name")
+                or "",
+            }
+        )
+    return enriched
 
 
 def _approved_mappings_for_master(
@@ -399,7 +448,16 @@ def _build_shop_filter_options(
             or row.get("tiktok_shop_name")
             or shop_id
         )
-        options[shop_id] = {"shop_id": shop_id, "shop_name": str(shop_name)}
+        tiktok_name = (
+            (master_row.tiktok_shop_name if master_row else None)
+            or row.get("tiktok_shop_name")
+            or ""
+        )
+        options[shop_id] = {
+            "shop_id": shop_id,
+            "shop_name": str(shop_name),
+            "tiktok_shop_name": str(tiktok_name),
+        }
 
     for product in enriched:
         shop_id = str(product.get("seller_shop_id") or "").strip()
@@ -410,6 +468,7 @@ def _build_shop_filter_options(
             "shop_name": str(
                 product.get("seller_shop_name") or product.get("shop_name") or shop_id
             ),
+            "tiktok_shop_name": str(product.get("tiktok_shop_name") or ""),
         }
 
     return sorted(options.values(), key=lambda row: (row.get("shop_name") or "").lower())
@@ -463,6 +522,9 @@ def _collect_mapped_products(
                     **product,
                     "seller_shop_id": str(mapping.get("shop_id") or ""),
                     "seller_shop_name": mapping.get("shop_name") or product.get("shop_name"),
+                    "tiktok_shop_name": mapping.get("tiktok_shop_name")
+                    or product.get("tiktok_shop_name")
+                    or "",
                     "fastmoss_shop_id": fastmoss_shop_id,
                 }
             )
@@ -645,12 +707,34 @@ def _assemble_radar_payload(
     except Exception:
         spreadsheet_id = None
 
+    try:
+        from seller.intelligence.gp_shop_rm import get_sla_sheet_filters_payload
+
+        sheet_filters = get_sla_sheet_filters_payload()
+    except Exception:
+        sheet_filters = {
+            "rm_filter": {"options": [{"value": "all", "label": "All RM"}], "by_rm": {}},
+            "gp_filter": {
+                "options": [{"value": "all", "label": "All GP"}],
+                "by_gp": {},
+                "gp_names_by_rm": {},
+            },
+        }
+
+    generated_at = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    for row in enriched:
+        row["last_updated"] = generated_at
+
     return {
         "module": "assortment_intelligence",
         "version": "v1",
         "status": "tiktok_product_radar",
         "strategy": "sheet_master_fastmoss_goods",
-        "generated_at": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "generated_at": generated_at,
+        "last_updated": generated_at,
+        "sheet_filters": sheet_filters,
+        "rm_filter": sheet_filters.get("rm_filter"),
+        "gp_filter": sheet_filters.get("gp_filter"),
         "data_source": {
             "spreadsheet_id": spreadsheet_id,
             "seller_master_tab": master_tab,
@@ -686,7 +770,7 @@ def _assemble_radar_payload(
         "fastmoss": fetch_meta,
         "portfolio": {
             "total_products": len(enriched),
-            "new_products_20d": sum(1 for p in enriched if p.get("is_new_product")),
+            "new_products_30d": sum(1 for p in enriched if p.get("is_new_product")),
             "growth_products": len(top_growth),
             "opportunity_products": len(top_opportunities),
         },
@@ -742,7 +826,10 @@ def build_tiktok_product_radar(
         master_tab = master.tab
         seller_master_rows = master.stats.total_loaded
 
-    mappings = _approved_mappings_for_master(master_shop_ids)
+    mappings = _enrich_mappings_from_master(
+        _approved_mappings_for_master(master_shop_ids),
+        master,
+    )
 
     if not fetch_fastmoss:
         shell = _assemble_radar_payload(

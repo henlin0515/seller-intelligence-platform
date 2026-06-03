@@ -132,20 +132,55 @@
   function defaultAssortmentFilters() {
     return {
       q: "",
+      rm: "all",
+      gp: "all",
       shop: "all",
-      category: "all",
+      productType: "top",
       dateRange: "all",
-      tab: "shop",
     };
+  }
+
+  function radarSheetFilters(data) {
+    return businessSheetFilters(data);
+  }
+
+  function radarShopFilterRecord(shop) {
+    return {
+      shop_name: shop?.shop_name || "",
+      tiktok_shop_name: shop?.tiktok_shop_name || "",
+    };
+  }
+
+  function radarFilteredShops(shops, f, sheetFilters) {
+    const sf = sheetFilters || {};
+    return (shops || []).filter((shop) => {
+      const rec = radarShopFilterRecord(shop);
+      if (!matchesRmFilter(rec, f.rm, sf.rm)) return false;
+      if (!matchesGpFilter(rec, f.gp, sf.gp)) return false;
+      return true;
+    });
+  }
+
+  function coerceRadarFilters(filters, data) {
+    const sheetFilters = radarSheetFilters(data || {});
+    let f = coerceBusinessGpForRm({ ...filters }, sheetFilters);
+    const shops = radarFilteredShops(data?.filters?.shops || [], f, sheetFilters);
+    const allowed = new Set(shops.map((s) => String(s.shop_id)));
+    if (f.shop !== "all" && !allowed.has(String(f.shop))) {
+      f = { ...f, shop: "all" };
+    }
+    return f;
   }
 
   function assortmentFiltersActive(f) {
     const d = defaultAssortmentFilters();
     return (
       Boolean((f.q || "").trim()) ||
-      (f.dateRange && f.dateRange !== d.dateRange) ||
-      (f.tab === "shop" && f.shop && f.shop !== "all" && f.shop !== d.shop) ||
-      (f.tab === "dashboard" && f.category && f.category !== "all" && f.category !== d.category)
+      f.rm !== d.rm ||
+      f.gp !== d.gp ||
+      f.shop !== d.shop ||
+      f.productType !== d.productType ||
+      f.dateRange !== d.dateRange
     );
   }
 
@@ -163,7 +198,12 @@
     if (v.data_status === "pending_catalog") {
       return escapeHtml(
         v.message ||
-          "Seller list loaded from Google Sheet. Click Update Data to refresh the product catalog."
+          "No FastMoss product data yet. Click Update Data to refresh the TikTok product catalog."
+      );
+    }
+    if ((v.approved_shop_count || 0) === 0) {
+      return escapeHtml(
+        "No mapped shop. Approve FastMoss mappings in Mapping Center, then click Update Data."
       );
     }
     if (v.data_status === "mapping_error") {
@@ -691,27 +731,22 @@
   }
 
   function productSearchBlob(p) {
-    return [p.product_name, p.category, p.shop_name, p.seller_shop_id, p.product_id]
+    return [
+      p.product_name,
+      p.category,
+      p.shop_name,
+      p.tiktok_shop_name,
+      p.seller_shop_id,
+      p.product_id,
+    ]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
   }
 
-  function filterRadarProducts(products, f, opts = {}) {
-    const skipShop = opts.skipShop === true;
-    const skipCategory = opts.skipCategory === true;
+  function filterRadarProducts(products, f) {
     return (products || []).filter((p) => {
       if (f.q && !productSearchBlob(p).includes(f.q.trim().toLowerCase())) return false;
-      if (!skipShop && f.shop !== "all" && String(p.seller_shop_id || "") !== String(f.shop)) {
-        return false;
-      }
-      if (
-        !skipCategory &&
-        f.category !== "all" &&
-        String(p.category || "Uncategorized") !== String(f.category)
-      ) {
-        return false;
-      }
       if (f.dateRange !== "all") {
         const days = p.days_since_launch;
         if (days == null) return false;
@@ -756,8 +791,13 @@
     return categories[0]?.category || "all";
   }
 
-  function filterAssortmentSellers(_sellers, _f) {
-    return [];
+  function filterAssortmentSellers(sellers, f, sheetFilters) {
+    const sf = sheetFilters || {};
+    return (sellers || []).filter((s) => {
+      if (!matchesRmFilter(s, f.rm, sf.rm)) return false;
+      if (!matchesGpFilter(s, f.gp, sf.gp)) return false;
+      return true;
+    });
   }
 
   /* ---------- UI components ---------- */
@@ -1040,81 +1080,114 @@
     }
   }
 
-  function assortmentTabsHtml(f) {
-    const shopActive = f.tab === "shop" ? " is-active" : "";
-    const dashActive = f.tab === "dashboard" ? " is-active" : "";
-    return `
-      <div class="si-radar-tabs" data-radar-tabs>
-        <button type="button" class="si-radar-tab${shopActive}" data-radar-tab="shop">Shop View</button>
-        <button type="button" class="si-radar-tab${dashActive}" data-radar-tab="dashboard">Assortment Dashboard</button>
-      </div>`;
-  }
-
-  function assortmentShopToolbarHtml(f, data) {
-    const shops = data?.shop_view?.shops || data?.filters?.shops || [];
-    const shopOpts = shops
-      .map(
+  function radarShopOptionsHtml(f, data) {
+    const sheetFilters = radarSheetFilters(data);
+    const shops = radarFilteredShops(data?.filters?.shops || [], f, sheetFilters);
+    const opts = [
+      `<option value="all"${f.shop === "all" ? " selected" : ""}>All shops</option>`,
+      ...shops.map(
         (s) =>
-          `<option value="${escapeHtml(s.shop_id)}"${f.shop === s.shop_id ? " selected" : ""}>${escapeHtml(s.shop_name)}</option>`
-      )
-      .join("");
+          `<option value="${escapeHtml(s.shop_id)}"${String(f.shop) === String(s.shop_id) ? " selected" : ""}>${escapeHtml(s.shop_name)}</option>`
+      ),
+    ];
+    return opts.join("");
+  }
+
+  function radarToolbarFieldsHtml(f, data) {
+    const sheetFilters = radarSheetFilters(data);
+    const gpFilterDef = businessGpFilterForRm(sheetFilters.gp, f.rm);
     return `
-      <div class="si-v1-toolbar si-radar-toolbar" data-toolbar="assortment">
-        ${assortmentTabsHtml(f)}
-        <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
-          <label for="siRadarSearch">Product search</label>
-          <input id="siRadarSearch" type="search" placeholder="Product name, category…" value="${escapeHtml(f.q)}" data-f="q" />
-        </div>
-        <div class="si-v1-toolbar-field si-v1-toolbar-field--primary">
-          <label for="siRadarShop">Shop</label>
-          <select id="siRadarShop" data-f="shop">
-            ${shopOpts}
-          </select>
-        </div>
-        <div class="si-v1-toolbar-field">
-          <label for="siRadarDate">Upload window</label>
-          <select id="siRadarDate" data-f="dateRange">
-            <option value="all"${f.dateRange === "all" ? " selected" : ""}>All dates</option>
-            <option value="20"${f.dateRange === "20" ? " selected" : ""}>Last 20 days</option>
-            <option value="14"${f.dateRange === "14" ? " selected" : ""}>Last 14 days</option>
-            <option value="7"${f.dateRange === "7" ? " selected" : ""}>Last 7 days</option>
-            <option value="3"${f.dateRange === "3" ? " selected" : ""}>Last 3 days</option>
-          </select>
-        </div>
-        <button type="button" class="si-v1-btn-reset" data-reset>Reset filters</button>
-        <p class="si-v1-result-count" data-result-count></p>
+          <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
+            <label for="siRadarSearch">Product search</label>
+            <input id="siRadarSearch" type="search" placeholder="Product name, category, shop…" value="${escapeHtml(f.q)}" data-f="q" />
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="siRadarRm">RM</label>
+            <select id="siRadarRm" data-f="rm">${filterSelectOptionsHtml(sheetFilters.rm, f.rm, "All RM")}</select>
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="siRadarGp">GP</label>
+            <select id="siRadarGp" data-f="gp">${filterSelectOptionsHtml(gpFilterDef, f.gp, "All GP")}</select>
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="siRadarShop">Shop</label>
+            <select id="siRadarShop" data-f="shop">${radarShopOptionsHtml(f, data)}</select>
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="siRadarProductType">Category type</label>
+            <select id="siRadarProductType" data-f="productType">
+              <option value="all"${f.productType === "all" ? " selected" : ""}>All</option>
+              <option value="top"${f.productType === "top" ? " selected" : ""}>Top 30</option>
+              <option value="new"${f.productType === "new" ? " selected" : ""}>New 30 days</option>
+              <option value="growth"${f.productType === "growth" ? " selected" : ""}>Growth products</option>
+            </select>
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="siRadarDate">Upload window</label>
+            <select id="siRadarDate" data-f="dateRange">
+              <option value="all"${f.dateRange === "all" ? " selected" : ""}>All dates</option>
+              <option value="30"${f.dateRange === "30" ? " selected" : ""}>Last 30 days</option>
+              <option value="7"${f.dateRange === "7" ? " selected" : ""}>Last 7 days</option>
+            </select>
+          </div>
+          <button type="button" class="si-sla-btn-reset" data-reset>Reset filters</button>`;
+  }
+
+  function radarFilterCardHtml(f, data) {
+    return `<div class="si-sla-filter-card si-radar-filter-card" data-radar-filter-card>
+        <div class="si-v1-toolbar si-sla-toolbar si-radar-toolbar" data-toolbar="radar">${radarToolbarFieldsHtml(f, data)}</div>
+        <p class="si-sla-result-count" data-radar-result-count></p>
       </div>`;
   }
 
-  function assortmentDashboardToolbarHtml(f, data) {
-    const categories = data?.category_dashboard?.categories || [];
-    const catOpts = categories
-      .map(
-        (c) =>
-          `<option value="${escapeHtml(c.category)}"${f.category === c.category ? " selected" : ""}>${escapeHtml(c.category)}</option>`
-      )
-      .join("");
-    return `
-      <div class="si-v1-toolbar si-radar-toolbar" data-toolbar="assortment">
-        ${assortmentTabsHtml(f)}
-        <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
-          <label for="siRadarSearch">Category search</label>
-          <input id="siRadarSearch" type="search" placeholder="Category name…" value="${escapeHtml(f.q)}" data-f="q" />
-        </div>
-        <div class="si-v1-toolbar-field si-v1-toolbar-field--primary">
-          <label for="siRadarCat">Category</label>
-          <select id="siRadarCat" data-f="category">
-            ${catOpts}
-          </select>
-        </div>
-        <button type="button" class="si-v1-btn-reset" data-reset>Reset filters</button>
-        <p class="si-v1-result-count" data-result-count></p>
-      </div>`;
+  function syncRadarFilterControls(el) {
+    const toolbar = el.querySelector("[data-toolbar='radar']");
+    if (!toolbar) return;
+    const data = state.assortment.raw || {};
+    const sheetFilters = radarSheetFilters(data);
+    state.assortment.filters = coerceRadarFilters(state.assortment.filters, data);
+    const f = state.assortment.filters;
+    const q = toolbar.querySelector("[data-f='q']");
+    if (q) q.value = f.q || "";
+    const map = {
+      rm: "siRadarRm",
+      gp: "siRadarGp",
+      shop: "siRadarShop",
+      productType: "siRadarProductType",
+      dateRange: "siRadarDate",
+    };
+    Object.entries(map).forEach(([key, id]) => {
+      const node = toolbar.querySelector(`#${id}`);
+      if (node) node.value = f[key] || (key === "shop" ? "all" : key === "productType" ? "top" : "all");
+    });
+    const rmSel = toolbar.querySelector("#siRadarRm");
+    if (rmSel) rmSel.innerHTML = filterSelectOptionsHtml(sheetFilters.rm, f.rm, "All RM");
+    const gpSel = toolbar.querySelector("#siRadarGp");
+    if (gpSel) {
+      gpSel.innerHTML = filterSelectOptionsHtml(
+        businessGpFilterForRm(sheetFilters.gp, f.rm),
+        f.gp,
+        "All GP"
+      );
+    }
+    const shopSel = toolbar.querySelector("#siRadarShop");
+    if (shopSel) shopSel.innerHTML = radarShopOptionsHtml(f, data);
   }
 
-  function assortmentToolbarHtml(f, data) {
-    if (f.tab === "dashboard") return assortmentDashboardToolbarHtml(f, data);
-    return assortmentShopToolbarHtml(f, data);
+  function radarSegmentHtml(productType) {
+    const segments = [
+      { id: "top", label: "Top 30 Products" },
+      { id: "new", label: "New Products" },
+      { id: "growth", label: "Growth Products" },
+    ];
+    return `<div class="si-radar-segments" data-radar-segments>
+      ${segments
+        .map(
+          (s) =>
+            `<button type="button" class="si-radar-segment${productType === s.id ? " is-active" : ""}" data-radar-segment="${s.id}">${escapeHtml(s.label)}</button>`
+        )
+        .join("")}
+    </div>`;
   }
 
   function readFiltersFromToolbar(toolbar, defaults) {
@@ -1709,150 +1782,204 @@
       </section>`;
   }
 
-  function paintAssortmentShopView() {
-    const el = containers.siAssortment;
-    const st = state.assortment;
-    if (!el || !st.raw) return;
-    const body = el.querySelector("[data-radar-body]");
-    if (!body) return;
-    const f = st.filters;
-    const filterShops = st.raw.filters?.shops || [];
-    const shopId = f.shop || resolveDefaultShopId(st.raw);
-    const shop =
-      resolveRadarShop(st.raw, shopId) ||
-      (filterShops[0] ? emptyRadarShop(filterShops[0].shop_id, filterShops[0].shop_name) : null);
-    if (!shop) {
-      body.innerHTML = `<p class="si-v1-empty">${radarEmptyMessage(st.raw)}</p>`;
-      return;
+  function radarVisibleShopIds(data, f) {
+    const sheetFilters = radarSheetFilters(data);
+    const shops = radarFilteredShops(data?.filters?.shops || [], f, sheetFilters);
+    if (f.shop && f.shop !== "all") {
+      return shops.some((s) => String(s.shop_id) === String(f.shop)) ? [String(f.shop)] : [];
     }
-    if (String(f.shop) !== String(shop.shop_id)) {
-      st.filters.shop = shop.shop_id;
-    }
-    const topProducts = filterRadarProducts(shop.top_products, f, { skipShop: true });
-    const newProducts = filterRadarProducts(shop.new_products, f, { skipShop: true });
-    const growthProducts = filterRadarProducts(shop.growth_products, f, { skipShop: true });
-    const opportunityProducts = filterRadarProducts(shop.opportunity_products, f, {
-      skipShop: true,
-    });
-    const hasVisible =
-      topProducts.length ||
-      newProducts.length ||
-      growthProducts.length ||
-      opportunityProducts.length;
-    if (!hasVisible && assortmentFiltersActive(f)) {
-      body.innerHTML = `<p class="si-v1-empty">${radarEmptyMessage(st.raw, { filteredEmpty: true })}</p>`;
-      return;
-    }
-    const countEl = el.querySelector("[data-result-count]");
-    if (countEl) {
-      countEl.textContent = `${shop.shop_name} · ${topProducts.length} top · ${newProducts.length} new · ${growthProducts.length} growth · ${opportunityProducts.length} opp`;
-    }
-    body.innerHTML = `
-      ${renderRadarShopSummary(shop.summary, shop.shop_name)}
-      ${renderRadarSection("Top Products", topProducts, { anchor: "shop-top" })}
-      ${renderRadarSection("New Products (20 Days)", newProducts, { anchor: "shop-new" })}
-      ${renderRadarSection("Growth Products", growthProducts, {
-        anchor: "shop-growth",
-        showGrowth: true,
-      })}
-      ${renderRadarSection("Opportunity Products", opportunityProducts, {
-        anchor: "shop-opp",
-        showOpportunity: true,
-      })}`;
+    return shops.map((s) => String(s.shop_id));
   }
 
-  function paintAssortmentDashboard() {
-    const el = containers.siAssortment;
-    const st = state.assortment;
-    if (!el || !st.raw) return;
-    const body = el.querySelector("[data-radar-body]");
-    if (!body) return;
-    const f = st.filters;
-    const dashboard = st.raw.category_dashboard || {};
-    const categories = dashboard.categories || [];
-    const activeCategory =
-      categories.find((c) => c.category === f.category)?.category ||
-      categories[0]?.category ||
-      null;
-    if (activeCategory && f.category !== activeCategory) {
-      st.filters.category = activeCategory;
+  function radarCollectProducts(data, shopIds, kind) {
+    const rows = [];
+    const seen = new Set();
+    for (const shop of data?.shop_view?.shops || []) {
+      if (shopIds.length && !shopIds.includes(String(shop.shop_id))) continue;
+      let list = [];
+      if (kind === "top") list = shop.top_products || [];
+      else if (kind === "new") list = shop.new_products || [];
+      else if (kind === "growth") list = shop.growth_products || [];
+      else if (kind === "all") {
+        list = [
+          ...(shop.top_products || []),
+          ...(shop.new_products || []),
+          ...(shop.growth_products || []),
+        ];
+      }
+      for (const p of list) {
+        const key = String(p.product_id || p.product_link || "");
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        rows.push(p);
+      }
     }
-    const detail = activeCategory ? dashboard.category_details?.[activeCategory] : null;
-    const topProducts = filterRadarProducts(detail?.top_products || [], f, { skipCategory: true });
-    const newProducts = filterRadarProducts(detail?.new_products || [], f, { skipCategory: true });
-    const growthProducts = filterRadarProducts(detail?.growth_products || [], f, {
-      skipCategory: true,
-    });
-    const topShops = detail?.top_shops || [];
-    const hasVisible =
-      topProducts.length || newProducts.length || growthProducts.length || topShops.length;
-    if (!activeCategory && categories.length === 0) {
-      body.innerHTML = `<p class="si-v1-empty">${radarEmptyMessage(st.raw)}</p>`;
-      return;
+    const newLimit = shopIds.length === 1 ? 10 : 30;
+    if (kind === "top") {
+      return rows
+        .sort(
+          (a, b) =>
+            (b.sales_amount ?? 0) - (a.sales_amount ?? 0) ||
+            (b.sold_count ?? 0) - (a.sold_count ?? 0)
+        )
+        .slice(0, 30);
     }
-    if (activeCategory && !hasVisible && assortmentFiltersActive(f)) {
-      body.innerHTML = `<p class="si-v1-empty">${radarEmptyMessage(st.raw, { filteredEmpty: true })}</p>`;
-      return;
+    if (kind === "new") {
+      return rows
+        .sort(
+          (a, b) =>
+            (a.days_since_launch ?? 9999) - (b.days_since_launch ?? 9999) ||
+            (b.sales_amount ?? 0) - (a.sales_amount ?? 0)
+        )
+        .slice(0, newLimit);
     }
-    const countEl = el.querySelector("[data-result-count]");
-    if (countEl) {
-      countEl.textContent = `${activeCategory || "—"} · ${topProducts.length} top · ${newProducts.length} new · ${growthProducts.length} growth · ${topShops.length} shops`;
+    if (kind === "growth") {
+      return rows
+        .sort((a, b) => (b.growth_score ?? 0) - (a.growth_score ?? 0))
+        .slice(0, 30);
     }
-    body.innerHTML = `
-      <section class="si-radar-section">
-        <div class="si-radar-section-head">
-          <h3 class="si-radar-section-title">Category Market Overview</h3>
-          <span class="si-radar-section-count">${categories.length} categories</span>
-        </div>
-        ${renderCategorySummaryGrid(categories, activeCategory, f.q)}
-      </section>
-      ${
-        activeCategory
-          ? `<div class="si-radar-category-focus">
-              <h3 class="si-radar-section-title">${escapeHtml(activeCategory)}</h3>
-              ${renderRadarSection("Top Products in Category", topProducts, { anchor: "cat-top" })}
-              ${renderRadarSection("New Products in Category (20 Days)", newProducts, { anchor: "cat-new" })}
-              ${renderRadarSection("Growth Products in Category", growthProducts, {
-                anchor: "cat-growth",
-                showGrowth: true,
-              })}
-              ${renderCategoryTopShopsSection(topShops)}
-            </div>`
-          : '<p class="si-v1-empty">Select a category to drill down.</p>'
-      }`;
-    body.querySelectorAll("[data-category-card]").forEach((card) => {
-      card.addEventListener("click", () => {
-        const category = card.dataset.categoryCard;
-        if (!category) return;
-        st.filters.category = category;
-        const toolbar = el.querySelector("[data-toolbar]");
-        if (toolbar) {
-          const select = toolbar.querySelector('[data-f="category"]');
-          if (select) select.value = category;
+    return rows;
+  }
+
+  function radarActiveProductKind(f) {
+    return f.productType || "top";
+  }
+
+  function radarTableKind(kind) {
+    return kind === "all" ? "top" : kind;
+  }
+
+  function renderRadarProductLink(p) {
+    const href = p.product_link || "#";
+    if (!href || href === "#") return "—";
+    return `<a class="si-radar-table-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">Open</a>`;
+  }
+
+  function renderRadarProductsTable(products, kind) {
+    if (!products.length) {
+      return '<p class="si-v1-empty">No products in this view.</p>';
+    }
+    const baseHead = `
+      <th>Shop</th>
+      <th>TikTok shop</th>
+      <th>Product</th>
+      <th>Link</th>`;
+    let extraHead = "";
+    if (kind === "new") {
+      extraHead = `<th>Upload date</th><th>Days</th>`;
+    }
+    if (kind === "growth") {
+      extraHead = `<th>Growth %</th><th>Trend</th>`;
+    }
+    const tailHead = `
+      <th class="si-v1-num">GMV</th>
+      <th class="si-v1-num">Sales</th>
+      <th class="si-v1-num">Price</th>
+      ${kind === "top" || kind === "growth" ? '<th class="si-v1-num">Rank</th>' : ""}
+      <th>Category</th>
+      <th>Last updated</th>`;
+
+    const rows = products
+      .map((p) => {
+        const growthPct =
+          p.growth_percent != null ? `${fmtNum(p.growth_percent, 1)}%` : fmtNum(p.growth_score, 1);
+        let extraCells = "";
+        if (kind === "new") {
+          extraCells = `<td>${escapeHtml(p.upload_date || "—")}</td><td class="si-v1-num">${p.days_since_launch != null ? fmtNum(p.days_since_launch) : "—"}</td>`;
         }
-        paintAssortmentDashboard();
-      });
-    });
+        if (kind === "growth") {
+          extraCells = `<td class="si-v1-num">${growthPct}</td><td>${escapeHtml(p.rank_change || p.trend_arrow || "—")}</td>`;
+        }
+        return `<tr>
+          <td>${escapeHtml(p.shop_name || "—")}</td>
+          <td>${escapeHtml(p.tiktok_shop_name || "—")}</td>
+          <td>${escapeHtml(p.product_name || "—")}</td>
+          <td>${renderRadarProductLink(p)}</td>
+          ${extraCells}
+          <td class="si-v1-num">${fmtPhp(p.sales_amount) || "—"}</td>
+          <td class="si-v1-num">${fmtNum(p.sold_count)}</td>
+          <td class="si-v1-num">${fmtPhp(p.product_price_php) || "—"}</td>
+          ${kind === "top" || kind === "growth" ? `<td class="si-v1-num">${p.rank != null ? fmtNum(p.rank) : "—"}</td>` : ""}
+          <td>${escapeHtml(p.category || "—")}</td>
+          <td>${escapeHtml(p.last_updated || "—")}</td>
+        </tr>`;
+      })
+      .join("");
+
+    return `
+      <div class="si-sla-table-card si-radar-table-card">
+        <div class="si-sla-table-wrap">
+          <table class="si-sla-table si-radar-products-table">
+            <thead><tr>${baseHead}${extraHead}${tailHead}</tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
   }
 
   function paintAssortmentRadar() {
-    const tab = state.assortment.filters.tab || "shop";
-    if (tab === "dashboard") paintAssortmentDashboard();
-    else paintAssortmentShopView();
+    const el = containers.siAssortment;
+    const st = state.assortment;
+    if (!el || !st.raw) return;
+    const body = el.querySelector("[data-radar-body]");
+    if (!body) return;
+    const v = st.raw.validation || {};
+    const refresh = st.raw.refresh_status || {};
+    if (refresh.running || v.refresh_running) {
+      body.innerHTML = `<div class="si-radar-loading" role="status"><div class="si-port-state-spinner" aria-hidden="true"></div><p>Loading TikTok product catalog…</p></div>`;
+      return;
+    }
+    if ((v.mapped_product_count || 0) === 0) {
+      body.innerHTML = `<p class="si-v1-empty">${radarEmptyMessage(st.raw)}</p>`;
+      return;
+    }
+
+    const f = coerceRadarFilters(st.filters, st.raw);
+    st.filters = f;
+    const shopIds = radarVisibleShopIds(st.raw, f);
+    if (!shopIds.length) {
+      body.innerHTML = `<p class="si-v1-empty">No mapped shops match the current RM / GP / Shop filters.</p>`;
+      return;
+    }
+
+    const kind = radarActiveProductKind(f);
+    let products = radarCollectProducts(st.raw, shopIds, kind);
+    products = filterRadarProducts(products, f);
+
+    const countEl = el.querySelector("[data-radar-filter-card] [data-radar-result-count]");
+    if (countEl) {
+      const scope =
+        f.shop !== "all"
+          ? (st.raw.filters?.shops || []).find((s) => String(s.shop_id) === String(f.shop))?.shop_name ||
+            f.shop
+          : `${shopIds.length} shops`;
+      countEl.textContent = `Showing ${products.length} products · ${scope}`;
+    }
+
+    el.querySelectorAll("[data-radar-segment]").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.dataset.radarSegment === kind);
+    });
+
+    if (!products.length) {
+      body.innerHTML = `<p class="si-v1-empty">${radarEmptyMessage(st.raw, { filteredEmpty: true })}</p>`;
+      return;
+    }
+    body.innerHTML = renderRadarProductsTable(products, radarTableKind(kind));
   }
 
-  function bindRadarTabs(toolbar, onChange) {
-    toolbar.querySelectorAll("[data-radar-tab]").forEach((btn) => {
+  function bindRadarSegments(el) {
+    el.querySelectorAll("[data-radar-segment]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const tab = btn.dataset.radarTab;
-        if (!tab || state.assortment.filters.tab === tab) return;
-        state.assortment.filters.tab = tab;
-        if (tab === "shop") {
-          state.assortment.filters.shop = resolveDefaultShopId(state.assortment.raw);
-        } else {
-          state.assortment.filters.category = resolveDefaultCategory(state.assortment.raw);
-        }
-        onChange({ tabSwitch: true });
+        const seg = btn.dataset.radarSegment;
+        if (!seg) return;
+        state.assortment.filters.productType = seg;
+        state.assortment.filters.productTypeSegment = seg;
+        const typeSel = el.querySelector("#siRadarProductType");
+        if (typeSel) typeSel.value = seg;
+        el.querySelectorAll("[data-radar-segment]").forEach((b) => {
+          b.classList.toggle("is-active", b.dataset.radarSegment === seg);
+        });
+        paintAssortmentRadar();
       });
     });
   }
@@ -1862,63 +1989,52 @@
     if (!el) return;
     logRadarDebug(data, "render");
     state.assortment.raw = data;
-    if (state.assortment.filters.shop === "all") {
-      state.assortment.filters.shop = resolveDefaultShopId(data);
-    }
-    if (
-      state.assortment.filters.tab === "dashboard" &&
-      (state.assortment.filters.category === "all" || !state.assortment.filters.category)
-    ) {
-      state.assortment.filters.category = resolveDefaultCategory(data);
-    }
+    state.assortment.filters = coerceRadarFilters(state.assortment.filters, data);
+
     const fm = data.fastmoss || {};
     const p = data.portfolio || {};
     const v = data.validation || {};
     const ds = data.data_source || {};
     const shopCount = v.shop_count ?? (data.filters?.shops || []).length;
-    const catCount = v.category_count ?? (data.category_dashboard?.categories || []).length;
+    const updated = data.last_updated || data.generated_at || "—";
     if (metas.siAssortment) {
       const tab = ds.seller_master_tab || data.tab || "shpoee link";
       metas.siAssortment.textContent = [
-        `TikTok Product Radar · ${fmtNum(p.total_products)} products · ${fmtNum(shopCount)} shops · ${fmtNum(catCount)} categories`,
+        `TikTok Product Radar · ${fmtNum(p.total_products)} products · ${fmtNum(shopCount)} mapped shops`,
         tab ? `Sheet: ${tab}` : "",
+        `Last updated: ${updated}`,
         v.data_status && v.data_status !== "ok" ? v.data_status : "",
       ]
         .filter(Boolean)
         .join(" · ");
     }
 
-    function refreshToolbar() {
-      el.querySelector("[data-toolbar]").outerHTML = assortmentToolbarHtml(
-        state.assortment.filters,
-        state.assortment.raw
-      );
-      bindToolbar(el.querySelector("[data-toolbar]"), onToolbarChange);
-      bindRadarTabs(el.querySelector("[data-toolbar]"), onToolbarChange);
-    }
-
-    function onToolbarChange(ev) {
+    const onToolbar = (ev) => {
       if (ev?.reset) {
         state.assortment.filters = defaultAssortmentFilters();
-        state.assortment.filters.shop = resolveDefaultShopId(state.assortment.raw);
-        state.assortment.filters.category = resolveDefaultCategory(state.assortment.raw);
-      } else if (!ev?.tabSwitch) {
+      } else {
         state.assortment.filters = readFiltersFromToolbar(
-          el.querySelector("[data-toolbar]"),
-          state.assortment.filters
+          el.querySelector("[data-toolbar='radar']"),
+          defaultAssortmentFilters()
         );
+        state.assortment.filters = coerceRadarFilters(state.assortment.filters, state.assortment.raw);
       }
-      refreshToolbar();
+      syncRadarFilterControls(el);
       paintAssortmentRadar();
-    }
+    };
 
     if (!state.assortment.shellReady) {
-      el.innerHTML = `${assortmentToolbarHtml(state.assortment.filters, data)}<div data-radar-body></div>`;
-      bindToolbar(el.querySelector("[data-toolbar]"), onToolbarChange);
-      bindRadarTabs(el.querySelector("[data-toolbar]"), onToolbarChange);
+      el.innerHTML = `<div class="si-radar-shell">${radarFilterCardHtml(state.assortment.filters, data)}${radarSegmentHtml(state.assortment.filters.productType || "top")}<div class="si-radar-body-wrap" data-radar-body></div></div>`;
+      bindToolbar(el.querySelector("[data-toolbar='radar']"), onToolbar);
+      bindRadarSegments(el);
       state.assortment.shellReady = true;
     } else {
-      refreshToolbar();
+      if (!el.querySelector("[data-radar-filter-card]")) {
+        state.assortment.shellReady = false;
+        setupAssortment(data);
+        return;
+      }
+      syncRadarFilterControls(el);
     }
     paintAssortmentRadar();
   }
@@ -2231,6 +2347,12 @@
 
   document.getElementById("siBusinessRefreshDataBtn")?.addEventListener("click", () => {
     refreshBusinessData().catch(() => {});
+  });
+
+  document.getElementById("siRadarRefreshDataBtn")?.addEventListener("click", () => {
+    delete cache.siAssortment;
+    state.assortment.shellReady = false;
+    loadAssortmentView({ refreshProducts: true }).catch(() => {});
   });
 
   window.ShpIntelligenceV1 = {
