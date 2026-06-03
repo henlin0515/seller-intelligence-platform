@@ -117,17 +117,23 @@ class HistoricalSobRowTests(unittest.TestCase):
         with (
             patch("seller.intelligence.historical_sob.service.get_ytd_monthly", return_value=ytd),
             patch("seller.intelligence.historical_sob.service.load_historical_sob_cache", return_value=cache),
-            patch("seller.intelligence.historical_sob.service._mapping_by_shop_id") as mock_map,
-            patch("seller.intelligence.historical_sob.service._review_status_for_shop", return_value="APPROVED"),
+            patch("seller.intelligence.historical_sob.service._fastmoss_mapping_indexes") as mock_map,
+            patch(
+                "seller.intelligence.historical_sob.service.get_review_by_shop_id",
+                return_value={"review_status": "APPROVED"},
+            ),
         ):
-            mock_map.return_value = {
-                "1": {
-                    "shop_id": "1",
-                    "fastmoss_shop_id": "fm1",
-                    "fastmoss_shop_name": "TikTok A",
-                    "mapping_status": "MAPPED",
-                }
-            }
+            mock_map.return_value = (
+                {
+                    "1": {
+                        "shop_id": "1",
+                        "fastmoss_shop_id": "fm1",
+                        "fastmoss_shop_name": "TikTok A",
+                        "mapping_status": "MAPPED",
+                    }
+                },
+                {},
+            )
             rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache=cache)
 
         shop_a = next(r for r in rows if r["shop_id"] == "1")
@@ -164,16 +170,22 @@ class HistoricalSobRowTests(unittest.TestCase):
         with (
             patch("seller.intelligence.historical_sob.service.get_ytd_monthly", return_value=ytd),
             patch("seller.intelligence.historical_sob.service.load_historical_sob_cache", return_value=cache),
-            patch("seller.intelligence.historical_sob.service._mapping_by_shop_id") as mock_map,
-            patch("seller.intelligence.historical_sob.service._review_status_for_shop", return_value="APPROVED"),
+            patch("seller.intelligence.historical_sob.service._fastmoss_mapping_indexes") as mock_map,
+            patch(
+                "seller.intelligence.historical_sob.service.get_review_by_shop_id",
+                return_value={"review_status": "APPROVED"},
+            ),
         ):
-            mock_map.return_value = {
-                "1": {
-                    "shop_id": "1",
-                    "fastmoss_shop_id": "fm1",
-                    "mapping_status": "MAPPED",
-                }
-            }
+            mock_map.return_value = (
+                {
+                    "1": {
+                        "shop_id": "1",
+                        "fastmoss_shop_id": "fm1",
+                        "mapping_status": "MAPPED",
+                    }
+                },
+                {},
+            )
             rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache=cache)
         shop_a = next(r for r in rows if r["shop_id"] == "1")
         self.assertEqual(shop_a["april_tiktok_gmv"], expected_usd)
@@ -212,8 +224,7 @@ class HistoricalSobRowTests(unittest.TestCase):
             patch("seller.intelligence.historical_sob.service.get_seller_master", return_value=master),
             patch("seller.intelligence.historical_sob.service.get_ytd_monthly", return_value=ytd),
             patch("seller.intelligence.historical_sob.service.load_historical_sob_cache", return_value={"shops": {}}),
-            patch("seller.intelligence.historical_sob.service._mapping_by_shop_id", return_value={}),
-            patch("seller.intelligence.historical_sob.service._review_status_for_shop", return_value="NOT_MAPPED"),
+            patch("seller.intelligence.historical_sob.service._fastmoss_mapping_indexes", return_value=({}, {})),
             patch("seller.intelligence.historical_sob.service.refresh_historical_sob_tiktok_cache", return_value={}),
         ):
             payload = get_historical_sob_payload(master, ensure_tiktok_cache=False)
@@ -224,6 +235,30 @@ class HistoricalSobRowTests(unittest.TestCase):
         self.assertEqual(payload["shopee_currency"], "USD")
         self.assertEqual(payload["tiktok_source_currency"], "PHP")
         self.assertEqual(payload["usd_php_rate"], USD_PHP_RATE)
+
+
+    def test_fastmoss_mapped_without_review_shows_mapped(self):
+        master = self._master()
+        ytd = _ytd_result([YtdMonthlyRecord("", "Shop A", 10.0, 10.0)])
+        with (
+            patch("seller.intelligence.historical_sob.service.get_ytd_monthly", return_value=ytd),
+            patch("seller.intelligence.historical_sob.service.load_historical_sob_cache", return_value={"shops": {}}),
+            patch("seller.intelligence.historical_sob.service._fastmoss_mapping_indexes") as mock_map,
+            patch("seller.intelligence.historical_sob.service.get_review_by_shop_id", return_value=None),
+        ):
+            mock_map.return_value = (
+                {},
+                {
+                    "shop a": {
+                        "shop_id": "99",
+                        "shop_name": "Shop A",
+                        "mapping_status": "MAPPED",
+                    }
+                },
+            )
+            rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache={"shops": {}})
+        shop_a = next(r for r in rows if r["shop_id"] == "1")
+        self.assertEqual(shop_a["fastmoss_match_status"], "MAPPED")
 
 
 class HistoricalSobCacheTests(unittest.TestCase):

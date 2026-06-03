@@ -16,7 +16,79 @@
   let filters = defaultFilters();
 
   function defaultFilters() {
-    return { q: "", mapped: "all", category: "all", sort: "shop_name" };
+    return { q: "", rm: "all", gp: "all", mapped: "all", category: "all", sort: "shop_name" };
+  }
+
+  function sheetFilters() {
+    return {
+      rm: payload?.rm_filter || payload?.sheet_filters?.rm_filter || {
+        options: [{ value: "all", label: "All RM" }],
+        by_rm: {},
+      },
+      gp: payload?.gp_filter || payload?.sheet_filters?.gp_filter || {
+        options: [{ value: "all", label: "All GP" }],
+        by_gp: {},
+        gp_names_by_rm: {},
+      },
+    };
+  }
+
+  function gpFilterForRm(gpFilter, rmValue) {
+    const base = gpFilter || { options: [{ value: "all", label: "All GP" }], by_gp: {} };
+    if (!rmValue || rmValue === "all") return base;
+    const names = base.gp_names_by_rm?.[rmValue] || [];
+    return {
+      ...base,
+      options: [
+        { value: "all", label: "All GP" },
+        ...names.map((gp) => ({ value: gp, label: gp })),
+      ],
+    };
+  }
+
+  function coerceGpForRm(f) {
+    const sf = sheetFilters();
+    const rm = f.rm || "all";
+    const gp = f.gp || "all";
+    if (rm === "all" || gp === "all") return f;
+    const allowed = sf.gp?.gp_names_by_rm?.[rm] || [];
+    if (!allowed.includes(gp)) return { ...f, gp: "all" };
+    return f;
+  }
+
+  function normalizeShopKey(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+  }
+
+  function matchesRmFilter(s, rmValue, rmFilter) {
+    if (!rmValue || rmValue === "all") return true;
+    const allowed = rmFilter?.by_rm?.[rmValue];
+    if (!allowed || !allowed.length) return false;
+    const set = new Set(allowed);
+    const keys = [normalizeShopKey(s.shop_name), normalizeShopKey(s.tiktok_shop_name)].filter(Boolean);
+    return keys.some((k) => set.has(k));
+  }
+
+  function matchesGpFilter(s, gpValue, gpFilter) {
+    if (!gpValue || gpValue === "all") return true;
+    const allowed = gpFilter?.by_gp?.[gpValue];
+    if (!allowed || !allowed.length) return false;
+    const set = new Set(allowed);
+    const keys = [normalizeShopKey(s.shop_name), normalizeShopKey(s.tiktok_shop_name)].filter(Boolean);
+    return keys.some((k) => set.has(k));
+  }
+
+  function filterSelectOptionsHtml(filterDef, selected, fallbackLabel) {
+    const options = filterDef?.options || [{ value: "all", label: fallbackLabel }];
+    return options
+      .map(
+        (opt) =>
+          `<option value="${escapeHtml(opt.value)}"${opt.value === selected ? " selected" : ""}>${escapeHtml(opt.label)}</option>`
+      )
+      .join("");
   }
 
   function i18n(key, fallback = "") {
@@ -114,14 +186,17 @@
   }
 
   function isMapped(row) {
-    return String(row.mapping_status || "").toUpperCase() === "APPROVED";
+    return String(row.fastmoss_match_status || row.mapping_status || "").toUpperCase() === "MAPPED";
   }
 
   function filterSellers(rows) {
     const q = filters.q.trim().toLowerCase();
+    const sf = sheetFilters();
     return sortSellers(
       (rows || []).filter((row) => {
         if (q && !sellerSearchBlob(row).includes(q)) return false;
+        if (!matchesRmFilter(row, filters.rm, sf.rm)) return false;
+        if (!matchesGpFilter(row, filters.gp, sf.gp)) return false;
         if (filters.mapped === "mapped" && !isMapped(row)) return false;
         if (filters.mapped === "not_mapped" && isMapped(row)) return false;
         const cat = row.category || i18n("historicalSob.uncategorized", "Uncategorized");
@@ -165,15 +240,14 @@
     return copy;
   }
 
-  function mappingReviewBadge(row) {
-    const status = String(row.mapping_status || "").toUpperCase();
+  function fastmossStatusBadge(status) {
     const map = {
-      APPROVED: ["si-v1-badge--ok", "Mapped"],
-      PENDING_REVIEW: ["si-v1-badge--warn", "Pending review"],
-      REJECTED: ["si-v1-badge--risk", "Rejected"],
-      NOT_MAPPED: ["si-v1-badge--muted", "Not mapped"],
+      MAPPED: ["si-v1-badge--ok", "Mapped"],
+      NEED_REVIEW: ["si-v1-badge--warn", "Need review"],
+      NOT_FOUND: ["si-v1-badge--risk", "Not found"],
     };
-    const [cls, label] = map[status] || ["si-v1-badge--muted", status || "—"];
+    const key = String(status || "").toUpperCase();
+    const [cls, label] = map[key] || ["si-v1-badge--muted", status || "—"];
     return `<span class="si-v1-badge ${cls}">${escapeHtml(label)}</span>`;
   }
 
@@ -369,7 +443,8 @@
         <dl class="si-detail-grid si-detail-grid--compact">
           <div class="si-detail-cell"><dt>TikTok Shop Name</dt><dd>${fmtDetail(row.tiktok_shop_name)}</dd></div>
           <div class="si-detail-cell"><dt>FastMoss Matched Shop</dt><dd>${fmtDetail(row.fastmoss_shop_name)}</dd></div>
-          <div class="si-detail-cell"><dt>Mapping Status</dt><dd>${mappingReviewBadge(row)}</dd></div>
+          <div class="si-detail-cell"><dt>FastMoss Status</dt><dd>${fastmossStatusBadge(row.fastmoss_match_status)}</dd></div>
+          <div class="si-detail-cell"><dt>Review Status</dt><dd>${fmtDetail(row.fastmoss_review_status || "—")}</dd></div>
           <div class="si-detail-cell"><dt>Category</dt><dd>${fmtDetail(row.category || i18n("historicalSob.uncategorized", "Uncategorized"))}</dd></div>
         </dl>
         <div class="si-biz-sob-card">
@@ -427,7 +502,7 @@
           <td class="si-biz-toggle-cell"><span class="si-biz-toggle" aria-hidden="true">▶</span></td>
           <td>${escapeHtml(row.shop_id)}</td>
           <td class="si-biz-name">${escapeHtml(row.shop_name)}</td>
-          <td>${mappingReviewBadge(row)}</td>
+          <td>${fastmossStatusBadge(row.fastmoss_match_status)}</td>
           ${renderInlineSobBarCell(row.april_shopee_sob_percent, row.april_tiktok_sob_percent)}
           ${renderInlineSobBarCell(row.may_shopee_sob_percent, row.may_tiktok_sob_percent)}
           <td class="si-v1-num">${escapeHtml(fmtChange(row.sob_change_pp))}</td>
@@ -469,48 +544,94 @@
       </div>`;
   }
 
-  function toolbarHtml(f) {
+  function categoryOptionsHtml(f) {
     const categories = payload?.filters?.categories || [];
-    const catOpts = [
+    return [
       `<option value="all">${escapeHtml(i18n("historicalSob.categoryAll", "All"))}</option>`,
       ...categories.map(
         (c) =>
           `<option value="${escapeHtml(c)}"${f.category === c ? " selected" : ""}>${escapeHtml(c)}</option>`
       ),
     ].join("");
+  }
 
+  function toolbarFieldsHtml(f) {
+    const sf = sheetFilters();
+    const gpDef = gpFilterForRm(sf.gp, f.rm);
     return `
-      <div class="si-v1-toolbar" data-toolbar="historical-sob">
-        <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
-          <label for="hsFilterSearch">${escapeHtml(i18n("historicalSob.filterSearch", "Seller search"))}</label>
-          <input id="hsFilterSearch" type="search" placeholder="${escapeHtml(i18n("historicalSob.filterSearchPh", "Shop ID, name, TikTok…"))}" value="${escapeHtml(f.q)}" data-f="q" />
-        </div>
-        <div class="si-v1-toolbar-field">
-          <label for="hsFilterMapped">${escapeHtml(i18n("historicalSob.filterStatus", "Status"))}</label>
-          <select id="hsFilterMapped" data-f="mapped">
-            <option value="all"${f.mapped === "all" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusAll", "All"))}</option>
-            <option value="mapped"${f.mapped === "mapped" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusMapped", "Mapped"))}</option>
-            <option value="not_mapped"${f.mapped === "not_mapped" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusNotMapped", "Not Mapped"))}</option>
-          </select>
-        </div>
-        <div class="si-v1-toolbar-field">
-          <label for="hsFilterCategory">${escapeHtml(i18n("historicalSob.filterCategory", "Category"))}</label>
-          <select id="hsFilterCategory" data-f="category">${catOpts}</select>
-        </div>
-        <div class="si-v1-toolbar-field">
-          <label for="hsFilterSort">${escapeHtml(i18n("historicalSob.filterSort", "Sort"))}</label>
-          <select id="hsFilterSort" data-f="sort">
-            <option value="shop_name"${f.sort === "shop_name" ? " selected" : ""}>Shop name</option>
-            <option value="april_sob"${f.sort === "april_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortAprilSob", "April SOB"))}</option>
-            <option value="may_sob"${f.sort === "may_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortMaySob", "May SOB"))}</option>
-            <option value="sob_change"${f.sort === "sob_change" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortChange", "SOB Change"))}</option>
-            <option value="tiktok_sob"${f.sort === "tiktok_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortTiktokSob", "Highest TikTok SOB"))}</option>
-            <option value="shopee_sob"${f.sort === "shopee_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortShopeeSob", "Highest Shopee SOB"))}</option>
-          </select>
-        </div>
-        <button type="button" class="si-v1-btn-reset" data-reset>${escapeHtml(i18n("historicalSob.resetFilters", "Reset filters"))}</button>
-        <p class="si-v1-result-count" data-result-count></p>
+          <div class="si-v1-toolbar-field si-v1-toolbar-field--search">
+            <label for="hsFilterSearch">${escapeHtml(i18n("historicalSob.filterSearch", "Search"))}</label>
+            <input id="hsFilterSearch" type="search" placeholder="${escapeHtml(i18n("historicalSob.filterSearchPh", "Shop ID, name, TikTok…"))}" value="${escapeHtml(f.q)}" data-f="q" />
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="hsFilterRm">RM</label>
+            <select id="hsFilterRm" data-f="rm">${filterSelectOptionsHtml(sf.rm, f.rm, "All RM")}</select>
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="hsFilterGp">GP</label>
+            <select id="hsFilterGp" data-f="gp">${filterSelectOptionsHtml(gpDef, f.gp, "All GP")}</select>
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="hsFilterMapped">${escapeHtml(i18n("historicalSob.filterStatus", "Status"))}</label>
+            <select id="hsFilterMapped" data-f="mapped">
+              <option value="all"${f.mapped === "all" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusAll", "All"))}</option>
+              <option value="mapped"${f.mapped === "mapped" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusMapped", "Mapped"))}</option>
+              <option value="not_mapped"${f.mapped === "not_mapped" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.statusNotMapped", "Not Mapped"))}</option>
+            </select>
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="hsFilterCategory">${escapeHtml(i18n("historicalSob.filterCategory", "Category"))}</label>
+            <select id="hsFilterCategory" data-f="category">${categoryOptionsHtml(f)}</select>
+          </div>
+          <div class="si-v1-toolbar-field">
+            <label for="hsFilterSort">${escapeHtml(i18n("historicalSob.filterSort", "Sort"))}</label>
+            <select id="hsFilterSort" data-f="sort">
+              <option value="shop_name"${f.sort === "shop_name" ? " selected" : ""}>Shop name</option>
+              <option value="april_sob"${f.sort === "april_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortAprilSob", "April SOB"))}</option>
+              <option value="may_sob"${f.sort === "may_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortMaySob", "May SOB"))}</option>
+              <option value="sob_change"${f.sort === "sob_change" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortChange", "SOB Change"))}</option>
+              <option value="tiktok_sob"${f.sort === "tiktok_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortTiktokSob", "Highest TikTok SOB"))}</option>
+              <option value="shopee_sob"${f.sort === "shopee_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortShopeeSob", "Highest Shopee SOB"))}</option>
+            </select>
+          </div>
+          <button type="button" class="si-sla-btn-reset" data-reset>${escapeHtml(i18n("historicalSob.resetFilters", "Reset filters"))}</button>`;
+  }
+
+  function filterCardHtml(f) {
+    return `<div class="si-sla-filter-card" data-hs-filter-card>
+        <div class="si-v1-toolbar si-sla-toolbar" data-toolbar="historical-sob">${toolbarFieldsHtml(f)}</div>
+        <p class="si-sla-result-count" data-result-count></p>
       </div>`;
+  }
+
+  function syncFilterControls() {
+    const card = contentEl?.querySelector("[data-hs-filter-card]");
+    const toolbar = card?.querySelector("[data-toolbar='historical-sob']");
+    if (!toolbar) return;
+    filters = coerceGpForRm(filters);
+    const f = filters;
+    const sf = sheetFilters();
+    const q = toolbar.querySelector("[data-f='q']");
+    if (q) q.value = f.q || "";
+    const map = {
+      rm: "hsFilterRm",
+      gp: "hsFilterGp",
+      mapped: "hsFilterMapped",
+      category: "hsFilterCategory",
+      sort: "hsFilterSort",
+    };
+    Object.entries(map).forEach(([key, id]) => {
+      const node = toolbar.querySelector(`#${id}`);
+      if (node) node.value = f[key] || "all";
+    });
+    const rmSel = toolbar.querySelector("#hsFilterRm");
+    if (rmSel) rmSel.innerHTML = filterSelectOptionsHtml(sf.rm, f.rm, "All RM");
+    const gpSel = toolbar.querySelector("#hsFilterGp");
+    if (gpSel) {
+      gpSel.innerHTML = filterSelectOptionsHtml(gpFilterForRm(sf.gp, f.rm), f.gp, "All GP");
+    }
+    const catSel = toolbar.querySelector("#hsFilterCategory");
+    if (catSel) catSel.innerHTML = categoryOptionsHtml(f);
   }
 
   function readFiltersFromToolbar(toolbar) {
@@ -568,12 +689,11 @@
     if (kpiEl) kpiEl.innerHTML = renderKpiGrid();
 
     const listEl = contentEl.querySelector("[data-hs-list]");
-    const toolbarEl = contentEl.querySelector("[data-toolbar]");
-    if (!listEl || !toolbarEl) return;
+    const countEl = contentEl.querySelector("[data-result-count]");
+    if (!listEl) return;
 
     const all = payload.sellers || [];
     const filtered = filterSellers(all);
-    const countEl = toolbarEl.querySelector("[data-result-count]");
     if (countEl) {
       countEl.textContent = `Showing ${filtered.length} of ${all.length} sellers`;
     }
@@ -590,19 +710,26 @@
     if (!contentEl || !payload) return;
     if (!shellReady) {
       contentEl.innerHTML = `
-        <div data-hs-kpis class="hs-page-kpis-wrap">${renderKpiGrid()}</div>
-        ${toolbarHtml(filters)}
-        <div class="si-v1-list" data-hs-list></div>`;
+        <div class="hs-shell">
+          <div data-hs-kpis class="hs-page-kpis-wrap">${renderKpiGrid()}</div>
+          ${filterCardHtml(filters)}
+          <div class="si-v1-list" data-hs-list></div>
+        </div>`;
 
       const onToolbar = (ev) => {
-        if (ev?.reset) filters = defaultFilters();
-        else filters = readFiltersFromToolbar(contentEl.querySelector("[data-toolbar]"));
-        contentEl.querySelector("[data-toolbar]").outerHTML = toolbarHtml(filters);
-        bindToolbar(contentEl.querySelector("[data-toolbar]"), onToolbar);
+        if (ev?.reset) {
+          filters = defaultFilters();
+        } else {
+          const toolbar = contentEl.querySelector("[data-toolbar='historical-sob']");
+          filters = coerceGpForRm(readFiltersFromToolbar(toolbar));
+        }
+        syncFilterControls();
         paintList();
       };
-      bindToolbar(contentEl.querySelector("[data-toolbar]"), onToolbar);
+      bindToolbar(contentEl.querySelector("[data-toolbar='historical-sob']"), onToolbar);
       shellReady = true;
+    } else {
+      syncFilterControls();
     }
     paintList();
   }

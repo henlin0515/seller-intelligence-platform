@@ -7,8 +7,14 @@ import time
 import traceback
 from typing import Any
 
-from seller.fastmoss.mapping import MAPPING_MAPPED, load_fastmoss_mapping
+from seller.fastmoss.mapping import (
+    MAPPING_MAPPED,
+    MAPPING_NEED_REVIEW,
+    MAPPING_NOT_FOUND,
+    load_fastmoss_mapping,
+)
 from seller.fastmoss.review import REVIEW_APPROVED, allows_tiktok_data, get_review_by_shop_id
+from seller.intelligence.gp_shop_rm import normalize_shop_key
 from seller.intelligence.business.calculations import sob_pair, tiktok_php_to_usd
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.historical_sob.collector import fetch_shop_historical_tiktok_gmv
@@ -47,33 +53,85 @@ def _round_sob(value: float | None) -> float | None:
     return round(value, 1)
 
 
-def _mapping_by_shop_id() -> dict[str, dict[str, Any]]:
+_STATUS_RANK = {MAPPING_MAPPED: 3, MAPPING_NEED_REVIEW: 2, MAPPING_NOT_FOUND: 1}
+
+
+def _mapping_status_rank(status: str | None) -> int:
+    return _STATUS_RANK.get(str(status or "").upper(), 0)
+
+
+def _fastmoss_mapping_indexes() -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    """Same fastmoss_mapping.json as Seller Level Analysis — by shop_id and shop name key."""
     try:
         payload = load_fastmoss_mapping()
     except OSError:
-        return {}
-    out: dict[str, dict[str, Any]] = {}
+        return {}, {}
+    by_id: dict[str, dict[str, Any]] = {}
+    by_name: dict[str, dict[str, Any]] = {}
     for row in payload.get("mappings") or []:
         if not isinstance(row, dict):
             continue
         shop_id = str(row.get("shop_id") or "").strip()
         if shop_id:
-            out[shop_id] = row
+            by_id[shop_id] = row
+        for raw_name in (row.get("shop_name"), row.get("tiktok_shop_name")):
+            key = normalize_shop_key(str(raw_name or ""))
+            if not key:
+                continue
+            prev = by_name.get(key)
+            if prev is None or _mapping_status_rank(row.get("mapping_status")) > _mapping_status_rank(
+                prev.get("mapping_status")
+            ):
+                by_name[key] = row
+    return by_id, by_name
+
+
+def resolve_fastmoss_mapping_row(
+    shop_id: str,
+    shop_name: str,
+    *,
+    tiktok_shop_name: str = "",
+    by_id: dict[str, dict[str, Any]] | None = None,
+    by_name: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any] | None:
+    if by_id is None or by_name is None:
+        by_id, by_name = _fastmoss_mapping_indexes()
+    sid = str(shop_id or "").strip()
+    if sid and sid in by_id:
+        return by_id[sid]
+    for raw in (shop_name, tiktok_shop_name):
+        key = normalize_shop_key(str(raw or ""))
+        if key and key in by_name:
+            return by_name[key]
+    return None
+
+
+def _category_by_shop_key(category_mapping: dict[str, Any] | None) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for cat in (category_mapping or {}).get("categories") or []:
+        if not isinstance(cat, dict):
+            continue
+        name = str(cat.get("name") or "").strip()
+        if not name:
+            continue
+        for key in cat.get("shop_keys") or []:
+            sk = str(key or "").strip()
+            if sk:
+                out[sk] = name
     return out
 
 
-def _review_status_for_shop(shop_id: str) -> str:
-    try:
-        review = get_review_by_shop_id(shop_id)
-        if review and review.get("review_status"):
-            return str(review["review_status"])
-    except Exception as exc:
-        logger.warning("Review lookup failed for shop %s: %s", shop_id, exc)
-    mapping = _mapping_by_shop_id().get(str(shop_id)) or {}
-    status = str(mapping.get("mapping_status") or "NOT_FOUND").upper()
-    if status != MAPPING_MAPPED:
-        return "NOT_MAPPED"
-    return "PENDING_REVIEW"
+def _shop_category(
+    *,
+    shop_name: str,
+    tiktok_shop_name: str,
+    category_by_key: dict[str, str],
+) -> str:
+    for raw in (shop_name, tiktok_shop_name):
+        key = normalize_shop_key(str(raw or ""))
+        if key and key in category_by_key:
+            return category_by_key[key]
+    return "Uncategorized"
 
 
 def _shop_sob_row(
@@ -83,6 +141,8 @@ def _shop_sob_row(
     tiktok_shop_name: str,
     mapping_row: dict[str, Any] | None,
     review_status: str,
+    fastmoss_match_status: str,
+    category: str,
     ytd_row: Any | None,
     tiktok_cache: dict[str, Any] | None,
 ) -> dict[str, Any]:
@@ -152,15 +212,13 @@ def _shop_sob_row(
     if april_tiktok_sob is not None and may_tiktok_sob is not None:
         sob_change_pp = _round_sob(float(may_tiktok_sob) - float(april_tiktok_sob))
 
-    category = None
-    if mapping_row:
-        category = mapping_row.get("category") or mapping_row.get("fastmoss_category")
-
     return {
         "shop_id": shop_id,
         "shop_name": shop_name,
         "tiktok_shop_name": tiktok_shop_name,
-        "mapping_status": review_status,
+        "fastmoss_match_status": fastmoss_match_status,
+        "fastmoss_review_status": review_status or None,
+        "mapping_status": fastmoss_match_status,
         "tiktok_mapping_status": review_status,
         "category": category,
         "fastmoss_shop_id": (mapping_row or {}).get("fastmoss_shop_id"),
@@ -190,16 +248,33 @@ def build_historical_sob_rows(
     *,
     ytd: YtdMonthlyLoadResult | None = None,
     tiktok_cache: dict[str, Any] | None = None,
+    category_mapping: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     ytd = ytd or get_ytd_monthly()
-    mappings = _mapping_by_shop_id()
+    by_id, by_name = _fastmoss_mapping_indexes()
+    category_by_key = _category_by_shop_key(category_mapping)
     cache = tiktok_cache if tiktok_cache is not None else load_historical_sob_cache()
     rows: list[dict[str, Any]] = []
 
     for seller in master.sellers:
         shop_id = str(seller.shop_id)
-        mapping_row = mappings.get(shop_id)
-        review_status = _review_status_for_shop(shop_id)
+        mapping_row = resolve_fastmoss_mapping_row(
+            shop_id,
+            seller.shop_name,
+            tiktok_shop_name=seller.tiktok_shop_name,
+            by_id=by_id,
+            by_name=by_name,
+        )
+        review_row = get_review_by_shop_id(shop_id)
+        review_status = str((review_row or {}).get("review_status") or "")
+        fastmoss_match_status = str(
+            (mapping_row or {}).get("mapping_status") or MAPPING_NOT_FOUND
+        ).upper()
+        category = _shop_category(
+            shop_name=seller.shop_name,
+            tiktok_shop_name=seller.tiktok_shop_name,
+            category_by_key=category_by_key,
+        )
         ytd_row = lookup_ytd_record(ytd, shop_name=seller.shop_name, shop_id=shop_id)
         tiktok_row = shop_tiktok_cache_row(cache, shop_id)
         rows.append(
@@ -209,6 +284,8 @@ def build_historical_sob_rows(
                 tiktok_shop_name=seller.tiktok_shop_name,
                 mapping_row=mapping_row,
                 review_status=review_status,
+                fastmoss_match_status=fastmoss_match_status,
+                category=category,
                 ytd_row=ytd_row,
                 tiktok_cache=tiktok_row,
             )
@@ -396,14 +473,22 @@ def _build_payload(
     ytd: YtdMonthlyLoadResult,
     cache: dict[str, Any],
     warnings: list[str],
+    sheet_filters: dict[str, Any] | None = None,
+    category_mapping: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache=cache)
+    rows = build_historical_sob_rows(
+        master,
+        ytd=ytd,
+        tiktok_cache=cache,
+        category_mapping=category_mapping,
+    )
     portfolio = build_portfolio_historical_sob(rows)
     summary = _summary_counts(rows, master, ytd=ytd, cache=cache, portfolio=portfolio)
     categories = sorted(
         {str(r.get("category") or "Uncategorized").strip() for r in rows},
         key=str.lower,
     )
+    sheet_filters = sheet_filters or {}
 
     return {
         "version": "v1",
@@ -441,8 +526,12 @@ def _build_payload(
         "portfolio": portfolio,
         "sellers": rows,
         "na_preview": _na_preview(rows),
+        "sheet_filters": sheet_filters,
+        "rm_filter": sheet_filters.get("rm_filter"),
+        "gp_filter": sheet_filters.get("gp_filter"),
+        "category_mapping": category_mapping or {},
         "filters": {
-            "mapping_statuses": sorted({str(r.get("mapping_status")) for r in rows}),
+            "mapping_statuses": sorted({str(r.get("fastmoss_match_status")) for r in rows}),
             "categories": categories,
         },
     }
@@ -526,7 +615,19 @@ def get_historical_sob_payload(
                 "TikTok April/May GMV not cached yet — click Refresh Data to fetch FastMoss historical GMV."
             )
 
-        return _build_payload(master, ytd=ytd, cache=cache, warnings=warnings)
+        from seller.intelligence.category_raw import get_category_mapping_payload
+        from seller.intelligence.gp_shop_rm import get_sla_sheet_filters_payload
+
+        sheet_filters = get_sla_sheet_filters_payload()
+        category_mapping = get_category_mapping_payload()
+        return _build_payload(
+            master,
+            ytd=ytd,
+            cache=cache,
+            warnings=warnings,
+            sheet_filters=sheet_filters,
+            category_mapping=category_mapping,
+        )
     except Exception as exc:
         tb = traceback.format_exc()
         logger.error("Historical SOB payload failed:\n%s", tb)
