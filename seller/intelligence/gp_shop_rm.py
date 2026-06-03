@@ -58,11 +58,17 @@ def _is_header_row(row: list[Any]) -> bool:
     )
 
 
+def _is_blank_separator_row(row: list[Any]) -> bool:
+    """Fully blank row between GP groups — ends the current GP block."""
+    return not _cell(row, 0) and not _cell(row, 1) and not _cell(row, 2)
+
+
 @dataclass
 class GpShopRmIndex:
     tab: str
     by_rm: dict[str, set[str]] = field(default_factory=dict)
     by_gp: dict[str, set[str]] = field(default_factory=dict)
+    gp_names_column_b: set[str] = field(default_factory=set)
     all_keys: set[str] = field(default_factory=set)
 
     @property
@@ -71,7 +77,8 @@ class GpShopRmIndex:
 
     @property
     def gp_options(self) -> list[str]:
-        return sorted(self.by_gp.keys(), key=lambda x: x.lower())
+        """Unique GP NAME values from Column B only (not shop names from Column C)."""
+        return sorted(self.gp_names_column_b, key=lambda x: x.lower())
 
     def rm_filter_payload(self) -> dict[str, Any]:
         return {
@@ -100,17 +107,27 @@ def parse_gp_shop_rm_rows(
     tab: str = DEFAULT_GP_SHOP_RM_TAB,
 ) -> GpShopRmIndex:
     """
-    Parse grouped RM sheet: forward-fill RM (A) and GP NAME (B); collect SHOP NAME (C).
-    GP names are included in each RM's match set for shop matching.
+    Parse grouped sheet (A=RM, B=GP NAME, C=SHOP NAME).
+
+    - RM (A): forward-fill until a new RM appears.
+    - GP (B): starts a group; forward-fill to following shop rows until the next
+      GP name in B or a fully blank separator row.
+    - Shops (C): only rows with a shop name; never treat blank rows as shops.
+    - GP dropdown options: unique non-empty values from Column B only.
     """
     by_rm: dict[str, set[str]] = {}
     by_gp: dict[str, set[str]] = {}
+    gp_names_column_b: set[str] = set()
     all_keys: set[str] = set()
     current_rm = ""
     current_gp = ""
 
     start = 1 if rows and _is_header_row(rows[0]) else 0
     for row in rows[start:]:
+        if _is_blank_separator_row(row):
+            current_gp = ""
+            continue
+
         rm_cell = _cell(row, 0)
         gp_cell = _cell(row, 1)
         shop_cell = _cell(row, 2)
@@ -119,6 +136,7 @@ def parse_gp_shop_rm_rows(
             current_rm = rm_cell
         if gp_cell:
             current_gp = gp_cell
+            gp_names_column_b.add(gp_cell)
 
         if not shop_cell:
             continue
@@ -143,7 +161,13 @@ def parse_gp_shop_rm_rows(
                 rm_bucket.add(gp_key)
                 all_keys.add(gp_key)
 
-    return GpShopRmIndex(tab=tab, by_rm=by_rm, by_gp=by_gp, all_keys=all_keys)
+    return GpShopRmIndex(
+        tab=tab,
+        by_rm=by_rm,
+        by_gp=by_gp,
+        gp_names_column_b=gp_names_column_b,
+        all_keys=all_keys,
+    )
 
 
 def _seller_keys(shop_name: str, tiktok_shop_name: str = "") -> list[str]:
@@ -185,9 +209,12 @@ def seller_matches_gp(
     """Return True if seller should show for the selected GP filter (Column C shops)."""
     if not gp_value or gp_value == ALL_GP_VALUE:
         return True
-    if index is None or not index.by_gp:
-        return True
-    return _matches_allowed(shop_name, tiktok_shop_name, index.by_gp.get(gp_value))
+    if index is None:
+        return False
+    allowed = index.by_gp.get(gp_value)
+    if not allowed:
+        return False
+    return _matches_allowed(shop_name, tiktok_shop_name, allowed)
 
 
 def _cache_is_fresh(*, now: float | None = None) -> bool:

@@ -89,6 +89,59 @@ class GpShopRmTests(unittest.TestCase):
         self.assertIn(normalize_shop_key("yoyo bags"), uisn)
         self.assertNotIn(normalize_shop_key("Mumu PH"), uisn)
 
+    def test_gp_options_from_column_b_only(self):
+        rows = [
+            ["RM", "GP NAME", "SHOP NAME"],
+            ["rm", "Mumu PH", "Mumu PH"],
+            ["", "", "MUMUSELECT PH"],
+        ]
+        index = parse_gp_shop_rm_rows(rows)
+        self.assertEqual(index.gp_options, ["Mumu PH"])
+        self.assertNotIn("MUMUSELECT PH", index.gp_options)
+
+    def test_blank_separator_ends_gp_group(self):
+        rows = [
+            ["RM", "GP NAME", "SHOP NAME"],
+            ["rm", "Mumu PH", "Mumu PH"],
+            ["", "", "MUMUSELECT PH"],
+            ["", "", ""],
+            ["", "", "ORPHAN SHOP"],
+            ["", "UISN Mall", "UISN Mall"],
+            ["", "", "vovo bags"],
+        ]
+        index = parse_gp_shop_rm_rows(rows)
+        self.assertNotIn("ORPHAN SHOP", {k for names in index.by_gp.values() for k in names})
+        self.assertIn(normalize_shop_key("vovo bags"), index.by_gp["UISN Mall"])
+
+    def test_mumu_ph_sheet_example(self):
+        rows = [
+            ["RM", "GP NAME", "SHOP NAME"],
+            ["frida.wu@shopee", "Mumu PH", "Mumu PH"],
+            ["", "", "MUMUSELECT PH"],
+            ["", "", "LYX SHOP"],
+            ["", "", "HRH PH"],
+            ["", "", "BAGSSHOP"],
+            ["", "", "Elegance&Co.ph"],
+            ["", "", "HJJ.PH"],
+            ["", "", ""],
+            ["", "UISN Mall", "UISN Mall"],
+            ["", "", "vovo bags"],
+        ]
+        index = parse_gp_shop_rm_rows(rows)
+        mumu = index.by_gp["Mumu PH"]
+        for shop in (
+            "Mumu PH",
+            "MUMUSELECT PH",
+            "LYX SHOP",
+            "HRH PH",
+            "BAGSSHOP",
+            "Elegance&Co.ph",
+            "HJJ.PH",
+        ):
+            self.assertIn(normalize_shop_key(shop), mumu, shop)
+        self.assertNotIn(normalize_shop_key("vovo bags"), mumu)
+        self.assertIn(normalize_shop_key("vovo bags"), index.by_gp["UISN Mall"])
+
     def test_gp_filter_payload_options(self):
         index = parse_gp_shop_rm_rows(
             [
@@ -105,12 +158,19 @@ class GpShopRmTests(unittest.TestCase):
         index = GpShopRmIndex(
             tab="t",
             by_gp={"GP A": {normalize_shop_key("Shop One")}},
+            gp_names_column_b={"GP A"},
         )
         self.assertTrue(
             seller_matches_gp(shop_name="shop one", gp_value="GP A", index=index)
         )
         self.assertFalse(
             seller_matches_gp(shop_name="Other", gp_value="GP A", index=index)
+        )
+
+    def test_seller_matches_gp_unknown_gp_hidden(self):
+        index = GpShopRmIndex(tab="t", by_gp={"GP A": {normalize_shop_key("Shop A")}})
+        self.assertFalse(
+            seller_matches_gp(shop_name="Shop A", gp_value="GP Missing", index=index)
         )
 
     def test_rm_and_gp_combined_matching(self):
