@@ -297,6 +297,14 @@
     stats: document.getElementById("siBusinessRefreshStats"),
     time: document.getElementById("siBusinessRefreshTime"),
     error: document.getElementById("siBusinessRefreshError"),
+    details: document.querySelector("[data-sla-refresh-details]"),
+    collapsedSummary: document.querySelector("[data-sla-refresh-collapsed-summary]"),
+    toggleBtn: document.querySelector("[data-sla-refresh-toggle]"),
+  };
+
+  const slaRefreshState = {
+    collapsed: false,
+    lastComplete: null,
   };
 
   function formatElapsedSeconds(sec) {
@@ -323,6 +331,60 @@
 
   function setSlaProgressVisible(visible) {
     slaRefreshUi.panel?.classList.toggle("hidden", !visible);
+  }
+
+  function slaRefreshMappingCounts(result, status) {
+    const mapping = result?.mapping || {};
+    const summary = mapping.summary || status || {};
+    return {
+      mapped: summary.mapped ?? summary.total ?? 0,
+      pending: summary.need_review ?? mapping.pending_review_count ?? status?.pending_review_count ?? 0,
+      notFound: summary.not_found ?? mapping.still_not_found_count ?? status?.still_not_found_count ?? 0,
+      refreshedAt: result?.refreshed_at || status?.refreshed_at || "—",
+    };
+  }
+
+  function renderSlaRefreshCollapsedSummary() {
+    const el = slaRefreshUi.collapsedSummary;
+    const lc = slaRefreshState.lastComplete;
+    if (!el || !lc) return;
+    const counts = slaRefreshMappingCounts(lc.result, lc.status);
+    el.textContent =
+      `Last updated: ${counts.refreshedAt} · Completed 100% · ` +
+      `FastMoss mapped: ${counts.mapped} · Pending review: ${counts.pending} · Not found: ${counts.notFound}`;
+  }
+
+  function setSlaRefreshCollapsed(collapsed) {
+    slaRefreshState.collapsed = collapsed;
+    const panel = slaRefreshUi.panel;
+    if (!panel) return;
+    panel.classList.toggle("is-collapsed", collapsed);
+    slaRefreshUi.details?.classList.toggle("hidden", collapsed);
+    slaRefreshUi.collapsedSummary?.classList.toggle("hidden", !collapsed);
+    const btn = slaRefreshUi.toggleBtn;
+    if (btn) {
+      btn.textContent = collapsed
+        ? i18n("si.refreshExpand", "Expand")
+        : i18n("si.refreshCollapse", "Collapse");
+      btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    }
+    if (collapsed) renderSlaRefreshCollapsedSummary();
+  }
+
+  function setSlaRefreshCollapseAvailable(available) {
+    slaRefreshUi.toggleBtn?.classList.toggle("hidden", !available);
+  }
+
+  function resetSlaRefreshPanelForRun() {
+    slaRefreshState.lastComplete = null;
+    setSlaRefreshCollapsed(false);
+    setSlaRefreshCollapseAvailable(false);
+    slaRefreshUi.collapsedSummary?.classList.add("hidden");
+  }
+
+  function markSlaRefreshComplete(result, status) {
+    slaRefreshState.lastComplete = { result, status };
+    setSlaRefreshCollapseAvailable(true);
   }
 
   function renderSlaProgress(status) {
@@ -585,6 +647,43 @@
     };
   }
 
+  function businessCategoryMapping(data) {
+    return (
+      data?.category_mapping || {
+        categories: [],
+        loaded: false,
+      }
+    );
+  }
+
+  function sellersForCategoryKeys(sellers, shopKeys) {
+    const set = new Set(shopKeys || []);
+    if (!set.size) return [];
+    return (sellers || []).filter((s) => {
+      const keys = [normalizeShopKey(s.shop_name), normalizeShopKey(s.tiktok_shop_name)].filter(
+        Boolean
+      );
+      return keys.some((k) => set.has(k));
+    });
+  }
+
+  function renderSlaCategorySobCard(categoryName, matchedCount, sob) {
+    const head = `<h4 class="si-sla-summary-card__title">${escapeHtml(categoryName)}</h4>`;
+    const countLine = `<p class="si-sla-summary-card__count">${fmtNum(matchedCount)} shops matched</p>`;
+    if (sob?.kind === "na") {
+      return `<article class="si-sla-summary-card si-sla-summary-card--category">${head}${countLine}<p class="si-sla-summary-card__na">${fmtNa("SOB N/A")}</p></article>`;
+    }
+    if (sob?.kind !== "values") {
+      return `<article class="si-sla-summary-card si-sla-summary-card--category">${head}${countLine}<p class="si-sla-summary-card__na">${fmtNa("SOB N/A")}</p></article>`;
+    }
+    return `<article class="si-sla-summary-card si-sla-summary-card--category">
+        ${head}${countLine}
+        <div class="hs-inline-sob si-sla-summary-card__sob">
+          ${renderSlaSobLegendBar(sob.shpPct, sob.tkPct, { barClass: "hs-inline-sob-bar si-sla-summary-sob-bar" })}
+        </div>
+      </article>`;
+  }
+
   function renderSlaSummarySobCard(title, { prompt, selection, sob }) {
     const head = `<h3 class="si-sla-summary-card__title">${escapeHtml(title)}</h3>`;
     if (prompt) {
@@ -643,7 +742,32 @@
       });
     }
 
-    summaryEl.innerHTML = `<div class="si-sla-summary-grid">${gpCard}${rmCard}</div>`;
+    const categoryMapping = businessCategoryMapping(st.raw);
+    const categories = categoryMapping.categories || [];
+    let categorySection = "";
+    if (!categories.length) {
+      categorySection = `<section class="si-sla-category-sob" data-sla-category-sob>
+        <h3 class="si-sla-category-sob__heading">Category SOB</h3>
+        <p class="si-sla-category-sob__empty">Category mapping not loaded from sheet.</p>
+      </section>`;
+    } else {
+      const categoryCards = categories
+        .map((cat) => {
+          const matched = sellersForCategoryKeys(sellers, cat.shop_keys);
+          return renderSlaCategorySobCard(
+            cat.name,
+            matched.length,
+            computeSlaSummarySob(matched)
+          );
+        })
+        .join("");
+      categorySection = `<section class="si-sla-category-sob" data-sla-category-sob>
+        <h3 class="si-sla-category-sob__heading">Category SOB</h3>
+        <div class="si-sla-category-grid">${categoryCards}</div>
+      </section>`;
+    }
+
+    summaryEl.innerHTML = `${categorySection}<div class="si-sla-summary-grid">${gpCard}${rmCard}</div>`;
     animateSobBars(summaryEl);
   }
 
@@ -2292,6 +2416,7 @@
       btn.classList.add("is-loading");
       btn.textContent = i18n("si.dataRefreshing", "Updating…");
     }
+    resetSlaRefreshPanelForRun();
     setSlaProgressVisible(true);
     renderSlaProgress({
       step_label: i18n("si.refreshStarting", "Starting update…"),
@@ -2320,7 +2445,7 @@
         summaryEl.classList.remove("hidden");
       }
       const mapSum = result.mapping?.summary || {};
-      renderSlaProgress({
+      const finalStatus = {
         step_label: i18n("si.refreshComplete", "Completed"),
         percent: 100,
         shops_processed: mapSum.total ?? 0,
@@ -2328,7 +2453,10 @@
         newly_mapped_count: result.mapping?.newly_mapped_count ?? 0,
         pending_review_count: mapSum.need_review ?? 0,
         still_not_found_count: mapSum.not_found ?? 0,
-      });
+        refreshed_at: result.refreshed_at,
+      };
+      renderSlaProgress(finalStatus);
+      markSlaRefreshComplete(result, finalStatus);
       delete cache.siBusiness;
       state.business.shellReady = false;
       await onShow("siBusiness");
@@ -2347,6 +2475,10 @@
 
   document.getElementById("siBusinessRefreshDataBtn")?.addEventListener("click", () => {
     refreshBusinessData().catch(() => {});
+  });
+
+  slaRefreshUi.toggleBtn?.addEventListener("click", () => {
+    setSlaRefreshCollapsed(!slaRefreshState.collapsed);
   });
 
   document.getElementById("siRadarRefreshDataBtn")?.addEventListener("click", () => {

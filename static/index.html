@@ -245,16 +245,29 @@
               role="status"
               aria-live="polite"
             >
-              <div class="si-sla-refresh__head">
-                <span class="si-sla-refresh__step" id="siBusinessRefreshStepLabel">—</span>
-                <span class="si-sla-refresh__pct" id="siBusinessRefreshPercent">0%</span>
+              <div class="si-sla-refresh__toolbar">
+                <p class="si-sla-refresh__collapsed-summary hidden" data-sla-refresh-collapsed-summary></p>
+                <button
+                  type="button"
+                  class="si-sla-refresh__toggle hidden"
+                  data-sla-refresh-toggle
+                  aria-expanded="true"
+                >
+                  Collapse
+                </button>
               </div>
-              <div class="si-sla-refresh__bar" aria-hidden="true">
-                <div class="si-sla-refresh__bar-fill" id="siBusinessRefreshBarFill" style="width: 0%"></div>
+              <div class="si-sla-refresh__details" data-sla-refresh-details>
+                <div class="si-sla-refresh__head">
+                  <span class="si-sla-refresh__step" id="siBusinessRefreshStepLabel">—</span>
+                  <span class="si-sla-refresh__pct" id="siBusinessRefreshPercent">0%</span>
+                </div>
+                <div class="si-sla-refresh__bar" aria-hidden="true">
+                  <div class="si-sla-refresh__bar-fill" id="siBusinessRefreshBarFill" style="width: 0%"></div>
+                </div>
+                <ul class="si-sla-refresh__stats" id="siBusinessRefreshStats"></ul>
+                <p class="si-sla-refresh__time" id="siBusinessRefreshTime">—</p>
+                <p class="si-sla-refresh__error hidden" id="siBusinessRefreshError"></p>
               </div>
-              <ul class="si-sla-refresh__stats" id="siBusinessRefreshStats"></ul>
-              <p class="si-sla-refresh__time" id="siBusinessRefreshTime">—</p>
-              <p class="si-sla-refresh__error hidden" id="siBusinessRefreshError"></p>
             </div>
             <p class="si-v1-meta si-v1-action-summary hidden" id="siBusinessActionSummary" role="status"></p>
           </header>

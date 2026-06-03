@@ -2295,6 +2295,47 @@
 }
 
 /* Seller Level Analysis — Update Data progress */
+.si-sla-refresh__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+
+.si-sla-refresh__collapsed-summary {
+  margin: 0;
+  flex: 1;
+  min-width: 12rem;
+  font-size: 0.72rem;
+  color: #9a9a9e;
+  line-height: 1.4;
+}
+
+.si-sla-refresh__toggle {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #c8c8cc;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.si-sla-refresh__toggle:hover {
+  border-color: rgba(255, 106, 0, 0.45);
+  color: #ff9a4d;
+}
+
+.si-sla-refresh.is-collapsed {
+  padding-bottom: 0.65rem;
+}
+
 .si-sla-refresh {
   margin: 0.75rem 0 0;
   padding: 0.85rem 1rem;
@@ -2487,6 +2528,48 @@
 
 .si-sla-summary-sob {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.si-sla-category-sob__heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9a9a9e;
+}
+
+.si-sla-category-sob__empty {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #7a7a7e;
+}
+
+.si-sla-category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 1100px) {
+  .si-sla-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .si-sla-category-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.si-sla-summary-card__count {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  color: #7a7a7e;
 }
 
 .si-sla-summary-grid {
