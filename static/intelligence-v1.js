@@ -478,6 +478,25 @@
       <span class="si-sla-chip">M-1 ${escapeHtml(periods.m1.start)} → ${escapeHtml(periods.m1.end)}</span>`;
   }
 
+  function renderSlaSobLegendBar(shpPct, tkPct, { barClass = "hs-inline-sob-bar" } = {}) {
+    const shp = clampSobPct(shpPct);
+    const tk = clampSobPct(tkPct);
+    if (shp == null || tk == null) return "";
+    return `
+        <div class="hs-inline-sob-legend">
+          <span class="hs-inline-sob-tag hs-inline-sob-tag--shp">
+            <span class="hs-inline-sob-dot" aria-hidden="true"></span>SHP ${fmtPct(shp)}
+          </span>
+          <span class="hs-inline-sob-tag hs-inline-sob-tag--tk">
+            <span class="hs-inline-sob-dot" aria-hidden="true"></span>TK ${fmtPct(tk)}
+          </span>
+        </div>
+        <div class="si-sob-stack-bar ${barClass}" data-sob-animate="1" data-shp="${shp}" data-tk="${tk}">
+          <div class="si-sob-stack-seg si-sob-stack-seg--shp" style="width:0%" aria-hidden="true"></div>
+          <div class="si-sob-stack-seg si-sob-stack-seg--tk" style="width:0%" aria-hidden="true"></div>
+        </div>`;
+  }
+
   function renderBusinessInlineSobCell(shpPct, tkPct) {
     const shp = clampSobPct(shpPct);
     const tk = clampSobPct(tkPct);
@@ -487,20 +506,105 @@
     return `
       <td class="si-sla-sob-cell">
         <div class="hs-inline-sob">
-          <div class="hs-inline-sob-legend">
-            <span class="hs-inline-sob-tag hs-inline-sob-tag--shp">
-              <span class="hs-inline-sob-dot" aria-hidden="true"></span>SHP ${fmtPct(shp)}
-            </span>
-            <span class="hs-inline-sob-tag hs-inline-sob-tag--tk">
-              <span class="hs-inline-sob-dot" aria-hidden="true"></span>TK ${fmtPct(tk)}
-            </span>
-          </div>
-          <div class="si-sob-stack-bar hs-inline-sob-bar" data-sob-animate="1" data-shp="${shp}" data-tk="${tk}">
-            <div class="si-sob-stack-seg si-sob-stack-seg--shp" style="width:0%" aria-hidden="true"></div>
-            <div class="si-sob-stack-seg si-sob-stack-seg--tk" style="width:0%" aria-hidden="true"></div>
-          </div>
+          ${renderSlaSobLegendBar(shp, tk)}
         </div>
       </td>`;
+  }
+
+  function slaMtdGmvUsd(s, platform) {
+    const field = platform === "shp" ? "shopee_mtd_adgmv_usd" : "tiktok_mtd_adgmv_usd";
+    const v = s[field];
+    if (v == null || v === "" || (typeof v === "number" && Number.isNaN(v))) return 0;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function sellersForRmScope(sellers, rmValue, sheetFilters) {
+    if (!rmValue || rmValue === "all") return [];
+    return (sellers || []).filter((s) => matchesRmFilter(s, rmValue, sheetFilters.rm));
+  }
+
+  function sellersForGpScope(sellers, gpValue, sheetFilters) {
+    if (!gpValue || gpValue === "all") return [];
+    return (sellers || []).filter((s) => matchesGpFilter(s, gpValue, sheetFilters.gp));
+  }
+
+  function computeSlaSummarySob(sellers) {
+    let shpSum = 0;
+    let tkSum = 0;
+    for (const s of sellers || []) {
+      shpSum += slaMtdGmvUsd(s, "shp");
+      tkSum += slaMtdGmvUsd(s, "tk");
+    }
+    const total = shpSum + tkSum;
+    if (total <= 0) return { kind: "na" };
+    return {
+      kind: "values",
+      shpPct: (shpSum / total) * 100,
+      tkPct: (tkSum / total) * 100,
+    };
+  }
+
+  function renderSlaSummarySobCard(title, { prompt, selection, sob }) {
+    const head = `<h3 class="si-sla-summary-card__title">${escapeHtml(title)}</h3>`;
+    if (prompt) {
+      return `<article class="si-sla-summary-card">${head}<p class="si-sla-summary-card__prompt">${escapeHtml(prompt)}</p></article>`;
+    }
+    const sel = selection
+      ? `<p class="si-sla-summary-card__sel">${escapeHtml(selection)}</p>`
+      : "";
+    if (sob?.kind === "na") {
+      return `<article class="si-sla-summary-card">${head}${sel}<p class="si-sla-summary-card__na">${fmtNa("SOB N/A")}</p></article>`;
+    }
+    if (sob?.kind !== "values") {
+      return `<article class="si-sla-summary-card">${head}${sel}<p class="si-sla-summary-card__na">${fmtNa("SOB N/A")}</p></article>`;
+    }
+    return `<article class="si-sla-summary-card">
+        ${head}${sel}
+        <div class="hs-inline-sob si-sla-summary-card__sob">
+          ${renderSlaSobLegendBar(sob.shpPct, sob.tkPct, { barClass: "hs-inline-sob-bar si-sla-summary-sob-bar" })}
+        </div>
+      </article>`;
+  }
+
+  function paintBusinessSummarySob() {
+    const el = containers.siBusiness;
+    const st = state.business;
+    const summaryEl = el?.querySelector("[data-sla-summary-sob]");
+    if (!summaryEl || !st.raw) return;
+
+    const sheetFilters = businessSheetFilters(st.raw);
+    const sellers = st.raw.sellers || [];
+    const f = st.filters;
+
+    let gpCard;
+    if (!f.gp || f.gp === "all") {
+      gpCard = renderSlaSummarySobCard("GP SOB", {
+        prompt: "Select GP to view GP SOB",
+      });
+    } else {
+      const gpSellers = sellersForGpScope(sellers, f.gp, sheetFilters);
+      gpCard = renderSlaSummarySobCard("GP SOB", {
+        selection: f.gp,
+        sob: computeSlaSummarySob(gpSellers),
+      });
+    }
+
+    let rmCard;
+    if (!f.rm || f.rm === "all") {
+      rmCard = renderSlaSummarySobCard("RM SOB", {
+        prompt: "Select RM to view RM SOB",
+      });
+    } else {
+      const rmSellers = sellersForRmScope(sellers, f.rm, sheetFilters);
+      rmCard = renderSlaSummarySobCard("RM SOB", {
+        selection: f.rm,
+        sob: computeSlaSummarySob(rmSellers),
+      });
+    }
+
+    summaryEl.innerHTML = `<div class="si-sla-summary-grid">${gpCard}${rmCard}</div>`;
+    animateSobBars(summaryEl);
   }
 
   async function load(path) {
@@ -1350,6 +1454,7 @@
     const el = containers.siBusiness;
     const st = state.business;
     if (!el || !st.raw) return;
+    paintBusinessSummarySob();
     const listEl = el.querySelector("[data-si-list]");
     if (!listEl) return;
     const filtered = filterBusinessSellers(
@@ -1394,7 +1499,7 @@
       metas.siBusiness.textContent = `${src}${collected} · USD/PHP ${data.usd_php_rate}`;
     }
     if (!state.business.shellReady) {
-      el.innerHTML = `<div class="si-sla-shell">${businessFilterCardHtml(state.business.filters, businessSheetFilters(data))}<div class="si-sla-list" data-si-list></div></div>`;
+      el.innerHTML = `<div class="si-sla-shell">${businessFilterCardHtml(state.business.filters, businessSheetFilters(data))}<div class="si-sla-summary-sob" data-sla-summary-sob aria-live="polite"></div><div class="si-sla-list" data-si-list></div></div>`;
       const onToolbar = (ev) => {
         if (ev?.reset) {
           state.business.filters = defaultBusinessFilters();
@@ -1415,6 +1520,16 @@
       bindToolbar(el.querySelector("[data-toolbar='business']"), onToolbar);
       state.business.shellReady = true;
     } else {
+      if (!el.querySelector("[data-sla-summary-sob]")) {
+        const listEl = el.querySelector("[data-si-list]");
+        if (listEl?.parentNode) {
+          const summary = document.createElement("div");
+          summary.className = "si-sla-summary-sob";
+          summary.setAttribute("data-sla-summary-sob", "");
+          summary.setAttribute("aria-live", "polite");
+          listEl.parentNode.insertBefore(summary, listEl);
+        }
+      }
       syncBusinessFilterControls(el);
     }
     paintBusinessList();
