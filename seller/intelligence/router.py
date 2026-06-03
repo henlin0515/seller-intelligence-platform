@@ -269,6 +269,14 @@ async def intelligence_v1_refresh_fastmoss_mapping(force_all: bool = False):
     return await intelligence_v1_refresh_data()
 
 
+@router.post("/refresh-fastmoss-mapping-not-found")
+async def intelligence_v1_refresh_fastmoss_not_found():
+    """Re-run enhanced FastMoss search for NOT_FOUND + NEED_REVIEW (MAPPED rows unchanged)."""
+    from seller.fastmoss.mapping import refresh_unresolved_fastmoss_mapping
+
+    return await asyncio.to_thread(refresh_unresolved_fastmoss_mapping)
+
+
 @router.get("/mapping-review")
 async def intelligence_v1_mapping_review_list():
     """List FastMoss mapping review rows and summary counts."""

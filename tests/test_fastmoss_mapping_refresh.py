@@ -55,6 +55,18 @@ class FastmossMappingRefreshTests(unittest.TestCase):
             should_retry_fastmoss_mapping(_seller(), existing, force_refresh_all=True)
         )
 
+    def test_unresolved_only_skips_mapped(self):
+        existing = {"mapping_status": MAPPING_MAPPED, "fastmoss_shop_id": "999"}
+        self.assertFalse(
+            should_retry_fastmoss_mapping(_seller(), existing, unresolved_only=True)
+        )
+
+    def test_unresolved_only_retries_need_review(self):
+        existing = {"mapping_status": MAPPING_NEED_REVIEW, "confidence": 0.5}
+        self.assertTrue(
+            should_retry_fastmoss_mapping(_seller(), existing, unresolved_only=True)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

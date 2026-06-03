@@ -6,7 +6,11 @@ import time
 from datetime import date
 from typing import Any
 
-from seller.fastmoss.mapping import MAPPING_MAPPED, load_fastmoss_mapping, refresh_fastmoss_mapping
+from seller.fastmoss.mapping import (
+    MAPPING_MAPPED,
+    load_fastmoss_mapping,
+    refresh_unresolved_fastmoss_mapping,
+)
 from seller.fastmoss.review import (
     REVIEW_APPROVED,
     approved_mapping_rows,
@@ -157,10 +161,12 @@ def refresh_all_intelligence_data() -> dict[str, Any]:
 
     sheet_result = _refresh_all_sheet_caches()
     clear_tiktok_radar_cache()
-    mapping_result = refresh_fastmoss_mapping()
+    # Re-match NOT_FOUND / NEED_REVIEW with multi-keyword search; keep MAPPED rows.
+    mapping_result = refresh_unresolved_fastmoss_mapping()
 
     payload = load_fastmoss_mapping()
     mappings = payload.get("mappings") or []
+    mapping_result["summary"] = payload.get("summary") or {}
     sync_reviews_from_mappings(mappings)
     bi_result = refresh_approved_tiktok_bi()
 

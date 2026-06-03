@@ -172,15 +172,26 @@
     const mapping = data.mapping || data;
     const review = data.review || {};
     const bi = data.tiktok_bi || {};
+    const mapSummary = mapping.summary || {};
     const template = i18n(
       "si.refreshSummary",
       "Approved: {approved} · Pending: {pending} · Rejected: {rejected} · TikTok refreshed: {tiktok}"
     );
-    return template
+    let text = template
       .replace("{approved}", String(review.APPROVED ?? 0))
       .replace("{pending}", String(review.PENDING_REVIEW ?? 0))
       .replace("{rejected}", String(review.REJECTED ?? 0))
       .replace("{tiktok}", String(bi.tiktok_data_refreshed_count ?? mapping.tiktok_data_refreshed_count ?? 0));
+    if (mapSummary.mapped != null) {
+      text += ` · FastMoss mapped: ${mapSummary.mapped}`;
+      if (mapSummary.not_found != null) {
+        text += ` · Not found: ${mapSummary.not_found}`;
+      }
+      if (mapping.newly_mapped_count > 0) {
+        text += ` · Newly mapped: ${mapping.newly_mapped_count}`;
+      }
+    }
+    return text;
   }
 
   function mappingReviewBadge(seller) {

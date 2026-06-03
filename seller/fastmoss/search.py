@@ -51,11 +51,22 @@ def _parse_candidate(row: dict[str, Any]) -> dict[str, Any] | None:
     info = row.get("shop_info") if isinstance(row.get("shop_info"), dict) else row
     shop_id = str(info.get("id") or info.get("seller_id") or row.get("seller_id") or "").strip()
     name = str(info.get("name") or info.get("shop_name") or "").strip()
+    handle = str(
+        info.get("unique_id")
+        or info.get("nickname")
+        or info.get("nick_name")
+        or info.get("seller_name")
+        or row.get("unique_id")
+        or row.get("nickname")
+        or ""
+    ).strip()
     if not shop_id or not name:
         return None
     return {
         "fastmoss_shop_id": shop_id,
         "fastmoss_shop_name": name,
+        "fastmoss_handle": handle or None,
+        "fastmoss_unique_id": str(info.get("unique_id") or row.get("unique_id") or "").strip() or None,
         "fastmoss_shop_url": _shop_detail_url(shop_id),
         "region": str(info.get("region") or row.get("region") or _region()).strip(),
         "seller_company": str(
@@ -145,13 +156,13 @@ def search_shop_candidates(
     page_size: int = 5,
 ) -> list[dict[str, Any]]:
     """Search FastMoss and return top candidates with confidence vs TikTok name."""
-    from seller.fastmoss.mapping import _name_similarity
+    from seller.fastmoss.match_scoring import candidate_similarity
 
     query_name = (tiktok_shop_name or keyword or "").strip()
     rows = search_shops(keyword, page_size=max(page_size, 5))[:page_size]
     out: list[dict[str, Any]] = []
     for row in rows:
-        confidence = round(_name_similarity(query_name, row.get("fastmoss_shop_name", "")), 4)
+        confidence = round(candidate_similarity(query_name, row), 4)
         out.append({**row, "confidence": confidence})
     out.sort(key=lambda item: item.get("confidence") or 0, reverse=True)
     return out
