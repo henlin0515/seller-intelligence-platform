@@ -2342,8 +2342,27 @@
   color: #ff9a4d;
 }
 
+.si-sla-last-updated {
+  font-size: 0.72rem;
+  color: #9a9a9e;
+  white-space: nowrap;
+}
+
+.si-sla-last-updated:empty {
+  display: none;
+}
+
 .si-sla-refresh.is-collapsed {
-  padding-bottom: 0.65rem;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.si-sla-refresh.is-collapsed .si-sla-refresh__details {
+  display: none !important;
+}
+
+.si-sla-refresh.is-collapsed .si-sla-refresh__toolbar {
+  margin-bottom: 0;
 }
 
 .si-sla-refresh {
@@ -2352,6 +2371,14 @@
   border-radius: 8px;
   border: 1px solid rgba(255, 106, 0, 0.35);
   background: rgba(12, 14, 22, 0.85);
+}
+
+.si-sla-refresh__toolbar {
+  display: none;
+}
+
+.si-sla-refresh.has-update-toolbar .si-sla-refresh__toolbar {
+  display: flex;
 }
 
 .si-sla-refresh__head {

@@ -699,6 +699,7 @@ def _build_payload(
     warnings: list[str],
     sheet_filters: dict[str, Any] | None = None,
     category_mapping: dict[str, Any] | None = None,
+    sla_update_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     rows = build_historical_sob_rows(
         master,
@@ -754,6 +755,7 @@ def _build_payload(
         "rm_filter": sheet_filters.get("rm_filter"),
         "gp_filter": sheet_filters.get("gp_filter"),
         "category_mapping": category_mapping or {},
+        "sla_update_state": sla_update_state or {},
         "filters": {
             "mapping_statuses": sorted({str(r.get("fastmoss_match_status")) for r in rows}),
             "categories": categories,
@@ -839,6 +841,7 @@ def get_historical_sob_payload(
                 "TikTok April/May GMV not cached yet — click Refresh Data to fetch FastMoss historical GMV."
             )
 
+        from seller.intelligence.business.sla_update_state import get_sla_update_state_for_api
         from seller.intelligence.category_raw import get_category_mapping_payload
         from seller.intelligence.gp_shop_rm import get_sla_sheet_filters_payload
 
@@ -851,6 +854,7 @@ def get_historical_sob_payload(
             warnings=warnings,
             sheet_filters=sheet_filters,
             category_mapping=category_mapping,
+            sla_update_state=get_sla_update_state_for_api(),
         )
     except Exception as exc:
         tb = traceback.format_exc()

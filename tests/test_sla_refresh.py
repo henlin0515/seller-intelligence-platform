@@ -21,7 +21,7 @@ def _seller(**kwargs) -> SellerMasterRecord:
 
 class SlaRefreshTests(unittest.TestCase):
     def test_steps_count(self):
-        self.assertEqual(len(STEPS), 8)
+        self.assertEqual(len(STEPS), 9)
         self.assertEqual(STEPS[0][0], "seller_master")
 
     def test_categorize_not_found_and_preserved(self):

@@ -5,8 +5,7 @@
   const API = "/api/intelligence/v1/historical-sob";
   const contentEl = document.getElementById("siHistoricalSobContent");
   const metaEl = document.getElementById("siHistoricalSobMeta");
-  const summaryEl = document.getElementById("siHistoricalSobActionSummary");
-  const refreshBtn = document.getElementById("siHistoricalSobRefreshDataBtn");
+  const headerLastUpdatedEl = document.getElementById("siHistoricalSobLastUpdated");
 
   const SOB_INBAR_MIN = 14;
 
@@ -14,6 +13,7 @@
   let shellReady = false;
   let expanded = new Set();
   let filters = defaultFilters();
+  let slaUpdateListenerBound = false;
 
   function defaultFilters() {
     return { q: "", rm: "all", gp: "all", status: "all", category: "all", sort: "shop_name" };
@@ -190,17 +190,6 @@
     } catch {
       return i18n("historicalSob.lastUpdatedUnknown", "Last updated: —");
     }
-  }
-
-  function formatMappingSummary(data) {
-    const hs = data?.historical_sob || {};
-    const summary = hs.summary || {};
-    return i18n(
-      "historicalSob.refreshSummary",
-      "YTD matched: {matched} · TikTok cached: {tiktok}"
-    )
-      .replace("{matched}", String(summary.ytd_matched_count ?? "—"))
-      .replace("{tiktok}", String(summary.tiktok_may_gmv_fetched_count ?? "—"));
   }
 
   function sellerSearchBlob(row) {
@@ -977,11 +966,25 @@
     paintList();
   }
 
+  function applySharedSlaUpdateFromPayload(data) {
+    const sla = data?.sla_update_state;
+    if (window.ShpIntelligenceV1?.applySharedSlaUpdateState) {
+      window.ShpIntelligenceV1.applySharedSlaUpdateState(sla, { headerEl: headerLastUpdatedEl });
+      return;
+    }
+    if (!headerLastUpdatedEl || !sla?.completed) return;
+    const iso = sla.refreshed_at || sla.finished_at;
+    const fmt = window.ShpIntelligenceV1?.formatSlaLastUpdatedHeader?.(iso) || iso || "";
+    if (fmt) {
+      headerLastUpdatedEl.textContent = `${i18n("si.lastUpdated", "Last updated:")} ${fmt}`;
+    }
+  }
+
   function updateMeta() {
+    if (payload) applySharedSlaUpdateFromPayload(payload);
     if (!metaEl || !payload) return;
     metaEl.textContent = [
       i18n("historicalSob.metaPeriod", "April 2026 · May 2026"),
-      formatLastUpdated(payload.cache_updated_at || payload.refreshed_at),
       payload.ytd_tab ? `YTD: ${payload.ytd_tab}` : "",
       payload.usd_php_rate != null ? `USD/PHP ${payload.usd_php_rate}` : "",
     ]
@@ -1036,43 +1039,17 @@
     }
   }
 
-  async function refreshData() {
-    const defaultLabel = i18n("si.refreshData", "Refresh Data");
-    if (refreshBtn) {
-      refreshBtn.disabled = true;
-      refreshBtn.classList.add("is-loading");
-      refreshBtn.textContent = i18n("si.dataRefreshing", "Refreshing…");
-    }
-    try {
-      let data;
-      if (window.ShpPlatform?.refreshAllSheetData) {
-        data = await window.ShpPlatform.refreshAllSheetData();
-      } else {
-        data = await fetchApi("/api/intelligence/v1/refresh-data", { method: "POST" });
-      }
-      if (summaryEl) {
-        summaryEl.textContent = formatMappingSummary(data);
-        summaryEl.classList.remove("hidden");
-      }
-      payload = null;
-      shellReady = false;
-      expanded.clear();
-      await load(true);
-      return data;
-    } catch (err) {
-      window.ShpPlatform?.showPlatformToast?.(err.message || "Refresh failed", "error");
-      throw err;
-    } finally {
-      if (refreshBtn) {
-        refreshBtn.disabled = false;
-        refreshBtn.classList.remove("is-loading");
-        refreshBtn.textContent = defaultLabel;
-      }
-    }
-  }
-
   function init() {
     load(false).catch(() => {});
+    if (!slaUpdateListenerBound) {
+      slaUpdateListenerBound = true;
+      document.addEventListener("sla-update-complete", () => {
+        payload = null;
+        shellReady = false;
+        expanded.clear();
+        load(true).catch(() => {});
+      });
+    }
   }
 
   function clearCache() {
@@ -1082,9 +1059,5 @@
     filters = defaultFilters();
   }
 
-  refreshBtn?.addEventListener("click", () => {
-    refreshData().catch(() => {});
-  });
-
-  window.ShpHistoricalSob = { init, load, clearCache, refreshData };
+  window.ShpHistoricalSob = { init, load, clearCache };
 })();

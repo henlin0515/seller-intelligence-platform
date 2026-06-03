@@ -296,6 +296,7 @@
 
   const slaRefreshUi = {
     panel: document.getElementById("siBusinessRefreshProgress"),
+    headerLastUpdated: document.getElementById("siBusinessLastUpdated"),
     stepLabel: document.getElementById("siBusinessRefreshStepLabel"),
     percent: document.getElementById("siBusinessRefreshPercent"),
     barFill: document.getElementById("siBusinessRefreshBarFill"),
@@ -338,6 +339,23 @@
     slaRefreshUi.panel?.classList.toggle("hidden", !visible);
   }
 
+  function formatSlaLastUpdatedHeader(iso) {
+    if (!iso || iso === "—") return "";
+    try {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return String(iso);
+      const y = d.getFullYear();
+      const m = d.getMonth() + 1;
+      const day = d.getDate();
+      const h = String(d.getHours()).padStart(2, "0");
+      const min = String(d.getMinutes()).padStart(2, "0");
+      const s = String(d.getSeconds()).padStart(2, "0");
+      return `${y}/${m}/${day} ${h}:${min}:${s}`;
+    } catch {
+      return String(iso);
+    }
+  }
+
   function slaRefreshMappingCounts(result, status) {
     const mapping = result?.mapping || {};
     const summary = mapping.summary || status || {};
@@ -345,8 +363,27 @@
       mapped: summary.mapped ?? summary.total ?? 0,
       pending: summary.need_review ?? mapping.pending_review_count ?? status?.pending_review_count ?? 0,
       notFound: summary.not_found ?? mapping.still_not_found_count ?? status?.still_not_found_count ?? 0,
-      refreshedAt: result?.refreshed_at || status?.refreshed_at || "—",
+      newlyMapped: mapping.newly_mapped_count ?? status?.newly_mapped_count ?? 0,
+      refreshedAt: result?.refreshed_at || status?.refreshed_at || status?.finished_at || "—",
     };
+  }
+
+  function setSharedSlaLastUpdatedHeader(iso, targetEl) {
+    const el = targetEl || slaRefreshUi.headerLastUpdated;
+    if (!el) return;
+    const formatted = formatSlaLastUpdatedHeader(iso);
+    if (!formatted) {
+      el.textContent = "";
+      return;
+    }
+    const prefix = i18n("si.lastUpdated", "Last updated:");
+    el.textContent = `${prefix} ${formatted}`;
+  }
+
+  function applySharedSlaUpdateState(slaState, { headerEl } = {}) {
+    if (!slaState?.completed) return;
+    const iso = slaState.refreshed_at || slaState.finished_at;
+    setSharedSlaLastUpdatedHeader(iso, headerEl || slaRefreshUi.headerLastUpdated);
   }
 
   function renderSlaRefreshCollapsedSummary() {
@@ -355,9 +392,14 @@
     if (!el || !lc) return;
     const counts = slaRefreshMappingCounts(lc.result, lc.status);
     const pct = Math.min(100, Math.max(0, Number(lc.status?.percent) || 100));
+    const lastLabel = formatSlaLastUpdatedHeader(counts.refreshedAt) || counts.refreshedAt;
     el.textContent =
-      `Last update completed at: ${counts.refreshedAt} · Completed ${pct}% · ` +
-      `FastMoss mapped: ${counts.mapped} · Pending review: ${counts.pending} · Not found: ${counts.notFound}`;
+      `${i18n("si.lastUpdated", "Last updated:")} ${lastLabel} · ` +
+      `${i18n("si.refreshCompletedPct", "Completed")} ${pct.toFixed(0)}% · ` +
+      `FastMoss mapped: ${counts.mapped} · ` +
+      `Pending review: ${counts.pending} · ` +
+      `Not found: ${counts.notFound} · ` +
+      `Newly mapped: ${counts.newlyMapped}`;
   }
 
   function slaStatusFromPersisted(ps) {
@@ -389,14 +431,9 @@
     renderSlaProgress(status);
     setSlaRefreshCollapseAvailable(true);
     setSlaRefreshCollapsed(true);
+    applySharedSlaUpdateState(ps);
     const summaryEl = document.getElementById("siBusinessActionSummary");
-    if (summaryEl) {
-      summaryEl.textContent =
-        ps.display_line ||
-        result.completion_message ||
-        formatSlaCompletionSummary(result);
-      summaryEl.classList.remove("hidden");
-    }
+    if (summaryEl) summaryEl.classList.add("hidden");
   }
 
   function setSlaRefreshCollapsed(collapsed) {
@@ -417,6 +454,7 @@
   }
 
   function setSlaRefreshCollapseAvailable(available) {
+    slaRefreshUi.panel?.classList.toggle("has-update-toolbar", !!available);
     slaRefreshUi.toggleBtn?.classList.toggle("hidden", !available);
   }
 
@@ -425,6 +463,7 @@
     setSlaRefreshCollapsed(false);
     setSlaRefreshCollapseAvailable(false);
     slaRefreshUi.collapsedSummary?.classList.add("hidden");
+    slaRefreshUi.panel?.classList.remove("has-update-toolbar");
   }
 
   function markSlaRefreshComplete(result, status) {
@@ -2495,7 +2534,6 @@
 
   async function refreshBusinessData() {
     const btn = document.getElementById("siBusinessRefreshDataBtn");
-    const summaryEl = document.getElementById("siBusinessActionSummary");
     const defaultLabel = i18n("si.refreshData", "Update Data");
     if (btn) {
       btn.disabled = true;
@@ -2521,15 +2559,9 @@
         renderSlaProgress(started);
       }
       const result = await pollSlaRefreshUntilDone();
-      const completion =
-        result.completion_message || formatSlaCompletionSummary(result);
       window.ShpPlatform?.showPlatformToast?.(
         i18n("si.dataRefreshSuccess", "Seller Level Analysis updated")
       );
-      if (summaryEl) {
-        summaryEl.textContent = completion;
-        summaryEl.classList.remove("hidden");
-      }
       const mapSum = result.mapping?.summary || {};
       const finalStatus = {
         step_label: i18n("si.refreshComplete", "Completed"),
@@ -2544,6 +2576,13 @@
       renderSlaProgress(finalStatus);
       markSlaRefreshComplete(result, finalStatus);
       setSlaRefreshCollapsed(true);
+      setSharedSlaLastUpdatedHeader(result.refreshed_at);
+      const summaryEl = document.getElementById("siBusinessActionSummary");
+      if (summaryEl) summaryEl.classList.add("hidden");
+      window.ShpHistoricalSob?.clearCache?.();
+      document.dispatchEvent(
+        new CustomEvent("sla-update-complete", { detail: { result, status: finalStatus } })
+      );
       delete cache.siBusiness;
       state.business.shellReady = false;
       await onShow("siBusiness");
@@ -2587,5 +2626,8 @@
     },
     refreshBusinessData,
     refreshRadarProducts: () => loadAssortmentView({ refreshProducts: true }),
+    formatSlaLastUpdatedHeader,
+    applySharedSlaUpdateState,
+    setSharedSlaLastUpdatedHeader,
   };
 })();

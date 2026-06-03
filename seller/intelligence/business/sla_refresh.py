@@ -44,7 +44,7 @@ _state: dict[str, Any] = {
     "step_id": None,
     "step_label": None,
     "step_index": 0,
-    "step_count": 8,
+    "step_count": 9,
     "percent": 0,
     "shops_processed": 0,
     "shops_total": 0,
@@ -71,6 +71,7 @@ STEPS: list[tuple[str, str]] = [
     ("preserve_mapped", "Preserving existing MAPPED shops"),
     ("save_mapping", "Updating FastMoss mapping storage"),
     ("reload_sla", "Reloading Seller Level Analysis data"),
+    ("historical_sob", "Refreshing Historical SOB"),
     ("completed", "Completed"),
 ]
 
@@ -422,6 +423,17 @@ def run_sla_refresh_job() -> dict[str, Any]:
         )
         save_business_intelligence_data(bi_data)
 
+        _begin_step("historical_sob")
+        historical_sob_result: dict[str, Any] = {}
+        try:
+            from seller.intelligence.historical_sob import refresh_historical_sob
+
+            historical_sob_result = refresh_historical_sob(force=True)
+            _set_state(percent=_percent_for("historical_sob", sub=1.0))
+        except Exception as exc:
+            logger.warning("Historical SOB refresh during SLA update failed: %s", exc)
+            historical_sob_result = {"success": False, "error": str(exc)}
+
         review = review_summary()
         refreshed_at = _utc_now()
         result = {
@@ -442,6 +454,7 @@ def run_sla_refresh_job() -> dict[str, Any]:
                 "collection_success": success,
                 "failed_count": bi_failed,
             },
+            "historical_sob": historical_sob_result,
             "completion_message": (
                 f"FastMoss mapped: {summary['mapped']} · "
                 f"Pending review: {summary['need_review']} · "
