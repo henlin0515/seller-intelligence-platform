@@ -673,38 +673,51 @@
       </td>`;
   }
 
+  /**
+   * MTD ADGMV for summary totals. NA / missing platform GMV => 0 (not excluded from scope).
+   */
   function slaMtdGmvUsd(s, platform) {
     const field = platform === "shp" ? "shopee_mtd_adgmv_usd" : "tiktok_mtd_adgmv_usd";
     const v = s[field];
     if (v == null || v === "" || (typeof v === "number" && Number.isNaN(v))) return 0;
     const n = Number(v);
-    return Number.isFinite(n) ? n : 0;
+    return Number.isFinite(n) && n > 0 ? n : 0;
   }
 
-  function sellersForRmScope(sellers, rmValue, sheetFilters) {
-    if (!rmValue || rmValue === "all") return [];
-    return (sellers || []).filter((s) => matchesRmFilter(s, rmValue, sheetFilters.rm));
-  }
-
-  function sellersForGpScope(sellers, gpValue, sheetFilters) {
-    if (!gpValue || gpValue === "all") return [];
-    return (sellers || []).filter((s) => matchesGpFilter(s, gpValue, sheetFilters.gp));
-  }
-
+  /**
+   * Summary SOB from summed MTD GMV in the current scope — never averages row SOB %.
+   *
+   * Shopee SOB = sum(Shopee MTD) / (sum(Shopee MTD) + sum(TikTok MTD))
+   * TikTok SOB = sum(TikTok MTD) / (sum(Shopee MTD) + sum(TikTok MTD))
+   */
   function computeSlaSummarySob(sellers) {
-    let shpSum = 0;
-    let tkSum = 0;
+    let shopeeGmvUsd = 0;
+    let tiktokGmvUsd = 0;
     for (const s of sellers || []) {
-      shpSum += slaMtdGmvUsd(s, "shp");
-      tkSum += slaMtdGmvUsd(s, "tk");
+      shopeeGmvUsd += slaMtdGmvUsd(s, "shp");
+      tiktokGmvUsd += slaMtdGmvUsd(s, "tk");
     }
-    const total = shpSum + tkSum;
-    if (total <= 0) return { kind: "na" };
+    const totalGmv = shopeeGmvUsd + tiktokGmvUsd;
+    if (totalGmv <= 0) return { kind: "na", shopCount: (sellers || []).length };
     return {
       kind: "values",
-      shpPct: (shpSum / total) * 100,
-      tkPct: (tkSum / total) * 100,
+      shpPct: (shopeeGmvUsd / totalGmv) * 100,
+      tkPct: (tiktokGmvUsd / totalGmv) * 100,
+      shopeeGmvUsd,
+      tiktokGmvUsd,
+      shopCount: (sellers || []).length,
     };
+  }
+
+  function slaFilteredScopeLabel(filtered, filters) {
+    const n = filtered.length;
+    const bits = [`${n} shop${n === 1 ? "" : "s"}`];
+    if (filters.gp && filters.gp !== "all") bits.push(`GP: ${filters.gp}`);
+    if (filters.rm && filters.rm !== "all") bits.push(`RM: ${filters.rm}`);
+    if (filters.q?.trim()) bits.push("search");
+    if (filters.status && filters.status !== "all") bits.push(filters.status);
+    if (filters.risk && filters.risk !== "all") bits.push(filters.risk);
+    return bits.join(" · ");
   }
 
   function businessCategoryMapping(data) {
@@ -777,6 +790,13 @@
     const f = st.filters;
     const filtered = filterBusinessSellers(sellers, f, sheetFilters);
     const filteredIds = new Set(filtered.map((s) => String(s.shop_id)));
+    const scopeSob = computeSlaSummarySob(filtered);
+    const scopeLabel = slaFilteredScopeLabel(filtered, f);
+
+    const overallCard = renderSlaSummarySobCard("Overall SOB", {
+      selection: scopeLabel,
+      sob: scopeSob,
+    });
 
     let gpCard;
     if (!f.gp || f.gp === "all") {
@@ -785,8 +805,8 @@
       });
     } else {
       gpCard = renderSlaSummarySobCard("GP SOB", {
-        selection: f.gp,
-        sob: computeSlaSummarySob(filtered),
+        selection: `${f.gp} · ${scopeLabel}`,
+        sob: scopeSob,
       });
     }
 
@@ -797,8 +817,8 @@
       });
     } else {
       rmCard = renderSlaSummarySobCard("RM SOB", {
-        selection: f.rm,
-        sob: computeSlaSummarySob(filtered),
+        selection: `${f.rm} · ${scopeLabel}`,
+        sob: scopeSob,
       });
     }
 
@@ -829,7 +849,7 @@
       </section>`;
     }
 
-    summaryEl.innerHTML = `${categorySection}<div class="si-sla-summary-grid">${gpCard}${rmCard}</div>`;
+    summaryEl.innerHTML = `${categorySection}<div class="si-sla-summary-grid">${overallCard}${gpCard}${rmCard}</div>`;
     animateSobBars(summaryEl);
   }
 

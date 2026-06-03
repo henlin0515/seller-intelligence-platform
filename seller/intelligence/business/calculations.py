@@ -35,6 +35,47 @@ def sob_pair(
     return shopee_sob, tiktok_sob
 
 
+def _gmv_usd_from_row(row: dict, field: str) -> float:
+    value = row.get(field)
+    if value is None or value == "":
+        return 0.0
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    return n if n > 0 else 0.0
+
+
+def aggregate_sob_from_rows(
+    rows: list[dict],
+    *,
+    shopee_field: str = "shopee_mtd_adgmv_usd",
+    tiktok_field: str = "tiktok_mtd_adgmv_usd",
+) -> dict[str, float | None]:
+    """
+    Summary SOB for a scope: sum GMV across rows, then compute SOB.
+
+    Never averages row-level SOB percentages. Missing platform GMV counts as 0.
+    """
+    shopee_total = sum(_gmv_usd_from_row(r, shopee_field) for r in rows)
+    tiktok_total = sum(_gmv_usd_from_row(r, tiktok_field) for r in rows)
+    total = shopee_total + tiktok_total
+    if total <= 0:
+        return {
+            "shopee_gmv_usd": shopee_total,
+            "tiktok_gmv_usd": tiktok_total,
+            "shopee_sob_percent": None,
+            "tiktok_sob_percent": None,
+        }
+    shopee_sob, tiktok_sob = sob_pair(shopee_total, tiktok_total)
+    return {
+        "shopee_gmv_usd": round(shopee_total, 4),
+        "tiktok_gmv_usd": round(tiktok_total, 4),
+        "shopee_sob_percent": _round_pct(shopee_sob),
+        "tiktok_sob_percent": _round_pct(tiktok_sob),
+    }
+
+
 def _round_pct(value: float | None, places: int = 4) -> float | None:
     if value is None:
         return None
