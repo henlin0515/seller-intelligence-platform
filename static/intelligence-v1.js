@@ -99,6 +99,9 @@
 
   function matchesRmFilter(s, rmValue, rmFilter) {
     if (!rmValue || rmValue === "all") return true;
+    const rmNeedle = String(rmValue).trim().toLowerCase();
+    const rowRm = String(s.rm || "").trim().toLowerCase();
+    if (rowRm && rmNeedle && rowRm === rmNeedle) return true;
     const allowed = rmFilter?.by_rm?.[rmValue];
     if (!allowed || !allowed.length) return false;
     const set = new Set(allowed);
@@ -110,6 +113,8 @@
 
   function matchesGpFilter(s, gpValue, gpFilter) {
     if (!gpValue || gpValue === "all") return true;
+    const gpNeedle = normalizeShopKey(gpValue);
+    if (gpNeedle && normalizeShopKey(s.gp_shop_name) === gpNeedle) return true;
     const allowed = gpFilter?.by_gp?.[gpValue];
     if (!allowed || !allowed.length) return false;
     const set = new Set(allowed);
@@ -523,9 +528,13 @@
   }
 
   function mappingReviewBadge(seller) {
+    const source = String(seller.platform_source || "NORMAL").toUpperCase();
+    if (source === "SHOPEE_ONLY" || source === "TIKTOK_ONLY") {
+      return platformSourceBadge(seller);
+    }
     const review = String(seller.fastmoss_review_status || "").toUpperCase();
     if (review === "APPROVED") {
-      return fastmossStatusBadge(seller.fastmoss_match_status);
+      return platformSourceBadge(seller);
     }
     const map = {
       PENDING_REVIEW: ["si-v1-badge--warn", "Pending review"],
@@ -535,7 +544,7 @@
       const [cls, label] = map[review];
       return `<span class="si-v1-badge ${cls}">${escapeHtml(label)}</span>`;
     }
-    return fastmossStatusBadge(seller.fastmoss_match_status);
+    return platformSourceBadge(seller);
   }
 
   function escapeHtml(text) {
@@ -600,6 +609,17 @@
     };
     const [cls, label] = map[status] || ["si-v1-badge--muted", status || "—"];
     return `<span class="si-v1-badge ${cls}">${escapeHtml(label)}</span>`;
+  }
+
+  function platformSourceBadge(s) {
+    const source = String(s.platform_source || "NORMAL").toUpperCase();
+    if (source === "SHOPEE_ONLY") {
+      return `<span class="si-v1-badge si-v1-badge--shopee">Shopee only</span>`;
+    }
+    if (source === "TIKTOK_ONLY") {
+      return `<span class="si-v1-badge si-v1-badge--tiktok">TikTok only</span>`;
+    }
+    return fastmossStatusBadge(s.fastmoss_match_status);
   }
 
   function fmtTikTokUsd(value, gmvPhp, label) {
@@ -755,6 +775,8 @@
     const sheetFilters = businessSheetFilters(st.raw);
     const sellers = st.raw.sellers || [];
     const f = st.filters;
+    const filtered = filterBusinessSellers(sellers, f, sheetFilters);
+    const filteredIds = new Set(filtered.map((s) => String(s.shop_id)));
 
     let gpCard;
     if (!f.gp || f.gp === "all") {
@@ -762,10 +784,9 @@
         prompt: "Select GP to view GP SOB",
       });
     } else {
-      const gpSellers = sellersForGpScope(sellers, f.gp, sheetFilters);
       gpCard = renderSlaSummarySobCard("GP SOB", {
         selection: f.gp,
-        sob: computeSlaSummarySob(gpSellers),
+        sob: computeSlaSummarySob(filtered),
       });
     }
 
@@ -775,10 +796,9 @@
         prompt: "Select RM to view RM SOB",
       });
     } else {
-      const rmSellers = sellersForRmScope(sellers, f.rm, sheetFilters);
       rmCard = renderSlaSummarySobCard("RM SOB", {
         selection: f.rm,
-        sob: computeSlaSummarySob(rmSellers),
+        sob: computeSlaSummarySob(filtered),
       });
     }
 
@@ -793,7 +813,9 @@
     } else {
       const categoryCards = categories
         .map((cat) => {
-          const matched = sellersForCategoryKeys(sellers, cat.shop_keys);
+          const matched = sellersForCategoryKeys(sellers, cat.shop_keys).filter((s) =>
+            filteredIds.has(String(s.shop_id))
+          );
           return renderSlaCategorySobCard(
             cat.name,
             matched.length,
@@ -828,6 +850,9 @@
       s.shop_name,
       s.shopee_link,
       s.tiktok_shop_name,
+      s.gp_shop_id,
+      s.gp_shop_name,
+      s.rm,
     ]
       .filter(Boolean)
       .join(" ")

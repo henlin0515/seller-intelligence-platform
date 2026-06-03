@@ -620,6 +620,16 @@
   color: #3dd68c;
 }
 
+.si-v1-badge--shopee {
+  background: rgba(255, 138, 61, 0.15);
+  color: #ff8a3d;
+}
+
+.si-v1-badge--tiktok {
+  background: rgba(181, 123, 255, 0.15);
+  color: #b57bff;
+}
+
 .si-v1-badge--warn {
   background: rgba(255, 106, 0, 0.15);
   color: #ff9a4d;
