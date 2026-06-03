@@ -118,6 +118,7 @@ async def intelligence_v1_business_refresh_status():
 
 @router.get("/business")
 async def intelligence_v1_business():
+    from seller.intelligence.business.sla_update_state import get_sla_update_state_for_api
     from seller.intelligence.category_raw import get_category_mapping_payload
     from seller.intelligence.gp_shop_rm import get_sla_sheet_filters_payload
 
@@ -140,6 +141,7 @@ async def intelligence_v1_business():
         "rm_filter": sheet_filters.get("rm_filter"),
         "gp_filter": sheet_filters.get("gp_filter"),
         "category_mapping": category_mapping,
+        "sla_update_state": get_sla_update_state_for_api(),
         "summary": {
             "seller_count": len(sellers),
             "tiktok_available": tiktok_available,

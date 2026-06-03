@@ -85,6 +85,20 @@ def get_sla_refresh_status() -> dict[str, Any]:
     with _lock:
         out = deepcopy(_state)
     out["steps"] = [{"id": s[0], "label": s[1]} for s in STEPS]
+    if out.get("running"):
+        return out
+    if out.get("result"):
+        return out
+    from seller.intelligence.business.sla_update_state import (
+        load_sla_update_state,
+        snapshot_to_refresh_status,
+    )
+
+    persisted = load_sla_update_state()
+    if persisted and persisted.get("completed"):
+        merged = snapshot_to_refresh_status(persisted)
+        merged["steps"] = out["steps"]
+        return merged
     return out
 
 
@@ -436,21 +450,33 @@ def run_sla_refresh_job() -> dict[str, Any]:
             ),
         }
 
+        final_status = {
+            "step_id": "completed",
+            "step_label": STEPS[-1][1],
+            "step_index": len(STEPS),
+            "percent": 100.0,
+            "running": False,
+            "finished_at": refreshed_at,
+            "shops_processed": summary.get("total"),
+            "shops_total": summary.get("total"),
+            "pending_review_count": summary["need_review"],
+            "still_not_found_count": summary["not_found"],
+            "newly_mapped_count": counts["newly_mapped_count"],
+            "failed_count": counts["failed_count"],
+            "preserved_mapped_count": preserved,
+            "changed_tiktok_count": changed,
+            "refreshed_at": refreshed_at,
+        }
         _set_state(
-            step_id="completed",
-            step_label=STEPS[-1][1],
-            step_index=len(STEPS),
-            percent=100.0,
-            running=False,
-            finished_at=refreshed_at,
             error=None,
             failed_step_id=None,
             failed_step_label=None,
             result=result,
-            pending_review_count=summary["need_review"],
-            still_not_found_count=summary["not_found"],
-            newly_mapped_count=counts["newly_mapped_count"],
+            **{k: v for k, v in final_status.items() if k != "running"},
         )
+        from seller.intelligence.business.sla_update_state import persist_sla_update_completion
+
+        persist_sla_update_completion(result, final_status)
         return result
     except Exception as exc:
         logger.exception("SLA refresh job failed")

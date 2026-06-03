@@ -349,9 +349,49 @@
     const lc = slaRefreshState.lastComplete;
     if (!el || !lc) return;
     const counts = slaRefreshMappingCounts(lc.result, lc.status);
+    const pct = Math.min(100, Math.max(0, Number(lc.status?.percent) || 100));
     el.textContent =
-      `Last updated: ${counts.refreshedAt} · Completed 100% · ` +
+      `Last update completed at: ${counts.refreshedAt} · Completed ${pct}% · ` +
       `FastMoss mapped: ${counts.mapped} · Pending review: ${counts.pending} · Not found: ${counts.notFound}`;
+  }
+
+  function slaStatusFromPersisted(ps) {
+    const status = ps?.status || {};
+    const summary = ps?.mapping_summary || {};
+    return {
+      step_label: status.step_label || i18n("si.refreshComplete", "Completed"),
+      percent: ps?.percent ?? status.percent ?? 100,
+      shops_processed: ps?.shops_processed ?? status.shops_processed ?? summary.total ?? 0,
+      shops_total: ps?.shops_total ?? status.shops_total ?? summary.total ?? 0,
+      newly_mapped_count: ps?.newly_mapped_count ?? status.newly_mapped_count ?? 0,
+      pending_review_count: ps?.pending_review_count ?? summary.need_review ?? 0,
+      still_not_found_count: ps?.still_not_found_count ?? summary.not_found ?? 0,
+      failed_count: ps?.failed_count ?? 0,
+      preserved_mapped_count: ps?.preserved_mapped_count ?? 0,
+      changed_tiktok_count: ps?.changed_tiktok_count ?? 0,
+      refreshed_at: ps?.refreshed_at,
+      finished_at: ps?.finished_at,
+    };
+  }
+
+  function applyPersistedSlaUpdateState(data) {
+    const ps = data?.sla_update_state;
+    if (!ps?.completed) return;
+    const result = ps.result || {};
+    const status = slaStatusFromPersisted(ps);
+    markSlaRefreshComplete(result, status);
+    setSlaProgressVisible(true);
+    renderSlaProgress(status);
+    setSlaRefreshCollapseAvailable(true);
+    setSlaRefreshCollapsed(true);
+    const summaryEl = document.getElementById("siBusinessActionSummary");
+    if (summaryEl) {
+      summaryEl.textContent =
+        ps.display_line ||
+        result.completion_message ||
+        formatSlaCompletionSummary(result);
+      summaryEl.classList.remove("hidden");
+    }
   }
 
   function setSlaRefreshCollapsed(collapsed) {
@@ -364,7 +404,7 @@
     const btn = slaRefreshUi.toggleBtn;
     if (btn) {
       btn.textContent = collapsed
-        ? i18n("si.refreshExpand", "Expand")
+        ? i18n("si.refreshExpandDetails", "Expand details")
         : i18n("si.refreshCollapse", "Collapse");
       btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
     }
@@ -1729,6 +1769,7 @@
       }
       syncBusinessFilterControls(el);
     }
+    applyPersistedSlaUpdateState(data);
     paintBusinessList();
   }
 
@@ -2457,6 +2498,7 @@
       };
       renderSlaProgress(finalStatus);
       markSlaRefreshComplete(result, finalStatus);
+      setSlaRefreshCollapsed(true);
       delete cache.siBusiness;
       state.business.shellReady = false;
       await onShow("siBusiness");
