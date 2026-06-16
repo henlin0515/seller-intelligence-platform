@@ -103,12 +103,27 @@
     {
       "shop_id": "201629115",
       "shop_name": "Demasia",
-      "tiktok_shop_name": "ACHS AWAKE",
-      "fastmoss_shop_name": "ACHS AWAKE",
-      "fastmoss_shop_id": "7494617615266384751",
-      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494617615266384751",
+      "tiktok_shop_name": "Demasia.ph",
+      "fastmoss_shop_name": "Demasia.ph",
+      "fastmoss_shop_id": "7496106223285078143",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7496106223285078143",
       "mapping_status": "MAPPED",
-      "confidence": 1.0
+      "confidence": 1.0,
+      "search_keyword_used": "Demasia.ph",
+      "search_keywords_tried": [
+        "Demasia.ph",
+        "demasia.ph",
+        "Demasia ph",
+        "demasia ph",
+        "Demasiaph",
+        "demasiaph",
+        "Demasia",
+        "demasia",
+        "ph"
+      ],
+      "failure_reason": null,
+      "match_debug": null,
+      "manual_override": true
     },
     {
       "shop_id": "62404318",

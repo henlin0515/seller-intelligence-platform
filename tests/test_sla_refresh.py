@@ -35,6 +35,7 @@ class SlaRefreshTests(unittest.TestCase):
                 "shop_id": "2",
                 "mapping_status": "MAPPED",
                 "tiktok_shop_name": "Mapped Shop",
+                "fastmoss_shop_name": "Mapped Shop",
                 "fastmoss_shop_id": "99",
             },
         }
@@ -52,6 +53,27 @@ class SlaRefreshTests(unittest.TestCase):
         nf, pending, preserved, changed = _categorize_sellers(sellers, existing)
         self.assertEqual(len(nf), 0)
         self.assertEqual(len(pending), 1)
+        self.assertEqual(preserved, 0)
+
+    def test_categorize_rejected_mapped_goes_to_rematch(self):
+        from unittest.mock import patch
+
+        sellers = [_seller(shop_id="4", tiktok_shop_name="Demasia.ph")]
+        existing = {
+            "4": {
+                "shop_id": "4",
+                "mapping_status": "MAPPED",
+                "tiktok_shop_name": "Demasia.ph",
+                "fastmoss_shop_name": "ACHS AWAKE",
+                "fastmoss_shop_id": "7494617615266384751",
+            },
+        }
+        with patch(
+            "seller.fastmoss.review.get_review_by_shop_id",
+            return_value={"review_status": "REJECTED"},
+        ):
+            nf, pending, preserved, changed = _categorize_sellers(sellers, existing)
+        self.assertEqual(len(nf), 1)
         self.assertEqual(preserved, 0)
 
 
