@@ -838,7 +838,7 @@ def get_historical_sob_payload(
                 warnings.append(f"TikTok historical cache refresh failed: {exc}")
         elif not cache.get("shops"):
             warnings.append(
-                "TikTok April/May GMV not cached yet — click Refresh Data to fetch FastMoss historical GMV."
+                "TikTok April/May GMV not cached yet — run Update Data on Seller Level Analysis once."
             )
 
         from seller.intelligence.business.sla_update_state import get_sla_update_state_for_api

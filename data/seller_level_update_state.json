@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "completed": true,
+  "refreshed_at": "2026-06-16T07:56:52Z",
+  "finished_at": "2026-06-16T07:56:52Z",
+  "percent": 100.0,
+  "shops_processed": 94,
+  "shops_total": 94,
+  "newly_mapped_count": 0,
+  "pending_review_count": 2,
+  "still_not_found_count": 6,
+  "failed_count": 0,
+  "preserved_mapped_count": 86,
+  "changed_tiktok_count": 0,
+  "fastmoss_mapped_count": 86,
+  "mapping_summary": {
+    "total": 94,
+    "mapped": 86,
+    "need_review": 2,
+    "not_found": 6
+  },
+  "result": {
+    "success": true,
+    "refreshed_at": "2026-06-16T07:56:52Z",
+    "mapping": {
+      "summary": {
+        "total": 94,
+        "mapped": 86,
+        "need_review": 2,
+        "not_found": 6
+      },
+      "newly_mapped_count": 0,
+      "still_not_found_count": 6,
+      "pending_review_count": 2,
+      "failed_count": 0,
+      "preserved_mapped_count": 86,
+      "changed_tiktok_count": 0
+    },
+    "review": {
+      "total": 95,
+      "mapped": 87,
+      "APPROVED": 86,
+      "PENDING_REVIEW": 9,
+      "REJECTED": 0
+    },
+    "tiktok_bi": {
+      "tiktok_data_refreshed_count": 85,
+      "collection_success": 85,
+      "failed_count": 0
+    },
+    "historical_sob": {
+      "success": true,
+      "refreshed_at": "2026-06-16T07:56:52Z",
+      "summary": {
+        "master_seller_count": 94,
+        "ytd_monthly_rows_loaded": 291,
+        "ytd_matched_count": 0,
+        "ytd_unmatched_count": 94,
+        "ytd_load_error": null,
+        "tiktok_historical_fetched_count": 88,
+        "tiktok_april_gmv_fetched_count": 88,
+        "tiktok_may_gmv_fetched_count": 88,
+        "april_sob_calculated_count": 0,
+        "may_sob_calculated_count": 0,
+        "april_shopee_gmv_total": null,
+        "may_shopee_gmv_total": null,
+        "april_tiktok_gmv_total": 14565978.2,
+        "may_tiktok_gmv_total": 18019968.89,
+        "april_portfolio_sob_percent": null,
+        "may_portfolio_sob_percent": null,
+        "portfolio_sob_change_pp": null
+      },
+      "tiktok_cache": {
+        "approved_count": 88,
+        "fetched_count": 88,
+        "failed_count": 0,
+        "skipped_cached_count": 0,
+        "cache_shop_count": 88,
+        "tiktok_historical_fetched_count": 88,
+        "tiktok_april_gmv_fetched_count": 88,
+        "tiktok_may_gmv_fetched_count": 88
+      }
+    },
+    "completion_message": "FastMoss mapped: 86 · Pending review: 2 · Not found: 6 · Newly mapped: 0"
+  },
+  "status": {
+    "step_label": "Completed",
+    "percent": 100.0,
+    "shops_processed": 94,
+    "shops_total": 94,
+    "newly_mapped_count": 0,
+    "pending_review_count": 2,
+    "still_not_found_count": 6,
+    "failed_count": 0,
+    "refreshed_at": "2026-06-16T07:56:52Z",
+    "finished_at": "2026-06-16T07:56:52Z"
+  }
+}

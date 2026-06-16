@@ -63,6 +63,24 @@ def _name_similarity(query: str, candidate_name: str) -> float:
     return name_similarity(query, candidate_name)
 
 
+def needs_fastmoss_rematch(existing: dict[str, Any] | None, seller: Any) -> bool:
+    """Re-search FastMoss for MAPPED rows that were rejected or clearly wrong."""
+    if not existing:
+        return False
+    from seller.fastmoss.review import (
+        AUDIT_LIKELY_WRONG,
+        REVIEW_REJECTED,
+        classify_audit_status,
+        get_review_by_shop_id,
+    )
+
+    review = get_review_by_shop_id(str(getattr(seller, "shop_id", "") or ""))
+    if str((review or {}).get("review_status") or "").upper() == REVIEW_REJECTED:
+        return True
+    audit = classify_audit_status(existing)
+    return str(audit.get("audit_status") or "").upper() == AUDIT_LIKELY_WRONG
+
+
 def should_retry_fastmoss_mapping(
     seller: SellerMasterRecord,
     existing: dict[str, Any] | None,
@@ -83,15 +101,17 @@ def should_retry_fastmoss_mapping(
         if not_found_only and not unresolved_only:
             return status == MAPPING_NOT_FOUND
         return status in {MAPPING_NOT_FOUND, MAPPING_NEED_REVIEW}
+    current_tiktok = str(seller.tiktok_shop_name or "").strip()
+    existing_tiktok = str(existing.get("tiktok_shop_name") or "").strip()
+    if existing_tiktok != current_tiktok:
+        return True
     if status == MAPPING_MAPPED:
-        return False
+        return needs_fastmoss_rematch(existing, seller)
     if status in {MAPPING_NOT_FOUND, MAPPING_NEED_REVIEW}:
         return True
     if not str(existing.get("fastmoss_shop_id") or "").strip():
         return True
-    existing_tiktok = str(existing.get("tiktok_shop_name") or "").strip()
-    current_tiktok = str(seller.tiktok_shop_name or "").strip()
-    return existing_tiktok != current_tiktok
+    return False
 
 
 def _is_exact_name_match(query: str, candidate: str | dict[str, Any]) -> bool:
@@ -451,6 +471,25 @@ def refresh_fastmoss_mapping(
         "tiktok_data_refreshed_count": 0,
         "refreshed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
+
+
+def refresh_all_sheet_fastmoss_mapping(
+    *,
+    mapping_path: str | Path | None = None,
+    delay_sec: float = REQUEST_DELAY_SEC,
+) -> dict[str, Any]:
+    """
+    Reload seller master from sheet and refresh shops that still need FastMoss search.
+
+    Preserves confirmed MAPPED rows; re-searches NOT_FOUND, NEED_REVIEW, rejected/wrong
+    MAPPED rows, and rows whose TikTok name changed on the sheet.
+    """
+    return refresh_fastmoss_mapping(
+        force_refresh_all=False,
+        unresolved_only=False,
+        mapping_path=mapping_path,
+        delay_sec=delay_sec,
+    )
 
 
 def refresh_unresolved_fastmoss_mapping(

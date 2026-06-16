@@ -171,6 +171,12 @@ async def on_startup() -> None:
         sync_manual_overrides_from_mapping_file()
     except Exception as exc:
         logger.warning("FastMoss mapping review bootstrap skipped: %s", exc)
+    try:
+        from seller.intelligence.bootstrap import maybe_start_background_sync
+
+        maybe_start_background_sync()
+    except Exception as exc:
+        logger.warning("Intelligence background sync bootstrap skipped: %s", exc)
     logger.info("Authentication enabled for all protected routes")
 
 

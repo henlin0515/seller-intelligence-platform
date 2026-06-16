@@ -18,6 +18,7 @@ from seller.fastmoss.mapping import (
     _summary_counts,
     load_fastmoss_mapping,
     map_seller_to_fastmoss,
+    needs_fastmoss_rematch,
     save_fastmoss_mapping,
 )
 from seller.fastmoss.review import review_summary, sync_reviews_from_mappings
@@ -163,26 +164,6 @@ def _tick_shop(
     _set_state(**patch)
 
 
-def _should_rematch_mapped(existing: dict[str, Any] | None, seller: Any) -> bool:
-    """Re-run FastMoss search for MAPPED rows that were rejected or clearly wrong."""
-    if not existing:
-        return False
-    from seller.fastmoss.review import (
-        AUDIT_LIKELY_WRONG,
-        REVIEW_REJECTED,
-        classify_audit_status,
-        get_review_by_shop_id,
-    )
-
-    review = get_review_by_shop_id(str(seller.shop_id))
-    if str((review or {}).get("review_status") or "").upper() == REVIEW_REJECTED:
-        return True
-    audit = classify_audit_status(existing)
-    if str(audit.get("audit_status") or "").upper() == AUDIT_LIKELY_WRONG:
-        return True
-    return False
-
-
 def _categorize_sellers(
     master_sellers: list[Any],
     existing_by_shop: dict[str, dict[str, Any]],
@@ -206,7 +187,7 @@ def _categorize_sellers(
 
         status = str((existing or {}).get("mapping_status") or MAPPING_NOT_FOUND).upper()
         if status == MAPPING_MAPPED:
-            if cur != prev or _should_rematch_mapped(existing, seller):
+            if cur != prev or needs_fastmoss_rematch(existing, seller):
                 not_found_q.append((seller, existing))
             else:
                 preserved += 1

@@ -29,8 +29,23 @@ class FastmossMappingRefreshTests(unittest.TestCase):
         self.assertTrue(should_retry_fastmoss_mapping(_seller(), None))
 
     def test_should_not_retry_mapped_without_force(self):
-        existing = {"mapping_status": MAPPING_MAPPED, "fastmoss_shop_id": "999"}
+        existing = {
+            "mapping_status": MAPPING_MAPPED,
+            "fastmoss_shop_id": "999",
+            "tiktok_shop_name": "FS.STORE23",
+            "fastmoss_shop_name": "FS.STORE23",
+        }
         self.assertFalse(should_retry_fastmoss_mapping(_seller(), existing))
+
+    def test_should_retry_mapped_when_sheet_tiktok_changed(self):
+        existing = {
+            "mapping_status": MAPPING_MAPPED,
+            "fastmoss_shop_id": "999",
+            "tiktok_shop_name": "OLD NAME",
+        }
+        self.assertTrue(
+            should_retry_fastmoss_mapping(_seller(tiktok_shop_name="FS.STORE23"), existing)
+        )
 
     def test_should_retry_not_found(self):
         existing = {"mapping_status": MAPPING_NOT_FOUND}
@@ -56,7 +71,12 @@ class FastmossMappingRefreshTests(unittest.TestCase):
         )
 
     def test_unresolved_only_skips_mapped(self):
-        existing = {"mapping_status": MAPPING_MAPPED, "fastmoss_shop_id": "999"}
+        existing = {
+            "mapping_status": MAPPING_MAPPED,
+            "fastmoss_shop_id": "999",
+            "tiktok_shop_name": "FS.STORE23",
+            "fastmoss_shop_name": "FS.STORE23",
+        }
         self.assertFalse(
             should_retry_fastmoss_mapping(_seller(), existing, unresolved_only=True)
         )

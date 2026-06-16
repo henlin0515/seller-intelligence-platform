@@ -204,7 +204,7 @@ async def intelligence_v1_historical_sob():
 
     try:
         master = _load_master()
-        payload = await asyncio.to_thread(get_historical_sob_payload, master, ensure_tiktok_cache=True)
+        payload = await asyncio.to_thread(get_historical_sob_payload, master, ensure_tiktok_cache=False)
         if payload.get("status") == "degraded":
             logger.error("Historical SOB degraded response: %s", payload.get("warnings"))
         return payload
