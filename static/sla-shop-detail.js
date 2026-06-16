@@ -1,6 +1,5 @@
 /**
  * SLA expandable shop detail — DateRangeSelector, ShopDetailMetricsCards, row binding.
- * Vanilla JS modules exposed as window.SlaShopDetail.
  */
 (function () {
   const API = "/api/seller-level-analysis/shop-detail";
@@ -43,8 +42,6 @@
       preset: "7",
       startDate: isoDaysAgo(7),
       endDate: isoToday(),
-      customStart: "",
-      customEnd: "",
       selected: new Set(["sales_volume", "sales_amount"]),
       loading: false,
       error: null,
@@ -95,7 +92,6 @@
     return { startDate: isoDaysAgo(preset.days), endDate: isoToday() };
   }
 
-  /** @returns {string} DateRangeSelector HTML */
   function DateRangeSelector(shopId, detailState) {
     const preset = detailState.preset || "7";
     const customActive = preset === "custom";
@@ -126,7 +122,6 @@
       </div>`;
   }
 
-  /** @returns {string} ShopDetailMetricsCards HTML */
   function ShopDetailMetricsCards(metrics, selectedSet) {
     if (!metrics) {
       return `<div class="si-sla-detail-metrics si-sla-detail-metrics--empty"><p>No metrics for this range.</p></div>`;
@@ -178,17 +173,6 @@
         </div>`;
     }
 
-    if (data.empty) {
-      return `
-        <div class="si-sla-detail-panel__header">
-          <h4 class="si-sla-detail-panel__title">數據趨勢</h4>
-          ${DateRangeSelector(seller.shop_id, detailState)}
-        </div>
-        <div class="si-sla-detail-panel__state si-sla-detail-panel__state--empty">
-          <p>${escapeHtml(data.message || "No trend data for this date range.")}</p>
-        </div>`;
-    }
-
     return `
       <div class="si-sla-detail-panel__header">
         <h4 class="si-sla-detail-panel__title">數據趨勢</h4>
@@ -200,7 +184,6 @@
       ${ShopDetailMetricsCards(data.metrics, detailState.selected)}`;
   }
 
-  /** Expandable detail row placed directly under the shop row. */
   function ShopDetailExpandableRow(seller, isOpen, detailState) {
     const openClass = isOpen ? " is-open" : "";
     return `
@@ -225,6 +208,14 @@
     </button>`;
   }
 
+  function getSellerMap(sellers) {
+    const map = new Map();
+    (sellers || []).forEach((s) => {
+      if (s?.shop_id) map.set(String(s.shop_id), s);
+    });
+    return map;
+  }
+
   async function fetchShopDetail(seller, startDate, endDate) {
     const params = new URLSearchParams({
       shopee_shop_id: String(seller.shop_id || ""),
@@ -244,41 +235,60 @@
     return body;
   }
 
-  function getSellerMap(sellers) {
-    const map = new Map();
-    (sellers || []).forEach((s) => {
-      if (s?.shop_id) map.set(String(s.shop_id), s);
-    });
-    return map;
+  function findTableRoot(node) {
+    return node?.closest?.(".si-sla-table") || null;
   }
 
-  function refreshDetailRowDOM(tableRoot, seller, detailState, isOpen) {
-    const row = tableRoot.querySelector(`[data-sla-detail-row][data-shop-id="${CSS.escape(String(seller.shop_id))}"]`);
-    if (!row) return;
-    row.classList.toggle("is-open", isOpen);
-    row.setAttribute("aria-hidden", isOpen ? "false" : "true");
-    const panel = row.querySelector(".si-sla-detail-panel");
-    if (panel) {
-      panel.classList.toggle("is-open", isOpen);
-      panel.innerHTML = renderDetailBody(seller, detailState);
-    }
+  function findDetailRow(tableRoot, shopId) {
+    return tableRoot.querySelector(`[data-sla-detail-row][data-shop-id="${CSS.escape(String(shopId))}"]`);
   }
 
-  async function loadDetailForShop(seller, detailState, tableRoot, isOpen) {
-    if (!hasTikTokData(seller)) {
-      refreshDetailRowDOM(tableRoot, seller, detailState, isOpen);
-      return;
-    }
+  function findMainRow(tableRoot, shopId) {
+    return tableRoot.querySelector(`.si-sla-row[data-shop-id="${CSS.escape(String(shopId))}"]`);
+  }
+
+  function refreshDetailPanel(tableRoot, seller, detailState, isOpen) {
+    const detailRow = findDetailRow(tableRoot, seller.shop_id);
+    if (!detailRow) return;
+    detailRow.classList.toggle("is-open", isOpen);
+    detailRow.setAttribute("aria-hidden", isOpen ? "false" : "true");
+    const panel = detailRow.querySelector(".si-sla-detail-panel");
+    if (!panel) return;
+    panel.classList.toggle("is-open", isOpen);
+    panel.innerHTML = renderDetailBody(seller, detailState);
+  }
+
+  function ensureDetailRow(tableRoot, seller, detailState) {
+    let detailRow = findDetailRow(tableRoot, seller.shop_id);
+    if (detailRow) return detailRow;
+    const mainRow = findMainRow(tableRoot, seller.shop_id);
+    if (!mainRow) return null;
+    mainRow.insertAdjacentHTML("afterend", ShopDetailExpandableRow(seller, true, detailState));
+    detailRow = mainRow.nextElementSibling;
+    return detailRow;
+  }
+
+  function collapseDetailRow(tableRoot, shopId) {
+    const mainRow = findMainRow(tableRoot, shopId);
+    mainRow?.classList.remove("is-expanded");
+    mainRow?.querySelector("[data-sla-row-toggle]")?.setAttribute("aria-expanded", "false");
+    findDetailRow(tableRoot, shopId)?.remove();
+  }
+
+  async function loadDetailForShop(seller, detailState, tableRoot) {
+    ensureDetailRow(tableRoot, seller, detailState);
+    refreshDetailPanel(tableRoot, seller, detailState, true);
+
+    if (!hasTikTokData(seller)) return;
 
     const key = rangeKey(detailState.startDate, detailState.endDate);
     if (detailState.fetchedKey === key && detailState.data && !detailState.error) {
-      refreshDetailRowDOM(tableRoot, seller, detailState, isOpen);
       return;
     }
 
     detailState.loading = true;
     detailState.error = null;
-    refreshDetailRowDOM(tableRoot, seller, detailState, isOpen);
+    refreshDetailPanel(tableRoot, seller, detailState, true);
 
     try {
       const data = await fetchShopDetail(seller, detailState.startDate, detailState.endDate);
@@ -290,53 +300,59 @@
       detailState.data = null;
     } finally {
       detailState.loading = false;
-      refreshDetailRowDOM(tableRoot, seller, detailState, isOpen);
+      refreshDetailPanel(tableRoot, seller, detailState, true);
     }
   }
 
-  function bindDetailPanelEvents(tableRoot, sellerMap, expandedSet, detailCache) {
-    tableRoot.querySelectorAll("[data-sla-row-toggle]").forEach((btn) => {
-      btn.addEventListener("click", (ev) => {
+  function resolveContext(listRoot, shopId, getSellers) {
+    const tableRoot = listRoot.querySelector(".si-sla-table");
+    if (!tableRoot) return null;
+    const sellers = getSellers?.() || [];
+    const sellerMap = getSellerMap(sellers);
+    const seller = sellerMap.get(String(shopId));
+    if (!seller) return null;
+    return { tableRoot, seller };
+  }
+
+  function initDelegation(listRoot, getSellers, expandedSet, detailCache) {
+    if (!listRoot || listRoot.dataset.slaDetailDelegation === "1") return;
+    listRoot.dataset.slaDetailDelegation = "1";
+
+    listRoot.addEventListener("click", (ev) => {
+      const toggle = ev.target.closest("[data-sla-row-toggle]");
+      if (toggle) {
         ev.stopPropagation();
-        const row = btn.closest("[data-shop-id]");
-        const shopId = row?.dataset?.shopId;
+        const mainRow = toggle.closest(".si-sla-row");
+        const shopId = mainRow?.dataset?.shopId;
         if (!shopId) return;
-        const seller = sellerMap.get(shopId);
-        if (!seller) return;
+        const ctx = resolveContext(listRoot, shopId, getSellers);
+        if (!ctx) return;
 
         if (expandedSet.has(shopId)) {
           expandedSet.delete(shopId);
-          row.classList.remove("is-expanded");
-          btn.setAttribute("aria-expanded", "false");
-          const detailRow = tableRoot.querySelector(
-            `[data-sla-detail-row][data-shop-id="${CSS.escape(shopId)}"]`
-          );
-          detailRow?.classList.remove("is-open");
-          detailRow?.setAttribute("aria-hidden", "true");
-          detailRow?.querySelector(".si-sla-detail-panel")?.classList.remove("is-open");
+          collapseDetailRow(ctx.tableRoot, shopId);
           return;
         }
 
         expandedSet.add(shopId);
-        row.classList.add("is-expanded");
-        btn.setAttribute("aria-expanded", "true");
+        mainRow.classList.add("is-expanded");
+        toggle.setAttribute("aria-expanded", "true");
         if (!detailCache.has(shopId)) detailCache.set(shopId, defaultDetailState());
-        const detailState = detailCache.get(shopId);
-        loadDetailForShop(seller, detailState, tableRoot, true);
-      });
-    });
+        loadDetailForShop(ctx.seller, detailCache.get(shopId), ctx.tableRoot);
+        return;
+      }
 
-    tableRoot.addEventListener("click", (ev) => {
       const metricBtn = ev.target.closest("[data-sla-detail-metric]");
       if (metricBtn) {
         const shopId = metricBtn.closest("[data-sla-detail-row]")?.dataset?.shopId;
         if (!shopId || !detailCache.has(shopId)) return;
-        const key = metricBtn.dataset.slaDetailMetric;
+        const ctx = resolveContext(listRoot, shopId, getSellers);
+        if (!ctx) return;
         const detailState = detailCache.get(shopId);
+        const key = metricBtn.dataset.slaDetailMetric;
         if (detailState.selected.has(key)) detailState.selected.delete(key);
         else detailState.selected.add(key);
-        const seller = sellerMap.get(shopId);
-        if (seller) refreshDetailRowDOM(tableRoot, seller, detailState, true);
+        refreshDetailPanel(ctx.tableRoot, ctx.seller, detailState, true);
         return;
       }
 
@@ -344,11 +360,12 @@
       if (presetBtn) {
         const shopId = presetBtn.dataset.shopId;
         if (!shopId || !detailCache.has(shopId)) return;
-        const seller = sellerMap.get(shopId);
-        if (!seller) return;
+        const ctx = resolveContext(listRoot, shopId, getSellers);
+        if (!ctx) return;
         const detailState = detailCache.get(shopId);
         const presetId = presetBtn.dataset.slaDetailPreset;
         detailState.preset = presetId;
+        detailState.fetchedKey = null;
         if (presetId === "custom") {
           const wrap = presetBtn.closest("[data-sla-detail-range]");
           const startInput = wrap?.querySelector("[data-sla-detail-start]");
@@ -362,60 +379,64 @@
           detailState.startDate = range.startDate;
           detailState.endDate = range.endDate;
         }
-        loadDetailForShop(seller, detailState, tableRoot, true);
+        loadDetailForShop(ctx.seller, detailState, ctx.tableRoot);
         return;
       }
 
       const retryBtn = ev.target.closest("[data-sla-detail-retry]");
       if (retryBtn) {
         const shopId = retryBtn.dataset.shopId;
-        const seller = sellerMap.get(shopId);
+        if (!shopId || !detailCache.has(shopId)) return;
+        const ctx = resolveContext(listRoot, shopId, getSellers);
+        if (!ctx) return;
         const detailState = detailCache.get(shopId);
-        if (seller && detailState) {
-          detailState.fetchedKey = null;
-          loadDetailForShop(seller, detailState, tableRoot, true);
-        }
+        detailState.fetchedKey = null;
+        loadDetailForShop(ctx.seller, detailState, ctx.tableRoot);
       }
     });
 
-    tableRoot.addEventListener("change", (ev) => {
+    listRoot.addEventListener("change", (ev) => {
       const input = ev.target.closest("[data-sla-detail-start], [data-sla-detail-end]");
       if (!input) return;
       const wrap = input.closest("[data-sla-detail-range]");
       const shopId = wrap?.dataset?.shopId;
       if (!shopId || !detailCache.has(shopId)) return;
-      const seller = sellerMap.get(shopId);
-      if (!seller) return;
+      const ctx = resolveContext(listRoot, shopId, getSellers);
+      if (!ctx) return;
       const detailState = detailCache.get(shopId);
       const startInput = wrap.querySelector("[data-sla-detail-start]");
       const endInput = wrap.querySelector("[data-sla-detail-end]");
       if (!startInput?.value || !endInput?.value) return;
       if (startInput.value > endInput.value) return;
       detailState.preset = "custom";
+      detailState.fetchedKey = null;
       detailState.startDate = startInput.value;
       detailState.endDate = endInput.value;
-      loadDetailForShop(seller, detailState, tableRoot, true);
+      loadDetailForShop(ctx.seller, detailState, ctx.tableRoot);
     });
   }
 
-  function bindTable(tableRoot, sellers, expandedSet, detailCache) {
+  function syncExpandedRows(tableRoot, sellers, expandedSet, detailCache) {
     if (!tableRoot) return;
-    const sellerMap = getSellerMap(sellers);
-    bindDetailPanelEvents(tableRoot, sellerMap, expandedSet, detailCache);
-    sellers.forEach((seller) => {
+    const pageIds = new Set((sellers || []).map((s) => String(s.shop_id)));
+    tableRoot.querySelectorAll("[data-sla-detail-row]").forEach((row) => {
+      const shopId = row.dataset.shopId;
+      if (!pageIds.has(shopId) || !expandedSet.has(shopId)) row.remove();
+    });
+
+    (sellers || []).forEach((seller) => {
       const shopId = String(seller.shop_id);
       if (!expandedSet.has(shopId)) return;
       if (!detailCache.has(shopId)) detailCache.set(shopId, defaultDetailState());
       const detailState = detailCache.get(shopId);
-      const mainRow = tableRoot.querySelector(
-        `.si-sla-row[data-shop-id="${CSS.escape(shopId)}"]`
-      );
+      const mainRow = findMainRow(tableRoot, shopId);
       mainRow?.classList.add("is-expanded");
       mainRow?.querySelector("[data-sla-row-toggle]")?.setAttribute("aria-expanded", "true");
+      ensureDetailRow(tableRoot, seller, detailState);
       if (!detailState.data && !detailState.loading && !detailState.error) {
-        loadDetailForShop(seller, detailState, tableRoot, true);
+        loadDetailForShop(seller, detailState, tableRoot);
       } else {
-        refreshDetailRowDOM(tableRoot, seller, detailState, true);
+        refreshDetailPanel(tableRoot, seller, detailState, true);
       }
     });
   }
@@ -427,7 +448,8 @@
     DateRangeSelector,
     ShopDetailMetricsCards,
     ShopDetailExpandableRow,
-    bindTable,
+    initDelegation,
+    syncExpandedRows,
     defaultDetailState,
   };
 })();

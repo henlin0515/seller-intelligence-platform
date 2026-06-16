@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import time
 from datetime import date, timedelta
 from typing import Any
 
@@ -17,6 +19,27 @@ from seller.fastmoss.recent_data import fetch_shop_period_metrics
 logger = logging.getLogger("seller.intelligence.shop_detail")
 
 UNAVAILABLE_MESSAGE = "No TikTok / FastMoss data available for this shop."
+_DETAIL_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
+_DETAIL_CACHE_TTL_SEC = float(os.getenv("SHOP_DETAIL_CACHE_TTL_SEC", "300"))
+
+
+def _cache_key(fastmoss_shop_id: str, start: date, end: date) -> str:
+    return f"{fastmoss_shop_id}|{start.isoformat()}|{end.isoformat()}"
+
+
+def _cache_get(key: str) -> dict[str, Any] | None:
+    row = _DETAIL_CACHE.get(key)
+    if not row:
+        return None
+    expires_at, payload = row
+    if time.time() > expires_at:
+        _DETAIL_CACHE.pop(key, None)
+        return None
+    return payload
+
+
+def _cache_set(key: str, payload: dict[str, Any]) -> None:
+    _DETAIL_CACHE[key] = (time.time() + _DETAIL_CACHE_TTL_SEC, payload)
 
 
 def resolve_detail_date_range(
@@ -105,6 +128,11 @@ def get_shop_detail_payload(
     base["fastmoss_shop_id"] = resolved_fastmoss_id
     base["fastmoss_shop_name"] = (mapping_row or {}).get("fastmoss_shop_name")
 
+    cache_key = _cache_key(resolved_fastmoss_id, start, end)
+    cached = _cache_get(cache_key)
+    if cached:
+        return {**base, **cached, "cached": True}
+
     try:
         metrics, request_url, _session = fetch_shop_period_metrics(resolved_fastmoss_id, start, end)
     except Exception as exc:
@@ -114,12 +142,12 @@ def get_shop_detail_payload(
         base["error"] = True
         return base
 
-    base.update(
-        {
-            "available": True,
-            "message": None,
-            "metrics": metrics,
-            "source_url": request_url,
-        }
-    )
+    result = {
+        "available": True,
+        "message": None,
+        "metrics": metrics,
+        "source_url": request_url,
+    }
+    _cache_set(cache_key, result)
+    base.update(result)
     return base

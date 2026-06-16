@@ -44,8 +44,11 @@ playwright-report/
 test-results/
 .playwright-shopee-profile/
 _debug_shopee_shop_*.png
+_debug_shopee_shop_*.json
 _shopee_extract_*.png
+_tmp_*
 _tmp_shopee_*.json
+sync_all_sheet_mappings.log
 mapping_review_status.json
 historical_sob_cache.json
 *.log
