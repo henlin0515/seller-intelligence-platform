@@ -67,22 +67,36 @@ def prefetch_shop_detail(
     return client
 
 
-def fetch_period_gmv_php(
+def parse_period_metrics(total_info: dict[str, Any]) -> dict[str, int | float]:
+    """Map FastMoss recentData total_info to SLA shop-detail metrics."""
+    return {
+        "sales_volume": int(total_info.get("sold_count") or 0),
+        "sales_amount": round(float(total_info.get("sale_amount") or 0), 2),
+        "creator_count": int(total_info.get("author_count") or 0),
+        "live_count": int(total_info.get("live_count") or 0),
+        "video_count": int(total_info.get("aweme_count") or 0),
+        "active_product_count": int(total_info.get("sold_product_count") or 0),
+    }
+
+
+def fetch_recent_data(
     fastmoss_shop_id: str,
     start: date,
     end: date,
     *,
     session: requests.Session | None = None,
     prefetch_detail: bool = True,
-) -> tuple[float, str, requests.Session]:
+) -> tuple[dict[str, Any], str, requests.Session]:
     """
-    Fetch period GMV (PHP) from recentData total_info.sale_amount.
+    Fetch recentData for a FastMoss shop and date range.
 
-    Returns (sale_amount_php, request_url, session).
+    Returns ({"total_info": ..., "trend": [...]}, request_url, session).
     """
     shop_id = str(fastmoss_shop_id or "").strip()
     if not shop_id:
         raise ValueError("fastmoss_shop_id is required")
+    if end < start:
+        raise ValueError("end_date must be on or after start_date")
 
     client = prefetch_shop_detail(shop_id, session) if prefetch_detail else (session or _new_session())
 
@@ -105,9 +119,52 @@ def fetch_period_gmv_php(
 
     data = payload.get("data") or {}
     lst = data.get("list") or {}
-    total_info = lst.get("total_info") or {}
-    sale_amount = total_info.get("sale_amount")
+    return {
+        "total_info": lst.get("total_info") or {},
+        "trend": lst.get("trend") or [],
+    }, resp.url, client
+
+
+def fetch_shop_period_metrics(
+    fastmoss_shop_id: str,
+    start: date,
+    end: date,
+    *,
+    session: requests.Session | None = None,
+    prefetch_detail: bool = True,
+) -> tuple[dict[str, int | float], str, requests.Session]:
+    """Fetch period shop trend metrics from recentData total_info."""
+    recent, request_url, client = fetch_recent_data(
+        fastmoss_shop_id,
+        start,
+        end,
+        session=session,
+        prefetch_detail=prefetch_detail,
+    )
+    return parse_period_metrics(recent.get("total_info") or {}), request_url, client
+
+
+def fetch_period_gmv_php(
+    fastmoss_shop_id: str,
+    start: date,
+    end: date,
+    *,
+    session: requests.Session | None = None,
+    prefetch_detail: bool = True,
+) -> tuple[float, str, requests.Session]:
+    """
+    Fetch period GMV (PHP) from recentData total_info.sale_amount.
+
+    Returns (sale_amount_php, request_url, session).
+    """
+    metrics, request_url, client = fetch_shop_period_metrics(
+        fastmoss_shop_id,
+        start,
+        end,
+        session=session,
+        prefetch_detail=prefetch_detail,
+    )
+    sale_amount = metrics.get("sales_amount")
     if sale_amount is None:
         raise RuntimeError("FastMoss recentData missing total_info.sale_amount")
-
-    return float(sale_amount), resp.url, client
+    return float(sale_amount), request_url, client

@@ -298,6 +298,7 @@ def build_business_seller_record(
         "rm": rm,
         "fastmoss_match_status": mapping_status,
         "fastmoss_matched_shop": fastmoss_matched_shop,
+        "fastmoss_shop_id": (mapping_row or {}).get("fastmoss_shop_id"),
         "fastmoss_review_status": review_status or None,
         "fastmoss_audit_status": (review_row or {}).get("audit_status"),
         "fastmoss_mapping_confidence": (mapping_row or {}).get("confidence"),

@@ -112,6 +112,28 @@ app.include_router(assortment_router, dependencies=[Depends(require_auth)])
 app.include_router(intelligence_v1_router)
 
 
+@app.get("/api/seller-level-analysis/shop-detail", dependencies=[Depends(require_auth)])
+async def seller_level_analysis_shop_detail(
+    shopee_shop_id: str,
+    fastmoss_shop_id: str | None = None,
+    tiktok_shop_id: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    platform_source: str = "",
+):
+    """Alias for SLA expandable row shop-detail (same handler as intelligence v1)."""
+    from seller.intelligence.router import _shop_detail_handler
+
+    return await _shop_detail_handler(
+        shopee_shop_id=shopee_shop_id,
+        fastmoss_shop_id=fastmoss_shop_id,
+        tiktok_shop_id=tiktok_shop_id,
+        start_date=start_date,
+        end_date=end_date,
+        platform_source=platform_source,
+    )
+
+
 class CompetitorCheckRequest(BaseModel):
     shop_ids: list[str] | None = None
 

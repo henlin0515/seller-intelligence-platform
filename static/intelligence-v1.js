@@ -39,6 +39,7 @@
       raw: null,
       filters: defaultBusinessFilters(),
       expanded: new Set(),
+      shopDetail: new Map(),
       shellReady: false,
       page: 1,
       pageSize: 20,
@@ -1668,9 +1669,10 @@
       </div>`;
   }
 
-  function renderBusinessTableRow(s) {
+  function renderBusinessTableRow(s, isOpen) {
     const tkReason = s.tiktok_na_reason || "TikTok data unavailable";
     const shReason = s.shopee_na_reason || "Shopee ADGMV not found in Tracker";
+    const chevron = window.SlaShopDetail?.renderChevron(isOpen) || "";
     const tkMom =
       s.tiktok_data_status === "available"
         ? renderMom(s.tiktok_mom_percent, tkReason)
@@ -1682,11 +1684,16 @@
     const mtdSob = renderBusinessInlineSobCell(s.mtd_shopee_sob_percent, s.mtd_tiktok_sob_percent);
     const m1Sob = renderBusinessInlineSobCell(s.m1_shopee_sob_percent, s.m1_tiktok_sob_percent);
     return `
-        <tr class="si-sla-row" data-shop-id="${escapeHtml(s.shop_id)}">
+        <tr class="si-sla-row${isOpen ? " is-expanded" : ""}" data-shop-id="${escapeHtml(s.shop_id)}">
           <td class="si-sla-shop">
-            <span class="si-sla-shop-name">${escapeHtml(s.shop_name)}</span>
-            <span class="si-sla-shop-meta">ID ${escapeHtml(s.shop_id)} · ${escapeHtml(s.tiktok_shop_name || "—")}</span>
-            <span class="si-sla-shop-meta">${mappingReviewBadge(s)}</span>
+            <div class="si-sla-shop-cell">
+              ${chevron}
+              <div class="si-sla-shop-text">
+                <span class="si-sla-shop-name">${escapeHtml(s.shop_name)}</span>
+                <span class="si-sla-shop-meta">ID ${escapeHtml(s.shop_id)} · ${escapeHtml(s.tiktok_shop_name || "—")}</span>
+                <span class="si-sla-shop-meta">${mappingReviewBadge(s)}</span>
+              </div>
+            </div>
           </td>
           <td class="si-v1-num">${fmtShopeeUsd(s.shopee_mtd_adgmv_usd, shReason)}</td>
           <td class="si-v1-num">${fmtTikTokUsd(s.tiktok_mtd_adgmv_usd, s.tiktok_mtd_gmv_php, tkReason)}</td>
@@ -1699,7 +1706,23 @@
         </tr>`;
   }
 
-  function renderBusinessTable(sellers) {
+  function renderBusinessTableBodyRows(sellers, expandedSet, detailCache) {
+    const detail = window.SlaShopDetail;
+    return sellers
+      .map((s) => {
+        const shopId = String(s.shop_id);
+        const isOpen = expandedSet.has(shopId);
+        const detailState =
+          detailCache.get(shopId) || (detail?.defaultDetailState ? detail.defaultDetailState() : {});
+        const main = renderBusinessTableRow(s, isOpen);
+        const expand =
+          detail?.ShopDetailExpandableRow?.(s, isOpen, detailState) || "";
+        return main + expand;
+      })
+      .join("");
+  }
+
+  function renderBusinessTable(sellers, expandedSet, detailCache) {
     return `
       <div class="si-sla-table-card">
         <div class="si-v1-table-wrap si-sla-table-wrap">
@@ -1717,7 +1740,7 @@
                 <th class="si-v1-num">TikTok MoM %</th>
               </tr>
             </thead>
-            <tbody>${sellers.map((s) => renderBusinessTableRow(s)).join("")}</tbody>
+            <tbody>${renderBusinessTableBodyRows(sellers, expandedSet, detailCache)}</tbody>
           </table>
         </div>
       </div>`;
@@ -1799,8 +1822,15 @@
       return;
     }
     listEl.innerHTML =
-      renderBusinessTable(pageRows) + renderBusinessPagination(total, st.page, st.pageSize);
+      renderBusinessTable(pageRows, st.expanded, st.shopDetail) +
+      renderBusinessPagination(total, st.page, st.pageSize);
     bindBusinessPagination(listEl, st, total);
+    window.SlaShopDetail?.bindTable?.(
+      listEl.querySelector(".si-sla-table"),
+      pageRows,
+      st.expanded,
+      st.shopDetail
+    );
     animateSobBars(listEl);
   }
 
@@ -2622,6 +2652,7 @@
       state.business.shellReady = false;
       state.assortment.shellReady = false;
       state.business.expanded.clear();
+      state.business.shopDetail.clear();
       state.assortment.expanded.clear();
     },
     refreshBusinessData,

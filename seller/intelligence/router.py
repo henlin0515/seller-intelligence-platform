@@ -116,6 +116,67 @@ async def intelligence_v1_business_refresh_status():
     return get_sla_refresh_status()
 
 
+async def _shop_detail_handler(
+    shopee_shop_id: str,
+    fastmoss_shop_id: str | None = None,
+    tiktok_shop_id: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    platform_source: str = "",
+):
+    import asyncio
+    from datetime import date as date_cls
+
+    from seller.intelligence.business.shop_detail import get_shop_detail_payload
+
+    def _parse_iso(value: str | None) -> date_cls | None:
+        if not value or not str(value).strip():
+            return None
+        try:
+            return date_cls.fromisoformat(str(value).strip()[:10])
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid date: {value}") from exc
+
+    if not str(shopee_shop_id or "").strip():
+        raise HTTPException(status_code=400, detail="shopee_shop_id is required")
+
+    try:
+        return await asyncio.to_thread(
+            get_shop_detail_payload,
+            shopee_shop_id=str(shopee_shop_id).strip(),
+            fastmoss_shop_id=fastmoss_shop_id,
+            tiktok_shop_id=tiktok_shop_id,
+            start_date=_parse_iso(start_date),
+            end_date=_parse_iso(end_date),
+            platform_source=platform_source,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Shop detail fetch failed for %s", shopee_shop_id)
+        raise HTTPException(status_code=502, detail="Could not load shop trend data.") from exc
+
+
+@router.get("/business/shop-detail")
+async def intelligence_v1_business_shop_detail(
+    shopee_shop_id: str,
+    fastmoss_shop_id: str | None = None,
+    tiktok_shop_id: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    platform_source: str = "",
+):
+    """FastMoss trend metrics for one SLA shop row (expandable detail panel)."""
+    return await _shop_detail_handler(
+        shopee_shop_id=shopee_shop_id,
+        fastmoss_shop_id=fastmoss_shop_id,
+        tiktok_shop_id=tiktok_shop_id,
+        start_date=start_date,
+        end_date=end_date,
+        platform_source=platform_source,
+    )
+
+
 @router.get("/business")
 async def intelligence_v1_business():
     from seller.intelligence.business.sla_update_state import get_sla_update_state_for_api
