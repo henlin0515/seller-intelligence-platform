@@ -130,6 +130,7 @@ async def intelligence_v1_business_refresh_status():
 @router.get("/business/period-refresh-status")
 async def intelligence_v1_business_period_refresh_status():
     """Poll auto TikTok BI refresh triggered by MTD/M-1 period tag changes."""
+    from seller.intelligence.business.bi_daily_scheduler import get_bi_daily_scheduler_status
     from seller.intelligence.business.period_auto_refresh import (
         get_tiktok_period_refresh_status,
         tiktok_bi_periods_stale,
@@ -142,6 +143,30 @@ async def intelligence_v1_business_period_refresh_status():
         "periods_stale": stale,
         "stale_reason": reason,
         "periods": resolve_periods(date.today()).as_dict(),
+        "daily_scheduler": get_bi_daily_scheduler_status(),
+    }
+
+
+@router.get("/business/bi-cache-status")
+async def intelligence_v1_business_bi_cache_status():
+    """BI cache freshness + daily scheduler status for ops / dashboard."""
+    from seller.intelligence.business.bi_cache_refresh import bi_cache_needs_daily_refresh
+    from seller.intelligence.business.bi_daily_scheduler import get_bi_daily_scheduler_status
+    from seller.intelligence.business.store import load_business_intelligence_data
+
+    today = date.today()
+    periods = resolve_periods(today)
+    saved = load_business_intelligence_data()
+    needs, reason = bi_cache_needs_daily_refresh(reference_today=today)
+    return {
+        "bi_date": (saved or {}).get("reference_today"),
+        "generated_at": (saved or {}).get("generated_at"),
+        "periods": (saved or {}).get("periods"),
+        "current_periods": periods.as_dict(),
+        "needs_refresh": needs,
+        "reason": reason,
+        "summary": (saved or {}).get("summary"),
+        "daily_scheduler": get_bi_daily_scheduler_status(),
     }
 
 

@@ -109,10 +109,18 @@ def maybe_start_background_sync() -> bool:
     """
     Start background sync on startup when data is missing or stale.
 
-    Always attempts a lightweight TikTok period refresh when MTD/M-1 tags changed.
+    Always starts the daily BI cache scheduler (unless disabled).
+    Also attempts a lightweight TikTok period refresh when MTD/M-1 tags changed.
     Full SLA sync is controlled by INTELLIGENCE_AUTO_SYNC_ON_STARTUP (default true).
     """
     global _started
+
+    try:
+        from seller.intelligence.business.bi_daily_scheduler import start_bi_daily_scheduler
+
+        start_bi_daily_scheduler()
+    except Exception as exc:
+        logger.warning("BI daily scheduler failed to start: %s", exc)
 
     maybe_start_period_tiktok_refresh()
 

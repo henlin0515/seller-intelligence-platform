@@ -1,4 +1,4 @@
-"""Business Intelligence V1 — persisted FastMoss TikTok collection."""
+"""Business Intelligence V1 — persisted FastMoss TikTok collection (atomic cache)."""
 
 from __future__ import annotations
 
@@ -30,11 +30,16 @@ def save_business_intelligence_data(
     payload: dict[str, Any],
     path: Path | None = None,
 ) -> Path:
+    """Atomically overwrite BI cache (temp file + replace)."""
     target = bi_data_path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", encoding="utf-8") as handle:
+    tmp = target.with_suffix(target.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2, ensure_ascii=False)
         handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(tmp, target)
     return target.resolve()
 
 

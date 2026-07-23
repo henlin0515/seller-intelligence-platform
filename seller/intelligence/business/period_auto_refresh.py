@@ -99,9 +99,9 @@ def run_tiktok_period_refresh(
         result=None,
     )
     try:
-        from seller.intelligence.refresh_data import refresh_approved_tiktok_bi
+        from seller.intelligence.business.bi_cache_refresh import refresh_bi_cache
 
-        result = refresh_approved_tiktok_bi(reference_today=today)
+        result = refresh_bi_cache(reference_today=today, trigger=trigger)
         summary = {
             "success": True,
             "trigger": trigger,
@@ -109,6 +109,10 @@ def run_tiktok_period_refresh(
             "approved_count": result.get("approved_count"),
             "tiktok_data_refreshed_count": result.get("tiktok_data_refreshed_count"),
             "collection_success": result.get("collection_success"),
+            "updated_count": result.get("updated_count"),
+            "elapsed_sec": result.get("elapsed_sec"),
+            "cache_overwritten": result.get("cache_overwritten"),
+            "bi_date": result.get("bi_date"),
             "finished_at": _utc_now(),
         }
         _set_state(

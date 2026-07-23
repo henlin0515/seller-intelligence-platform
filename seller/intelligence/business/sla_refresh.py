@@ -6,7 +6,6 @@ import logging
 import threading
 import time
 from copy import deepcopy
-from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -22,21 +21,11 @@ from seller.fastmoss.mapping import (
     save_fastmoss_mapping,
 )
 from seller.fastmoss.review import review_summary, sync_reviews_from_mappings
-from seller.intelligence.business.collector import collect_mapped_shop_tiktok
 from seller.intelligence.business.shopee_adgmv import clear_shopee_adgmv_cache, get_shopee_adgmv
-from seller.intelligence.business.store import (
-    fastmoss_collection_by_shop_id,
-    load_business_intelligence_data,
-    save_business_intelligence_data,
-)
-from seller.intelligence.config import USD_PHP_RATE
-from seller.intelligence.periods import resolve_periods
 from seller.intelligence.seller_master import (
     clear_seller_master_cache,
     get_seller_master,
 )
-from seller.fastmoss.review import approved_mapping_rows
-
 logger = logging.getLogger("seller.intelligence.sla_refresh")
 
 _lock = threading.Lock()
@@ -357,72 +346,30 @@ def run_sla_refresh_job() -> dict[str, Any]:
         )
 
         _begin_step("reload_sla")
-        today = date.today()
-        periods = resolve_periods(today)
-        approved = approved_mapping_rows()
-        total_bi = len(approved)
         bi_failed = 0
         bi_refreshed = 0
-        bi_data = load_business_intelligence_data() or {
-            "reference_today": today.isoformat(),
-            "periods": periods.as_dict(),
-            "usd_php_rate": USD_PHP_RATE,
-            "source": "fastmoss_recentData",
-            "sellers": [],
-        }
-        approved_ids = {str(r.get("shop_id")) for r in approved}
-        collection_by_shop = {
-            sid: row
-            for sid, row in fastmoss_collection_by_shop_id(bi_data).items()
-            if sid in approved_ids
-        }
-
-        for index, row in enumerate(approved, start=1):
-            shop_id = str(row.get("shop_id") or "")
-            if not shop_id:
-                continue
-            if index > 1 and delay_sec > 0:
-                time.sleep(delay_sec)
-            try:
-                collected = collect_mapped_shop_tiktok(row, periods, delay_sec=0)
-            except Exception as exc:
-                logger.warning("TikTok BI collect failed for %s: %s", shop_id, exc)
-                bi_failed += 1
-                counts["failed_count"] = counts.get("failed_count", 0) + 1
-                continue
-            collection_by_shop[shop_id] = collected
-            if collected.get("status") == "success":
-                bi_refreshed += 1
-            else:
-                bi_failed += 1
-            _tick_shop(
-                "reload_sla",
-                index,
-                total_bi,
-                counts={
-                    "failed_count": counts["failed_count"] + bi_failed,
-                },
+        try:
+            from seller.intelligence.business.bi_cache_refresh import (
+                BiCacheRefreshError,
+                refresh_bi_cache,
             )
 
-        sellers_list = list(collection_by_shop.values())
-        success = sum(1 for r in sellers_list if r.get("status") == "success")
-        bi_data.update(
-            {
-                "generated_at": _utc_now(),
-                "reference_today": today.isoformat(),
-                "periods": periods.as_dict(),
-                "usd_php_rate": USD_PHP_RATE,
-                "source": "fastmoss_recentData",
-                "summary": {
-                    "processed": len(sellers_list),
-                    "success": success,
-                    "failed": len(sellers_list) - success,
-                    "approved_only": True,
-                },
-                "sellers": sellers_list,
-            }
-        )
-        save_business_intelligence_data(bi_data)
+            bi_result = refresh_bi_cache(delay_sec=delay_sec, trigger="sla_update")
+            bi_refreshed = int(bi_result.get("collection_success") or 0)
+            updated = int(bi_result.get("updated_count") or 0)
+            bi_failed = max(0, updated - bi_refreshed)
+            _tick_shop(
+                "reload_sla",
+                updated or 1,
+                updated or 1,
+                counts={"failed_count": counts["failed_count"] + bi_failed},
+            )
+        except BiCacheRefreshError as exc:
+            logger.exception("TikTok BI cache refresh failed during SLA update: %s", exc)
+            bi_failed = 1
+            counts["failed_count"] = counts.get("failed_count", 0) + 1
+            bi_result = {"success": False, "error": str(exc), "cache_overwritten": False}
+        success = bi_refreshed
 
         _begin_step("historical_sob")
         historical_sob_result: dict[str, Any] = {}
@@ -454,6 +401,13 @@ def run_sla_refresh_job() -> dict[str, Any]:
                 "tiktok_data_refreshed_count": bi_refreshed,
                 "collection_success": success,
                 "failed_count": bi_failed,
+                "cache_overwritten": bool(
+                    isinstance(bi_result, dict) and bi_result.get("cache_overwritten")
+                ),
+                "periods": (bi_result or {}).get("periods") if isinstance(bi_result, dict) else None,
+                "elapsed_sec": (bi_result or {}).get("elapsed_sec")
+                if isinstance(bi_result, dict)
+                else None,
             },
             "historical_sob": historical_sob_result,
             "completion_message": (

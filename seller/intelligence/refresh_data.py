@@ -7,12 +7,10 @@ from datetime import date
 from typing import Any
 
 from seller.fastmoss.mapping import (
-    MAPPING_MAPPED,
     load_fastmoss_mapping,
     refresh_unresolved_fastmoss_mapping,
 )
 from seller.fastmoss.review import (
-    REVIEW_APPROVED,
     approved_mapping_rows,
     list_review_rows,
     review_summary,
@@ -34,7 +32,9 @@ def refresh_tiktok_bi_for_shop_ids(
     delay_sec: float = 0.35,
     reference_today: date | None = None,
 ) -> dict[str, Any]:
-    """Collect FastMoss TikTok GMV for specific approved shop IDs."""
+    """Collect FastMoss TikTok GMV for specific approved shop IDs (atomic overwrite on success)."""
+    from seller.intelligence.business.bi_cache_refresh import BiCacheRefreshError
+
     wanted = {str(shop_id) for shop_id in shop_ids if str(shop_id).strip()}
     if not wanted:
         return {"approved_count": 0, "tiktok_data_refreshed_count": 0, "collection_success": 0}
@@ -42,38 +42,37 @@ def refresh_tiktok_bi_for_shop_ids(
     today = reference_today or date.today()
     periods = resolve_periods(today)
     approved = [row for row in approved_mapping_rows() if str(row.get("shop_id")) in wanted]
-    bi_data = load_business_intelligence_data() or {
-        "reference_today": today.isoformat(),
-        "periods": periods.as_dict(),
-        "usd_php_rate": USD_PHP_RATE,
-        "source": "fastmoss_recentData",
-        "sellers": [],
-    }
+    previous = load_business_intelligence_data()
     approved_ids = {str(r.get("shop_id")) for r in approved_mapping_rows()}
     collection_by_shop = {
         sid: row
-        for sid, row in fastmoss_collection_by_shop_id(bi_data).items()
+        for sid, row in fastmoss_collection_by_shop_id(previous).items()
         if sid in approved_ids
     }
 
     refreshed = 0
     updated_rows: list[dict[str, Any]] = []
-    for index, row in enumerate(approved):
-        shop_id = str(row.get("shop_id") or "")
-        if not shop_id:
-            continue
-        if index > 0 and delay_sec > 0:
-            time.sleep(delay_sec)
-        collected = collect_mapped_shop_tiktok(row, periods, delay_sec=0)
-        collection_by_shop[shop_id] = collected
-        updated_rows.append(collected)
-        if collected.get("status") == "success":
-            refreshed += 1
+    try:
+        for index, row in enumerate(approved):
+            shop_id = str(row.get("shop_id") or "")
+            if not shop_id:
+                continue
+            if index > 0 and delay_sec > 0:
+                time.sleep(delay_sec)
+            collected = collect_mapped_shop_tiktok(row, periods, delay_sec=0)
+            collection_by_shop[shop_id] = collected
+            updated_rows.append(collected)
+            if collected.get("status") == "success":
+                refreshed += 1
 
-    sellers_list = list(collection_by_shop.values())
-    success = sum(1 for row in sellers_list if row.get("status") == "success")
-    bi_data.update(
-        {
+        if approved and refreshed == 0:
+            raise BiCacheRefreshError(
+                "Targeted FastMoss BI collects all failed — preserving previous cache"
+            )
+
+        sellers_list = list(collection_by_shop.values())
+        success = sum(1 for row in sellers_list if row.get("status") == "success")
+        bi_data = {
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "reference_today": today.isoformat(),
             "periods": periods.as_dict(),
@@ -87,8 +86,11 @@ def refresh_tiktok_bi_for_shop_ids(
             },
             "sellers": sellers_list,
         }
-    )
-    save_business_intelligence_data(bi_data)
+        save_business_intelligence_data(bi_data)
+    except Exception:
+        # Do not overwrite previous cache on failure.
+        raise
+
     return {
         "shop_ids": sorted(wanted),
         "approved_count": len(approved),
@@ -96,6 +98,7 @@ def refresh_tiktok_bi_for_shop_ids(
         "collection_success": refreshed,
         "shops": updated_rows,
         "periods": periods.as_dict(),
+        "cache_overwritten": True,
     }
 
 
@@ -103,63 +106,16 @@ def refresh_approved_tiktok_bi(
     *,
     delay_sec: float = 0.35,
     reference_today: date | None = None,
+    trigger: str = "refresh_approved",
 ) -> dict[str, Any]:
-    """Collect FastMoss TikTok GMV only for APPROVED mappings (current UI periods)."""
-    today = reference_today or date.today()
-    periods = resolve_periods(today)
-    approved = approved_mapping_rows()
-    bi_data = load_business_intelligence_data() or {
-        "reference_today": today.isoformat(),
-        "periods": periods.as_dict(),
-        "usd_php_rate": USD_PHP_RATE,
-        "source": "fastmoss_recentData",
-        "sellers": [],
-    }
-    approved_ids = {str(r.get("shop_id")) for r in approved}
-    collection_by_shop = {
-        sid: row
-        for sid, row in fastmoss_collection_by_shop_id(bi_data).items()
-        if sid in approved_ids
-    }
+    """Collect FastMoss TikTok GMV for APPROVED mappings; overwrite BI cache only on success."""
+    from seller.intelligence.business.bi_cache_refresh import refresh_bi_cache
 
-    refreshed = 0
-    for index, row in enumerate(approved):
-        shop_id = str(row.get("shop_id") or "")
-        if not shop_id:
-            continue
-        if index > 0 and delay_sec > 0:
-            time.sleep(delay_sec)
-        collected = collect_mapped_shop_tiktok(row, periods, delay_sec=0)
-        collection_by_shop[shop_id] = collected
-        if collected.get("status") == "success":
-            refreshed += 1
-
-    sellers_list = list(collection_by_shop.values())
-    success = sum(1 for row in sellers_list if row.get("status") == "success")
-    bi_data.update(
-        {
-            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "reference_today": today.isoformat(),
-            "periods": periods.as_dict(),
-            "usd_php_rate": USD_PHP_RATE,
-            "source": "fastmoss_recentData",
-            "summary": {
-                "processed": len(sellers_list),
-                "success": success,
-                "failed": len(sellers_list) - success,
-                "approved_only": True,
-            },
-            "sellers": sellers_list,
-        }
+    return refresh_bi_cache(
+        delay_sec=delay_sec,
+        reference_today=reference_today,
+        trigger=trigger,
     )
-    save_business_intelligence_data(bi_data)
-    return {
-        "approved_count": len(approved),
-        "tiktok_data_refreshed_count": refreshed,
-        "collection_success": success,
-        "periods": periods.as_dict(),
-        "reference_today": today.isoformat(),
-    }
 
 
 def refresh_all_intelligence_data() -> dict[str, Any]:
@@ -180,7 +136,6 @@ def refresh_all_intelligence_data() -> dict[str, Any]:
 
     from seller.intelligence.historical_sob import refresh_historical_sob
     from seller.intelligence.seller_master import get_seller_master
-    from seller.intelligence.assortment.service import get_assortment_intelligence
 
     historical_sob_result = refresh_historical_sob(force=True)
 

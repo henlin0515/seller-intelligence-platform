@@ -22,8 +22,9 @@ def test_new_product_badge_buckets():
     assert new_product_badge(2) == "3 DAYS"
     assert new_product_badge(5) == "7 DAYS"
     assert new_product_badge(10) == "14 DAYS"
-    assert new_product_badge(18) == "20 DAYS"
-    assert new_product_badge(30) is None
+    assert new_product_badge(18) == "21 DAYS"
+    assert new_product_badge(30) == "30 DAYS"
+    assert new_product_badge(31) is None
 
 
 def test_days_since_launch():

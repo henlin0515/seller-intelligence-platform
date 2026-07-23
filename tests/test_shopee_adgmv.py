@@ -46,6 +46,8 @@ def test_build_record_applies_shopee_without_touching_tiktok():
 
 
 def test_sob_pair_totals_100():
+    from unittest.mock import patch
+
     from seller.intelligence.business.meta import build_business_seller_record, validate_sob_rows
     from seller.intelligence.business.shopee_adgmv import ShopeeAdgmvRecord
 
@@ -57,14 +59,18 @@ def test_sob_pair_totals_100():
         "tiktok_mtd_adgmv_php": 6155.0,
         "tiktok_m1_adgmv_php": 6155.0,
     }
-    row = build_business_seller_record(
-        shop_id="1",
-        shop_name="Mumu PH",
-        tiktok_shop_name="Mumu PH",
-        mapping_row={"mapping_status": "MAPPED"},
-        collection_row=collection,
-        shopee_row=shopee,
-    )
+    with patch(
+        "seller.intelligence.business.meta.get_review_by_shop_id",
+        return_value={"review_status": "APPROVED"},
+    ):
+        row = build_business_seller_record(
+            shop_id="1",
+            shop_name="Mumu PH",
+            tiktok_shop_name="Mumu PH",
+            mapping_row={"mapping_status": "MAPPED", "tiktok_shop_name": "Mumu PH"},
+            collection_row=collection,
+            shopee_row=shopee,
+        )
     assert row["mtd_shopee_sob_percent"] is not None
     assert row["mtd_tiktok_sob_percent"] is not None
     assert abs(row["mtd_shopee_sob_percent"] + row["mtd_tiktok_sob_percent"] - 100.0) <= 0.05
