@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import random
 import time
 from datetime import date
@@ -14,6 +15,7 @@ from seller.fastmoss.client import (
     REQUEST_DELAY_SEC,
     REQUEST_TIMEOUT_SEC,
     RETRYABLE_STATUS,
+    anonymous_session,
     base_url,
     get_shared_session,
     new_session,
@@ -24,6 +26,11 @@ from seller.fastmoss.client import (
 logger = logging.getLogger("seller.fastmoss.recent_data")
 
 RECENT_DATA_PATH = "/api/shop/v3/recentData"
+
+# Paywall placeholder FastMoss returns under MAG_AUTH when not authorized.
+_PAYWALL_SENTINEL_SALE = 142217262690.98
+_SAFE_CODES = {"MSG_SAFE_0001", "MSG_SAFE_0002"}
+_MAX_LOGIC_RETRIES = int(os.getenv("FASTMOSS_LOGIC_RETRIES", "8"))
 
 # Backward-compatible aliases used by goods / radar / older scripts.
 _base_url = base_url
@@ -46,7 +53,7 @@ def prefetch_shop_detail(
     shop_id = str(fastmoss_shop_id or "").strip()
     if not shop_id:
         raise ValueError("fastmoss_shop_id is required")
-    client = session or new_session()
+    client = session or anonymous_session()
     url = _detail_referer(shop_id)
     resp = request_with_retry(
         client,
@@ -77,6 +84,57 @@ def parse_period_metrics(total_info: dict[str, Any]) -> dict[str, int | float]:
     }
 
 
+def _total_info_from_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    data = payload.get("data") or {}
+    if not isinstance(data, dict):
+        return {}
+    lst = data.get("list") or {}
+    if not isinstance(lst, dict):
+        return {}
+    info = lst.get("total_info") or {}
+    return info if isinstance(info, dict) else {}
+
+
+def _is_paywall_placeholder(total_info: dict[str, Any]) -> bool:
+    try:
+        sale = float(total_info.get("sale_amount"))
+    except (TypeError, ValueError):
+        return False
+    if abs(sale - _PAYWALL_SENTINEL_SALE) < 0.01:
+        return True
+    # Paywall stubs usually omit shop_name.
+    if not str(total_info.get("shop_name") or "").strip() and sale > 1e11:
+        return True
+    return False
+
+
+def _payload_has_usable_metrics(payload: dict[str, Any]) -> bool:
+    code = payload.get("code")
+    info = _total_info_from_payload(payload)
+    if not info or info.get("sale_amount") is None:
+        return False
+    if _is_paywall_placeholder(info):
+        return False
+    if code in (200, "200"):
+        return True
+    # Some MAG_AUTH_* responses still include real metrics (with shop_name).
+    if str(code).startswith("MAG_AUTH") and str(info.get("shop_name") or "").strip():
+        return True
+    return False
+
+
+def _should_retry_logic(payload: dict[str, Any]) -> bool:
+    code = str(payload.get("code") or "")
+    if code in _SAFE_CODES:
+        return True
+    if code.startswith("MAG_AUTH"):
+        info = _total_info_from_payload(payload)
+        return (not info) or _is_paywall_placeholder(info) or not str(
+            info.get("shop_name") or ""
+        ).strip()
+    return False
+
+
 def fetch_recent_data(
     fastmoss_shop_id: str,
     start: date,
@@ -84,11 +142,15 @@ def fetch_recent_data(
     *,
     session: requests.Session | None = None,
     prefetch_detail: bool = True,
+    prefer_anonymous: bool = True,
 ) -> tuple[dict[str, Any], str, requests.Session]:
     """
     Fetch recentData for a FastMoss shop and date range.
 
-    Returns ({"total_info": ..., "trend": [...]}, request_url, session).
+    Strategy:
+    - Prefer anonymous session (logged-in Cookie often trips MSG_SAFE_0001).
+    - Retry on MSG_SAFE / paywall MAG_AUTH placeholders with backoff.
+    - Fall back to cookie session once if anonymous keeps failing.
     """
     shop_id = str(fastmoss_shop_id or "").strip()
     if not shop_id:
@@ -96,41 +158,81 @@ def fetch_recent_data(
     if end < start:
         raise ValueError("end_date must be on or after start_date")
 
-    client = (
-        prefetch_shop_detail(shop_id, session)
-        if prefetch_detail
-        else (session or get_shared_session())
-    )
+    modes: list[tuple[str, requests.Session]] = []
+    if prefer_anonymous:
+        modes.append(("anonymous", session if session is not None else anonymous_session()))
+        modes.append(("cookie", new_session()))
+    else:
+        modes.append(("cookie", session or get_shared_session()))
+        modes.append(("anonymous", anonymous_session()))
 
-    params = {
-        "id": shop_id,
-        # Must match Seller Intelligence UI MTD / M-1 period chips (ISO dates).
-        "start_date": start.isoformat(),
-        "end_date": end.isoformat(),
-        "region": region(),
-        "_time": str(int(time.time())),
-        "cnonce": str(random.randint(10_000_000, 99_999_999)),
-    }
-    url = f"{base_url()}{RECENT_DATA_PATH}"
-    headers = {"Referer": _detail_referer(shop_id)}
-    resp = request_with_retry(
-        client,
-        "GET",
-        url,
-        params=params,
-        headers=headers,
-    )
-    payload: dict[str, Any] = resp.json()
-    if payload.get("code") != 200:
-        message = payload.get("message") or payload.get("msg") or payload.get("code")
-        raise RuntimeError(f"FastMoss recentData error: {message}")
+    last_message = "unknown"
+    last_client = modes[0][1]
+    last_url = f"{base_url()}{RECENT_DATA_PATH}"
 
-    data = payload.get("data") or {}
-    lst = data.get("list") or {}
-    return {
-        "total_info": lst.get("total_info") or {},
-        "trend": lst.get("trend") or [],
-    }, resp.url, client
+    for mode_name, base_client in modes:
+        client = base_client
+        for attempt in range(1, _MAX_LOGIC_RETRIES + 1):
+            if prefetch_detail and attempt == 1:
+                client = prefetch_shop_detail(shop_id, client)
+            elif attempt > 1:
+                # Rotate session after soft blocks.
+                client = anonymous_session() if mode_name == "anonymous" else new_session()
+
+            params = {
+                "id": shop_id,
+                "start_date": start.isoformat(),
+                "end_date": end.isoformat(),
+                "region": region(),
+                "_time": str(int(time.time())),
+                "cnonce": str(random.randint(10_000_000, 99_999_999)),
+            }
+            url = f"{base_url()}{RECENT_DATA_PATH}"
+            headers = {"Referer": _detail_referer(shop_id)}
+            resp = request_with_retry(
+                client,
+                "GET",
+                url,
+                params=params,
+                headers=headers,
+                raise_for_status=False,
+            )
+            last_url = resp.url
+            last_client = client
+            try:
+                payload: dict[str, Any] = resp.json()
+            except Exception:
+                last_message = f"HTTP {resp.status_code} non-JSON"
+                time.sleep(1.2 * attempt + random.uniform(0.3, 1.0))
+                continue
+
+            if _payload_has_usable_metrics(payload):
+                data = payload.get("data") or {}
+                lst = data.get("list") or {}
+                return {
+                    "total_info": lst.get("total_info") or {},
+                    "trend": lst.get("trend") or [],
+                }, resp.url, client
+
+            code = payload.get("code")
+            last_message = str(
+                payload.get("message") or payload.get("msg") or code or f"HTTP {resp.status_code}"
+            )
+            if _should_retry_logic(payload) and attempt < _MAX_LOGIC_RETRIES:
+                logger.warning(
+                    "FastMoss recentData %s for %s (%s attempt %s/%s) — retrying",
+                    code,
+                    shop_id,
+                    mode_name,
+                    attempt,
+                    _MAX_LOGIC_RETRIES,
+                )
+                time.sleep(1.5 * attempt + random.uniform(0.5, 2.0))
+                continue
+            # Non-retryable for this mode — try next mode.
+            break
+
+    raise RuntimeError(f"FastMoss recentData error: {last_message}")
 
 
 def fetch_shop_period_metrics(

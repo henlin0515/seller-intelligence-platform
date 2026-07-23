@@ -7,7 +7,7 @@ import time
 from datetime import date
 from typing import Any
 
-from seller.fastmoss.client import REQUEST_DELAY_MIN_SEC, get_shared_session, healthcheck
+from seller.fastmoss.client import REQUEST_DELAY_MIN_SEC, anonymous_session, healthcheck
 from seller.fastmoss.recent_data import fetch_period_gmv_php, prefetch_shop_detail
 from seller.fastmoss.review import approved_mapping_rows
 from seller.intelligence.config import USD_PHP_RATE
@@ -33,9 +33,7 @@ def collect_mapped_shop_tiktok(
     """
     Collect MTD/M-1 GMV for one mapped shop and derive daily ADGMV.
 
-    Per-request pacing/retry lives in ``seller.fastmoss.client``. Extra
-    ``delay_sec`` sleeps (legacy) are only applied between MTD and M-1 when > 0.
-    Failures are marked on the shop row; callers should continue other shops.
+    Uses anonymous FastMoss sessions by default (login Cookie often trips MSG_SAFE_0001).
     """
     shop_id = str(mapping_row.get("shop_id") or "")
     shop_name = str(mapping_row.get("shop_name") or "")
@@ -66,7 +64,7 @@ def collect_mapped_shop_tiktok(
     }
 
     try:
-        client = prefetch_shop_detail(fastmoss_shop_id, session or get_shared_session())
+        client = prefetch_shop_detail(fastmoss_shop_id, session or anonymous_session())
         if delay_sec > 0:
             time.sleep(delay_sec)
         mtd_gmv, mtd_url, client = fetch_period_gmv_php(
@@ -128,14 +126,10 @@ def collect_all_mapped_shops(
             )
 
     sellers: list[dict[str, Any]] = []
-    shared = get_shared_session()
     for index, row in enumerate(mapped_rows):
-        # Client already random-throttles; optional extra gap between shops.
         if index > 0 and delay_sec > 0:
             time.sleep(delay_sec)
-        sellers.append(
-            collect_mapped_shop_tiktok(row, periods, delay_sec=0, session=shared)
-        )
+        sellers.append(collect_mapped_shop_tiktok(row, periods, delay_sec=0, session=None))
 
     success = sum(1 for row in sellers if row.get("status") == "success")
     failed = len(sellers) - success

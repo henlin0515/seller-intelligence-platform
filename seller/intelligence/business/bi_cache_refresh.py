@@ -7,7 +7,12 @@ import time
 from datetime import date
 from typing import Any
 
-from seller.fastmoss.client import cookie_configured, get_last_health, get_shared_session, healthcheck
+from seller.fastmoss.client import (
+    anonymous_session,
+    cookie_configured,
+    get_last_health,
+    healthcheck,
+)
 from seller.fastmoss.review import approved_mapping_rows
 from seller.intelligence.business.collector import collect_mapped_shop_tiktok
 from seller.intelligence.business.store import (
@@ -173,7 +178,6 @@ def refresh_bi_cache(
         sellers: list[dict[str, Any]] = []
         refreshed = 0
         failed_shops: list[dict[str, str]] = []
-        shared = get_shared_session()
         for index, row in enumerate(approved):
             shop_id = str(row.get("shop_id") or "")
             if not shop_id:
@@ -181,7 +185,8 @@ def refresh_bi_cache(
             if index > 0 and delay_sec > 0:
                 time.sleep(delay_sec)
             try:
-                collected = collect(row, periods, delay_sec=0, session=shared)
+                # Fresh anonymous session per shop avoids MSG_SAFE login lockouts.
+                collected = collect(row, periods, delay_sec=0, session=anonymous_session())
             except TypeError:
                 # Test doubles / older collect_fn without session kwarg.
                 collected = collect(row, periods, delay_sec=0)
