@@ -16,6 +16,7 @@ logger = logging.getLogger("seller.intelligence.historical_sob.ytd_monthly")
 
 DEFAULT_YTD_MONTHLY_TAB = "ytd monthly data"
 
+# Kept for period metadata / docs only — sheet values are not multiplied.
 MAY_DAY_COUNT = 31
 JUNE_DAY_COUNT = 30
 
@@ -124,15 +125,13 @@ class YtdMonthlyRecord:
 
     @property
     def may_shopee_gmv(self) -> float | None:
-        if self.ytd_may_adgmv is None:
-            return None
-        return self.ytd_may_adgmv * MAY_DAY_COUNT
+        """Sheet ``ytd_may_adgmv`` is used as-is (no × day-count)."""
+        return self.ytd_may_adgmv
 
     @property
     def june_shopee_gmv(self) -> float | None:
-        if self.ytd_june_adgmv is None:
-            return None
-        return self.ytd_june_adgmv * JUNE_DAY_COUNT
+        """Sheet ``ytd_june_adgmv`` is used as-is (no × day-count)."""
+        return self.ytd_june_adgmv
 
 
 @dataclass

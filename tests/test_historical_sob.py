@@ -55,11 +55,11 @@ class YtdMonthlyParseTests(unittest.TestCase):
         result = parse_ytd_monthly_rows(rows)
         self.assertEqual(result.stats.total_loaded, 2)
         rec = result.by_shop_name[normalize_shop_name("Shop A")]
-        self.assertEqual(rec.may_shopee_gmv, 3100.0)  # 100 * 31
-        self.assertEqual(rec.june_shopee_gmv, 6000.0)  # 200 * 30
+        self.assertEqual(rec.may_shopee_gmv, 100.0)
+        self.assertEqual(rec.june_shopee_gmv, 200.0)
         partial = result.by_shop_name[normalize_shop_name("Shop B")]
-        self.assertEqual(partial.may_shopee_gmv, 1565.5)
-        self.assertEqual(partial.june_shopee_gmv, 2257.5)
+        self.assertEqual(partial.may_shopee_gmv, 50.5)
+        self.assertEqual(partial.june_shopee_gmv, 75.25)
 
     def test_match_by_shop_id_primary(self):
         rows = [
@@ -69,7 +69,7 @@ class YtdMonthlyParseTests(unittest.TestCase):
         ytd = parse_ytd_monthly_rows(rows)
         rec = lookup_ytd_record(ytd, shop_name="LaLa_Shoes.PH", shop_id="64329852")
         self.assertIsNotNone(rec)
-        self.assertEqual(rec.may_shopee_gmv, 310.0)
+        self.assertEqual(rec.may_shopee_gmv, 10.0)
 
     def test_match_by_shop_name_fallback(self):
         rows = [
@@ -79,7 +79,7 @@ class YtdMonthlyParseTests(unittest.TestCase):
         ytd = parse_ytd_monthly_rows(rows)
         rec = lookup_ytd_record(ytd, shop_name="LaLa_Shoes.PH", shop_id="64329852")
         self.assertIsNotNone(rec)
-        self.assertEqual(rec.may_shopee_gmv, 310.0)
+        self.assertEqual(rec.may_shopee_gmv, 10.0)
 
     def test_resolve_ytd_tab_title_case_insensitive(self):
         titles = ["AI data", "YTD Monthly Data", "shpoee link"]
@@ -143,8 +143,8 @@ class HistoricalSobRowTests(unittest.TestCase):
 
         shop_a = next(r for r in rows if r["shop_id"] == "1")
         shop_b = next(r for r in rows if r["shop_id"] == "2")
-        may_shopee = 3100.0
-        june_shopee = 3000.0
+        may_shopee = 100.0
+        june_shopee = 100.0
         may_tiktok_usd = round(tiktok_php_to_usd(1000.0), 2)
         june_tiktok_usd = round(tiktok_php_to_usd(2000.0), 2)
         _, expected_may_tiktok_sob = sob_pair(may_shopee, may_tiktok_usd)

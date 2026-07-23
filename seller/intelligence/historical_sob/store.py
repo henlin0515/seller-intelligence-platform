@@ -15,8 +15,8 @@ DEFAULT_CACHE_PATH = Path(
 CACHE_VERSION = 2
 PERIOD_KEY = "2026-05_2026-06"
 HISTORICAL_PERIODS = {
-    "may": {"start": "2026-05-01", "end": "2026-05-31", "shopee_multiplier": 31},
-    "june": {"start": "2026-06-01", "end": "2026-06-30", "shopee_multiplier": 30},
+    "may": {"start": "2026-05-01", "end": "2026-05-31", "shopee_multiplier": 1},
+    "june": {"start": "2026-06-01", "end": "2026-06-30", "shopee_multiplier": 1},
 }
 
 
