@@ -203,7 +203,10 @@ def _shop_sob_row(
             tiktok_na_reason = str(tiktok_cache.get("error") if tiktok_cache else "TikTok historical data not cached")
         else:
             tiktok_na_reason = "FastMoss shop not mapped"
-    elif allows_tiktok_data(review_status) and mapping_row:
+    elif mapping_row and (
+        allows_tiktok_data(review_status)
+        or str(fastmoss_match_status or "").upper() == MAPPING_MAPPED
+    ):
         fastmoss_id = str(mapping_row.get("fastmoss_shop_id") or "").strip()
         if fastmoss_id and tiktok_cache and tiktok_cache.get("status") == "success":
             may_tiktok = _tiktok_gmv_usd(tiktok_cache.get("may_gmv_php"))
@@ -222,7 +225,7 @@ def _shop_sob_row(
             tiktok_na_reason = str(tiktok_cache.get("error") or "TikTok historical fetch failed")
         else:
             tiktok_na_reason = "TikTok historical data not cached — click Refresh Data"
-    elif review_status != REVIEW_APPROVED:
+    elif review_status and review_status != REVIEW_APPROVED:
         tiktok_na_reason = f"Mapping status: {review_status}"
     else:
         tiktok_na_reason = "FastMoss shop not mapped"
@@ -591,6 +594,81 @@ def _na_preview(rows: list[dict[str, Any]], *, limit: int = 20) -> list[dict[str
     return preview
 
 
+def _historical_tiktok_targets(
+    master: SellerMasterLoadResult | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Build FastMoss fetch targets for Historical SOB.
+
+    Prefer merged Historical SOB rows when seller master is available; otherwise
+    fall back to MAPPED rows in fastmoss_mapping.json (no Google Sheets required).
+    """
+    targets: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    if master is not None:
+        try:
+            ytd = get_ytd_monthly()
+            merged_rows = build_historical_sob_rows(master, ytd=ytd)
+            for row in merged_rows:
+                fastmoss_id = str(row.get("fastmoss_shop_id") or "").strip()
+                shop_id = str(row.get("shop_id") or "").strip()
+                if not fastmoss_id or not shop_id or shop_id in seen:
+                    continue
+                if row.get("platform_source") == "SHOPEE_ONLY":
+                    continue
+                seen.add(shop_id)
+                targets.append(
+                    {
+                        "shop_id": shop_id,
+                        "fastmoss_shop_id": fastmoss_id,
+                        "tiktok_shop_name": row.get("tiktok_shop_name"),
+                    }
+                )
+            if targets:
+                return targets
+        except Exception as exc:
+            logger.warning("Historical SOB target build via master failed: %s", exc)
+
+    try:
+        from seller.fastmoss.mapping import load_fastmoss_mapping
+        from seller.fastmoss.review import allows_tiktok_data, get_review_by_shop_id
+    except Exception as exc:
+        logger.warning("Historical SOB mapping fallback unavailable: %s", exc)
+        return targets
+
+    try:
+        payload = load_fastmoss_mapping()
+    except OSError as exc:
+        logger.warning("Could not load fastmoss_mapping.json: %s", exc)
+        return targets
+
+    for row in payload.get("mappings") or []:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("mapping_status") or "").upper() != MAPPING_MAPPED:
+            continue
+        shop_id = str(row.get("shop_id") or "").strip()
+        fastmoss_id = str(row.get("fastmoss_shop_id") or "").strip()
+        if not shop_id or not fastmoss_id or shop_id in seen:
+            continue
+        review = get_review_by_shop_id(shop_id)
+        review_status = str((review or {}).get("review_status") or "")
+        # Include MAPPED rows; prefer APPROVED for TikTok display, but still fetch.
+        if review_status and not allows_tiktok_data(review_status):
+            # Still fetch so cache is ready once approved; include in targets.
+            pass
+        seen.add(shop_id)
+        targets.append(
+            {
+                "shop_id": shop_id,
+                "fastmoss_shop_id": fastmoss_id,
+                "tiktok_shop_name": row.get("tiktok_shop_name") or row.get("fastmoss_shop_name"),
+            }
+        )
+    return targets
+
+
 def refresh_historical_sob_tiktok_cache(
     master: SellerMasterLoadResult | None = None,
     *,
@@ -598,26 +676,7 @@ def refresh_historical_sob_tiktok_cache(
     force: bool = False,
 ) -> dict[str, Any]:
     """Fetch May/June TikTok GMV for mapped shops in the merged Historical SOB universe."""
-    master = master or get_seller_master()
-    ytd = get_ytd_monthly()
-    merged_rows = build_historical_sob_rows(master, ytd=ytd)
-    targets: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for row in merged_rows:
-        fastmoss_id = str(row.get("fastmoss_shop_id") or "").strip()
-        shop_id = str(row.get("shop_id") or "").strip()
-        if not fastmoss_id or not shop_id or shop_id in seen:
-            continue
-        if row.get("platform_source") == "SHOPEE_ONLY":
-            continue
-        seen.add(shop_id)
-        targets.append(
-            {
-                "shop_id": shop_id,
-                "fastmoss_shop_id": fastmoss_id,
-                "tiktok_shop_name": row.get("tiktok_shop_name"),
-            }
-        )
+    targets = _historical_tiktok_targets(master)
 
     cache = load_historical_sob_cache()
     shops: dict[str, Any] = dict(cache.get("shops") or {})
@@ -652,6 +711,22 @@ def refresh_historical_sob_tiktok_cache(
             collected["tiktok_shop_name"] = row.get("tiktok_shop_name")
             shops[shop_id] = collected
             fetched += 1
+            if fetched % 5 == 0 or fetched == 1:
+                cache["shops"] = shops
+                save_historical_sob_cache(cache)
+                logger.info(
+                    "Historical TikTok progress %s/%s (last shop_id=%s may=%s june=%s)",
+                    fetched,
+                    len(targets),
+                    shop_id,
+                    collected.get("may_gmv_php"),
+                    collected.get("june_gmv_php"),
+                )
+                print(
+                    f"progress {fetched}/{len(targets)} shop={shop_id} "
+                    f"may={collected.get('may_gmv_php')} june={collected.get('june_gmv_php')}",
+                    flush=True,
+                )
         except Exception as exc:
             logger.warning("Historical TikTok fetch failed for shop %s: %s", shop_id, exc)
             shops[shop_id] = {
@@ -677,17 +752,29 @@ def refresh_historical_sob_tiktok_cache(
 
 
 def refresh_historical_sob(*, force: bool = True) -> dict[str, Any]:
-    """Reload sheets and refresh TikTok historical cache."""
-    master = get_seller_master(force_refresh=True)
-    ytd = get_ytd_monthly(force_refresh=True)
+    """Reload sheets (when available) and refresh TikTok historical cache."""
+    master: SellerMasterLoadResult | None = None
+    ytd = None
+    try:
+        master = get_seller_master(force_refresh=True)
+        ytd = get_ytd_monthly(force_refresh=True)
+    except Exception as exc:
+        logger.warning("Historical SOB sheet reload skipped: %s", exc)
+
     tiktok_result = refresh_historical_sob_tiktok_cache(master, force=force)
     cache = load_historical_sob_cache()
-    rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache=cache)
-    portfolio = build_portfolio_historical_sob(rows)
+    if master is not None and ytd is not None:
+        rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache=cache)
+        portfolio = build_portfolio_historical_sob(rows)
+        summary = _summary_counts(rows, master, ytd=ytd, cache=cache, portfolio=portfolio)
+    else:
+        rows = []
+        portfolio = {}
+        summary = {**_tiktok_cache_counts(cache), "sheet_reload": "skipped"}
     return {
         "success": True,
         "refreshed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "summary": _summary_counts(rows, master, ytd=ytd, cache=cache, portfolio=portfolio),
+        "summary": summary,
         "tiktok_cache": tiktok_result,
     }
 
