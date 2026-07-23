@@ -367,7 +367,7 @@ async def intelligence_v1_voucher():
 
 @router.get("/historical-sob")
 async def intelligence_v1_historical_sob():
-    """Historical April/May SOB — seller master + YTD sheet + cached FastMoss TikTok GMV."""
+    """Historical May/June SOB — seller master + YTD sheet + cached FastMoss TikTok GMV."""
     import asyncio
 
     from seller.intelligence.historical_sob import get_historical_sob_payload

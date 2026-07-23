@@ -2218,11 +2218,11 @@
   transition: height 0.45s ease;
 }
 
-.hs-trend-bar--apr {
+.hs-trend-bar--may {
   background: linear-gradient(180deg, #b57bff 0%, #7a4fd4 100%);
 }
 
-.hs-trend-bar--may {
+.hs-trend-bar--june {
   background: linear-gradient(180deg, #ff8a3d 0%, #c96520 100%);
 }
 

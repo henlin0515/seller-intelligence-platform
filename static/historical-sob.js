@@ -228,22 +228,22 @@
     const cmp = (a, b) => (a > b ? 1 : a < b ? -1 : 0);
     copy.sort((a, b) => {
       switch (filters.sort) {
-        case "april_sob":
-          return cmp(
-            b.april_tiktok_sob_percent ?? -1,
-            a.april_tiktok_sob_percent ?? -1
-          );
         case "may_sob":
-          return cmp(b.may_tiktok_sob_percent ?? -1, a.may_tiktok_sob_percent ?? -1);
+          return cmp(
+            b.may_tiktok_sob_percent ?? -1,
+            a.may_tiktok_sob_percent ?? -1
+          );
+        case "june_sob":
+          return cmp(b.june_tiktok_sob_percent ?? -1, a.june_tiktok_sob_percent ?? -1);
         case "tiktok_sob":
           return cmp(
-            b.may_tiktok_sob_percent ?? b.april_tiktok_sob_percent ?? -1,
-            a.may_tiktok_sob_percent ?? a.april_tiktok_sob_percent ?? -1
+            b.june_tiktok_sob_percent ?? b.may_tiktok_sob_percent ?? -1,
+            a.june_tiktok_sob_percent ?? a.may_tiktok_sob_percent ?? -1
           );
         case "shopee_sob":
           return cmp(
-            b.may_shopee_sob_percent ?? b.april_shopee_sob_percent ?? -1,
-            a.may_shopee_sob_percent ?? a.april_shopee_sob_percent ?? -1
+            b.june_shopee_sob_percent ?? b.may_shopee_sob_percent ?? -1,
+            a.june_shopee_sob_percent ?? a.may_shopee_sob_percent ?? -1
           );
         case "sob_change":
           return cmp(
@@ -300,8 +300,8 @@
   }
 
   function hsPeriodGmvUsd(row, period, platform) {
-    const shpField = period === "april" ? "april_shopee_gmv" : "may_shopee_gmv";
-    const tkField = period === "april" ? "april_tiktok_gmv" : "may_tiktok_gmv";
+    const shpField = period === "may" ? "may_shopee_gmv" : "june_shopee_gmv";
+    const tkField = period === "may" ? "may_tiktok_gmv" : "june_tiktok_gmv";
     const field = platform === "shp" ? shpField : tkField;
     const v = row[field];
     if (v == null || v === "" || Number.isNaN(Number(v))) return 0;
@@ -345,7 +345,7 @@
         </div>`;
   }
 
-  function renderHsSummaryCard(title, { prompt, selection, aprilSob, maySob }) {
+  function renderHsSummaryCard(title, { prompt, selection, maySob, juneSob }) {
     const head = `<h3 class="si-sla-summary-card__title">${escapeHtml(title)}</h3>`;
     if (prompt) {
       return `<article class="si-sla-summary-card">${head}<p class="si-sla-summary-card__prompt">${escapeHtml(prompt)}</p></article>`;
@@ -360,13 +360,13 @@
     return `<article class="si-sla-summary-card">
       ${head}${sel}
       <div class="hs-summary-periods">
-        ${periodBlock("April", aprilSob)}
         ${periodBlock("May", maySob)}
+        ${periodBlock("June", juneSob)}
       </div>
     </article>`;
   }
 
-  function renderHsCategorySobCard(categoryName, matchedCount, aprilSob, maySob) {
+  function renderHsCategorySobCard(categoryName, matchedCount, maySob, juneSob) {
     const head = `<h4 class="si-sla-summary-card__title">${escapeHtml(categoryName)}</h4>`;
     const countLine = `<p class="si-sla-summary-card__count">${fmtNum(matchedCount)} shops in scope</p>`;
     const periodBlock = (label, sob) => {
@@ -377,8 +377,8 @@
     };
     return `<article class="si-sla-summary-card si-sla-summary-card--category">
       ${head}${countLine}
-      ${periodBlock("Apr", aprilSob)}
       ${periodBlock("May", maySob)}
+      ${periodBlock("Jun", juneSob)}
     </article>`;
   }
 
@@ -414,13 +414,13 @@
     const f = filters;
     const filtered = filterSellers(sellers);
     const scopeLabel = hsFilteredScopeLabel(filtered, f);
-    const aprilScope = computeHsSummarySob(filtered, "april");
     const mayScope = computeHsSummarySob(filtered, "may");
+    const juneScope = computeHsSummarySob(filtered, "june");
 
     const overallCard = renderHsSummaryCard("Overall SOB", {
       selection: scopeLabel,
-      aprilSob: aprilScope,
       maySob: mayScope,
+      juneSob: juneScope,
     });
 
     let gpCard;
@@ -429,8 +429,8 @@
     } else {
       gpCard = renderHsSummaryCard("GP SOB", {
         selection: `${f.gp} · ${scopeLabel}`,
-        aprilSob: aprilScope,
         maySob: mayScope,
+        juneSob: juneScope,
       });
     }
 
@@ -440,8 +440,8 @@
     } else {
       rmCard = renderHsSummaryCard("RM SOB", {
         selection: `${f.rm} · ${scopeLabel}`,
-        aprilSob: aprilScope,
         maySob: mayScope,
+        juneSob: juneScope,
       });
     }
 
@@ -462,8 +462,8 @@
           return renderHsCategorySobCard(
             cat.name,
             matched.length,
-            computeHsSummarySob(matched, "april"),
-            computeHsSummarySob(matched, "may")
+            computeHsSummarySob(matched, "may"),
+            computeHsSummarySob(matched, "june")
           );
         })
         .join("");
@@ -496,22 +496,16 @@
     return `
       <div class="si-port-kpi-grid hs-page-kpis">
         ${renderPortfolioKpi(
-          i18n("historicalSob.kpiAprPortfolioGmv", "April Portfolio GMV"),
-          gmv(k.april_portfolio_gmv),
-          "Shopee + TikTok",
-          "hero"
-        )}
-        ${renderPortfolioKpi(
           i18n("historicalSob.kpiMayPortfolioGmv", "May Portfolio GMV"),
           gmv(k.may_portfolio_gmv),
           "Shopee + TikTok",
           "hero"
         )}
         ${renderPortfolioKpi(
-          i18n("historicalSob.kpiAprShopeeSob", "April Shopee SOB"),
-          pct(k.april_shopee_sob_percent),
-          "",
-          "shopee"
+          i18n("historicalSob.kpiJunePortfolioGmv", "June Portfolio GMV"),
+          gmv(k.june_portfolio_gmv),
+          "Shopee + TikTok",
+          "hero"
         )}
         ${renderPortfolioKpi(
           i18n("historicalSob.kpiMayShopeeSob", "May Shopee SOB"),
@@ -520,10 +514,10 @@
           "shopee"
         )}
         ${renderPortfolioKpi(
-          i18n("historicalSob.kpiAprTiktokSob", "April TikTok SOB"),
-          pct(k.april_tiktok_sob_percent),
+          i18n("historicalSob.kpiJuneShopeeSob", "June Shopee SOB"),
+          pct(k.june_shopee_sob_percent),
           "",
-          "tiktok"
+          "shopee"
         )}
         ${renderPortfolioKpi(
           i18n("historicalSob.kpiMayTiktokSob", "May TikTok SOB"),
@@ -532,9 +526,15 @@
           "tiktok"
         )}
         ${renderPortfolioKpi(
+          i18n("historicalSob.kpiJuneTiktokSob", "June TikTok SOB"),
+          pct(k.june_tiktok_sob_percent),
+          "",
+          "tiktok"
+        )}
+        ${renderPortfolioKpi(
           i18n("historicalSob.kpiPortfolioSobChange", "Portfolio MoM SOB Change"),
           change,
-          "May TikTok SOB − April",
+          "June TikTok SOB − May",
           "accent"
         )}
       </div>`;
@@ -594,25 +594,25 @@
   }
 
   function renderTrendChart(row) {
-    const apr = clampSobPct(row.april_tiktok_sob_percent);
-    const may = clampSobPct(row.may_tiktok_sob_percent);
-    if (apr == null && may == null) {
+    const mayPct = clampSobPct(row.may_tiktok_sob_percent);
+    const junePct = clampSobPct(row.june_tiktok_sob_percent);
+    if (mayPct == null && junePct == null) {
       return `<p class="si-v1-empty">${escapeHtml(i18n("historicalSob.trendNa", "Trend unavailable"))}</p>`;
     }
-    const max = Math.max(apr || 0, may || 0, 1);
-    const aprH = apr == null ? 0 : (apr / max) * 100;
-    const mayH = may == null ? 0 : (may / max) * 100;
+    const max = Math.max(mayPct || 0, junePct || 0, 1);
+    const mayH = mayPct == null ? 0 : (mayPct / max) * 100;
+    const juneH = junePct == null ? 0 : (junePct / max) * 100;
     return `
-      <div class="hs-trend-chart" aria-label="TikTok SOB trend April vs May">
-        <div class="hs-trend-col">
-          <div class="hs-trend-bar hs-trend-bar--apr" style="height:${aprH}%"></div>
-          <span class="hs-trend-label">Apr</span>
-          <span class="hs-trend-value">${fmtPct(apr)}</span>
-        </div>
+      <div class="hs-trend-chart" aria-label="TikTok SOB trend May vs June">
         <div class="hs-trend-col">
           <div class="hs-trend-bar hs-trend-bar--may" style="height:${mayH}%"></div>
           <span class="hs-trend-label">May</span>
-          <span class="hs-trend-value">${fmtPct(may)}</span>
+          <span class="hs-trend-value">${fmtPct(mayPct)}</span>
+        </div>
+        <div class="hs-trend-col">
+          <div class="hs-trend-bar hs-trend-bar--june" style="height:${juneH}%"></div>
+          <span class="hs-trend-label">Jun</span>
+          <span class="hs-trend-value">${fmtPct(junePct)}</span>
         </div>
       </div>`;
   }
@@ -621,20 +621,20 @@
     return `
       <div class="hs-detail-kpi-grid">
         <article class="si-port-kpi si-port-kpi--shopee">
-          <div class="si-port-kpi-label">April Shopee GMV</div>
-          <div class="si-port-kpi-value">${escapeHtml(fmtUsd(row.april_shopee_gmv) || "N/A")}</div>
-        </article>
-        <article class="si-port-kpi si-port-kpi--tiktok">
-          <div class="si-port-kpi-label">April TikTok GMV</div>
-          <div class="si-port-kpi-value">${escapeHtml(fmtUsd(row.april_tiktok_gmv) || "N/A")}</div>
-        </article>
-        <article class="si-port-kpi si-port-kpi--shopee">
           <div class="si-port-kpi-label">May Shopee GMV</div>
           <div class="si-port-kpi-value">${escapeHtml(fmtUsd(row.may_shopee_gmv) || "N/A")}</div>
         </article>
         <article class="si-port-kpi si-port-kpi--tiktok">
           <div class="si-port-kpi-label">May TikTok GMV</div>
           <div class="si-port-kpi-value">${escapeHtml(fmtUsd(row.may_tiktok_gmv) || "N/A")}</div>
+        </article>
+        <article class="si-port-kpi si-port-kpi--shopee">
+          <div class="si-port-kpi-label">June Shopee GMV</div>
+          <div class="si-port-kpi-value">${escapeHtml(fmtUsd(row.june_shopee_gmv) || "N/A")}</div>
+        </article>
+        <article class="si-port-kpi si-port-kpi--tiktok">
+          <div class="si-port-kpi-label">June TikTok GMV</div>
+          <div class="si-port-kpi-value">${escapeHtml(fmtUsd(row.june_tiktok_gmv) || "N/A")}</div>
         </article>
         <article class="si-port-kpi si-port-kpi--accent">
           <div class="si-port-kpi-label">SOB Change</div>
@@ -644,14 +644,6 @@
   }
 
   function renderDetailPanel(row) {
-    const aprBlock = renderSobPeriodBlock(
-      "April",
-      row.april_shopee_sob_percent,
-      row.april_tiktok_sob_percent,
-      row.april_shopee_gmv,
-      row.april_tiktok_gmv,
-      true
-    );
     const mayBlock = renderSobPeriodBlock(
       "May",
       row.may_shopee_sob_percent,
@@ -660,8 +652,16 @@
       row.may_tiktok_gmv,
       true
     );
+    const juneBlock = renderSobPeriodBlock(
+      "June",
+      row.june_shopee_sob_percent,
+      row.june_tiktok_sob_percent,
+      row.june_shopee_gmv,
+      row.june_tiktok_gmv,
+      true
+    );
     const divider =
-      aprBlock && mayBlock ? `<div class="si-biz-sob-card-divider" role="presentation"></div>` : "";
+      mayBlock && juneBlock ? `<div class="si-biz-sob-card-divider" role="presentation"></div>` : "";
 
     return `
       <div class="si-biz-detail-panel">
@@ -679,9 +679,9 @@
           </div>
           <div class="si-biz-sob-card-body">
             ${renderHistoricalSobCards(row)}
-            ${aprBlock}
-            ${divider}
             ${mayBlock}
+            ${divider}
+            ${juneBlock}
             <h4 class="hs-detail-subtitle">${escapeHtml(i18n("historicalSob.detailTrend", "TikTok SOB trend"))}</h4>
             ${renderTrendChart(row)}
           </div>
@@ -729,13 +729,13 @@
           <td>${escapeHtml(row.shop_id)}</td>
           <td class="si-biz-name">${escapeHtml(row.shop_name)}</td>
           <td>${mappingReviewBadge(row)}</td>
-          ${renderInlineSobBarCell(row.april_shopee_sob_percent, row.april_tiktok_sob_percent)}
           ${renderInlineSobBarCell(row.may_shopee_sob_percent, row.may_tiktok_sob_percent)}
+          ${renderInlineSobBarCell(row.june_shopee_sob_percent, row.june_tiktok_sob_percent)}
           <td class="si-v1-num">${escapeHtml(fmtChange(row.sob_change_pp))}</td>
-          <td class="si-v1-num">${cellGmv(row.april_shopee_gmv, row.shopee_na_reason)}</td>
-          <td class="si-v1-num">${cellGmv(row.april_tiktok_gmv, row.tiktok_na_reason)}</td>
           <td class="si-v1-num">${cellGmv(row.may_shopee_gmv, row.shopee_na_reason)}</td>
           <td class="si-v1-num">${cellGmv(row.may_tiktok_gmv, row.tiktok_na_reason)}</td>
+          <td class="si-v1-num">${cellGmv(row.june_shopee_gmv, row.shopee_na_reason)}</td>
+          <td class="si-v1-num">${cellGmv(row.june_tiktok_gmv, row.tiktok_na_reason)}</td>
         </tr>
         <tr class="si-biz-row-detail">
           <td colspan="11">${renderDetailPanel(row)}</td>
@@ -756,13 +756,13 @@
               <th>Shop ID</th>
               <th>Shop Name</th>
               <th>Mapping Status</th>
-              <th class="hs-sob-bar-col">APR SOB BAR</th>
               <th class="hs-sob-bar-col">MAY SOB BAR</th>
+              <th class="hs-sob-bar-col">JUNE SOB BAR</th>
               <th>SOB Change %</th>
-              <th>April Shopee GMV</th>
-              <th>April TikTok GMV</th>
               <th>May Shopee GMV</th>
               <th>May TikTok GMV</th>
+              <th>June Shopee GMV</th>
+              <th>June TikTok GMV</th>
             </tr>
           </thead>
           ${rows.map((r) => renderTableRow(r, expanded.has(r.shop_id))).join("")}
@@ -816,8 +816,8 @@
             <label for="hsFilterSort">${escapeHtml(i18n("historicalSob.filterSort", "Sort"))}</label>
             <select id="hsFilterSort" data-f="sort">
               <option value="shop_name"${f.sort === "shop_name" ? " selected" : ""}>Shop name</option>
-              <option value="april_sob"${f.sort === "april_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortAprilSob", "April SOB"))}</option>
               <option value="may_sob"${f.sort === "may_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortMaySob", "May SOB"))}</option>
+              <option value="june_sob"${f.sort === "june_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortJuneSob", "June SOB"))}</option>
               <option value="sob_change"${f.sort === "sob_change" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortChange", "SOB Change"))}</option>
               <option value="tiktok_sob"${f.sort === "tiktok_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortTiktokSob", "Highest TikTok SOB"))}</option>
               <option value="shopee_sob"${f.sort === "shopee_sob" ? " selected" : ""}>${escapeHtml(i18n("historicalSob.sortShopeeSob", "Highest Shopee SOB"))}</option>
@@ -984,7 +984,7 @@
     if (payload) applySharedSlaUpdateFromPayload(payload);
     if (!metaEl || !payload) return;
     metaEl.textContent = [
-      i18n("historicalSob.metaPeriod", "April 2026 · May 2026"),
+      i18n("historicalSob.metaPeriod", "May 2026 · June 2026"),
       payload.ytd_tab ? `YTD: ${payload.ytd_tab}` : "",
       payload.usd_php_rate != null ? `USD/PHP ${payload.usd_php_rate}` : "",
     ]

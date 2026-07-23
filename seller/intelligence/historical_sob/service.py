@@ -20,6 +20,7 @@ from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.historical_sob.collector import fetch_shop_historical_tiktok_gmv
 from seller.intelligence.historical_sob.portfolio import build_portfolio_historical_sob
 from seller.intelligence.historical_sob.store import (
+    HISTORICAL_PERIODS,
     load_historical_sob_cache,
     resolve_tiktok_cache_row,
     save_historical_sob_cache,
@@ -173,18 +174,18 @@ def _shop_sob_row(
     shopee_na_reason = None
     if ytd_row is None:
         shopee_na_reason = "No ytd monthly data row matched by shop_id"
-    elif ytd_row.ytd_apr_adgmv is None and ytd_row.ytd_may_adgmv is None:
-        shopee_na_reason = "Missing ytd_apr_adgmv and ytd_may_adgmv"
-    elif ytd_row.ytd_apr_adgmv is None:
-        shopee_na_reason = "Missing ytd_apr_adgmv"
+    elif ytd_row.ytd_may_adgmv is None and ytd_row.ytd_june_adgmv is None:
+        shopee_na_reason = "Missing ytd_may_adgmv and ytd_june_adgmv"
     elif ytd_row.ytd_may_adgmv is None:
         shopee_na_reason = "Missing ytd_may_adgmv"
+    elif ytd_row.ytd_june_adgmv is None:
+        shopee_na_reason = "Missing ytd_june_adgmv"
 
-    april_shopee = _round_gmv(ytd_row.april_shopee_gmv) if ytd_row else None
     may_shopee = _round_gmv(ytd_row.may_shopee_gmv) if ytd_row else None
+    june_shopee = _round_gmv(ytd_row.june_shopee_gmv) if ytd_row else None
 
-    april_tiktok = None
     may_tiktok = None
+    june_tiktok = None
     tiktok_status = "na"
     tiktok_na_reason = None
 
@@ -193,9 +194,9 @@ def _shop_sob_row(
     elif platform_source == "TIKTOK_ONLY":
         shopee_na_reason = "TikTok-only shop — no Shopee historical GMV"
         if mapping_row and tiktok_cache and tiktok_cache.get("status") == "success":
-            april_tiktok = _tiktok_gmv_usd(tiktok_cache.get("april_gmv_php"))
             may_tiktok = _tiktok_gmv_usd(tiktok_cache.get("may_gmv_php"))
-            if april_tiktok is not None or may_tiktok is not None:
+            june_tiktok = _tiktok_gmv_usd(tiktok_cache.get("june_gmv_php"))
+            if may_tiktok is not None or june_tiktok is not None:
                 tiktok_status = "available"
                 tiktok_na_reason = None
         elif mapping_row:
@@ -205,14 +206,14 @@ def _shop_sob_row(
     elif allows_tiktok_data(review_status) and mapping_row:
         fastmoss_id = str(mapping_row.get("fastmoss_shop_id") or "").strip()
         if fastmoss_id and tiktok_cache and tiktok_cache.get("status") == "success":
-            april_tiktok = _tiktok_gmv_usd(tiktok_cache.get("april_gmv_php"))
             may_tiktok = _tiktok_gmv_usd(tiktok_cache.get("may_gmv_php"))
-            if april_tiktok is None and may_tiktok is None:
-                tiktok_na_reason = "FastMoss sale_amount missing for April and May"
-            elif april_tiktok is None:
-                tiktok_na_reason = "FastMoss sale_amount missing for April"
+            june_tiktok = _tiktok_gmv_usd(tiktok_cache.get("june_gmv_php"))
+            if may_tiktok is None and june_tiktok is None:
+                tiktok_na_reason = "FastMoss sale_amount missing for May and June"
             elif may_tiktok is None:
                 tiktok_na_reason = "FastMoss sale_amount missing for May"
+            elif june_tiktok is None:
+                tiktok_na_reason = "FastMoss sale_amount missing for June"
             else:
                 tiktok_status = "available"
         elif not fastmoss_id:
@@ -226,23 +227,23 @@ def _shop_sob_row(
     else:
         tiktok_na_reason = "FastMoss shop not mapped"
 
-    april_shopee_sob, april_tiktok_sob = _historical_period_sob(
-        april_shopee, april_tiktok, platform_source=platform_source
-    )
     may_shopee_sob, may_tiktok_sob = _historical_period_sob(
         may_shopee, may_tiktok, platform_source=platform_source
     )
+    june_shopee_sob, june_tiktok_sob = _historical_period_sob(
+        june_shopee, june_tiktok, platform_source=platform_source
+    )
 
-    april_total = None
-    if april_shopee is not None or april_tiktok is not None:
-        april_total = (april_shopee or 0) + (april_tiktok or 0)
     may_total = None
     if may_shopee is not None or may_tiktok is not None:
         may_total = (may_shopee or 0) + (may_tiktok or 0)
+    june_total = None
+    if june_shopee is not None or june_tiktok is not None:
+        june_total = (june_shopee or 0) + (june_tiktok or 0)
 
     sob_change_pp = None
-    if april_tiktok_sob is not None and may_tiktok_sob is not None:
-        sob_change_pp = _round_sob(float(may_tiktok_sob) - float(april_tiktok_sob))
+    if may_tiktok_sob is not None and june_tiktok_sob is not None:
+        sob_change_pp = _round_sob(float(june_tiktok_sob) - float(may_tiktok_sob))
 
     return {
         "shop_id": shop_id,
@@ -259,20 +260,20 @@ def _shop_sob_row(
         "category": category,
         "fastmoss_shop_id": (mapping_row or {}).get("fastmoss_shop_id"),
         "fastmoss_shop_name": (mapping_row or {}).get("fastmoss_shop_name"),
-        "april_shopee_gmv": april_shopee,
-        "april_tiktok_gmv": april_tiktok,
-        "april_total_gmv": _round_gmv(april_total),
         "may_shopee_gmv": may_shopee,
         "may_tiktok_gmv": may_tiktok,
         "may_total_gmv": _round_gmv(may_total),
-        "april_sob_percent": _round_sob(april_tiktok_sob),
+        "june_shopee_gmv": june_shopee,
+        "june_tiktok_gmv": june_tiktok,
+        "june_total_gmv": _round_gmv(june_total),
         "may_sob_percent": _round_sob(may_tiktok_sob),
-        "april_shopee_sob_percent": _round_sob(april_shopee_sob),
-        "april_tiktok_sob_percent": _round_sob(april_tiktok_sob),
+        "june_sob_percent": _round_sob(june_tiktok_sob),
         "may_shopee_sob_percent": _round_sob(may_shopee_sob),
         "may_tiktok_sob_percent": _round_sob(may_tiktok_sob),
+        "june_shopee_sob_percent": _round_sob(june_shopee_sob),
+        "june_tiktok_sob_percent": _round_sob(june_tiktok_sob),
         "sob_change_pp": sob_change_pp,
-        "shopee_data_status": "available" if april_shopee is not None or may_shopee is not None else "na",
+        "shopee_data_status": "available" if may_shopee is not None or june_shopee is not None else "na",
         "shopee_na_reason": shopee_na_reason,
         "tiktok_data_status": tiktok_status,
         "tiktok_na_reason": tiktok_na_reason,
@@ -506,21 +507,21 @@ def build_historical_sob_rows(
 
 def _tiktok_cache_counts(cache: dict[str, Any]) -> dict[str, int]:
     shops = cache.get("shops") or {}
-    april = 0
     may = 0
+    june = 0
     success = 0
     for row in shops.values():
         if not isinstance(row, dict) or row.get("status") != "success":
             continue
         success += 1
-        if row.get("april_gmv_php") is not None:
-            april += 1
         if row.get("may_gmv_php") is not None:
             may += 1
+        if row.get("june_gmv_php") is not None:
+            june += 1
     return {
         "tiktok_historical_fetched_count": success,
-        "tiktok_april_gmv_fetched_count": april,
         "tiktok_may_gmv_fetched_count": may,
+        "tiktok_june_gmv_fetched_count": june,
     }
 
 
@@ -546,8 +547,8 @@ def _summary_counts(
 ) -> dict[str, Any]:
     tiktok_counts = _tiktok_cache_counts(cache)
     portfolio = portfolio or build_portfolio_historical_sob(rows)
-    april_sob = sum(1 for r in rows if r.get("april_sob_percent") is not None)
     may_sob = sum(1 for r in rows if r.get("may_sob_percent") is not None)
+    june_sob = sum(1 for r in rows if r.get("june_sob_percent") is not None)
     matched = _count_ytd_matched(master, ytd)
     return {
         "master_seller_count": len(master.sellers),
@@ -556,14 +557,14 @@ def _summary_counts(
         "ytd_unmatched_count": len(master.sellers) - matched,
         "ytd_load_error": ytd.load_error,
         **tiktok_counts,
-        "april_sob_calculated_count": april_sob,
         "may_sob_calculated_count": may_sob,
-        "april_shopee_gmv_total": portfolio.get("april_shopee_gmv"),
+        "june_sob_calculated_count": june_sob,
         "may_shopee_gmv_total": portfolio.get("may_shopee_gmv"),
-        "april_tiktok_gmv_total": portfolio.get("april_tiktok_gmv"),
+        "june_shopee_gmv_total": portfolio.get("june_shopee_gmv"),
         "may_tiktok_gmv_total": portfolio.get("may_tiktok_gmv"),
-        "april_portfolio_sob_percent": portfolio.get("april_portfolio_sob_percent"),
+        "june_tiktok_gmv_total": portfolio.get("june_tiktok_gmv"),
         "may_portfolio_sob_percent": portfolio.get("may_portfolio_sob_percent"),
+        "june_portfolio_sob_percent": portfolio.get("june_portfolio_sob_percent"),
         "portfolio_sob_change_pp": portfolio.get("portfolio_sob_change_pp"),
     }
 
@@ -596,7 +597,7 @@ def refresh_historical_sob_tiktok_cache(
     delay_sec: float = 0.35,
     force: bool = False,
 ) -> dict[str, Any]:
-    """Fetch April/May TikTok GMV for mapped shops in the merged Historical SOB universe."""
+    """Fetch May/June TikTok GMV for mapped shops in the merged Historical SOB universe."""
     master = master or get_seller_master()
     ytd = get_ytd_monthly()
     merged_rows = build_historical_sob_rows(master, ytd=ytd)
@@ -637,8 +638,8 @@ def refresh_historical_sob_tiktok_cache(
             and isinstance(existing, dict)
             and existing.get("status") == "success"
             and existing.get("fastmoss_shop_id") == fastmoss_id
-            and existing.get("april_gmv_php") is not None
             and existing.get("may_gmv_php") is not None
+            and existing.get("june_gmv_php") is not None
         ):
             continue
 
@@ -725,27 +726,24 @@ def _build_payload(
         "usd_php_rate": USD_PHP_RATE,
         "master_tab": master.tab,
         "ytd_tab": ytd.tab,
-        "periods": {
-            "april": {"start": "2026-04-01", "end": "2026-04-30", "shopee_multiplier": 30},
-            "may": {"start": "2026-05-01", "end": "2026-05-31", "shopee_multiplier": 31},
-        },
+        "periods": dict(HISTORICAL_PERIODS),
         "cache_updated_at": cache.get("updated_at"),
         "warnings": warnings,
         "summary": summary,
         "kpis": {
             "total_shops": len(master.sellers),
-            "april_portfolio_gmv": portfolio.get("april_total_gmv"),
             "may_portfolio_gmv": portfolio.get("may_total_gmv"),
-            "april_shopee_gmv": portfolio.get("april_shopee_gmv"),
-            "april_tiktok_gmv": portfolio.get("april_tiktok_gmv"),
-            "april_shopee_sob_percent": portfolio.get("april_shopee_sob_percent"),
-            "april_tiktok_sob_percent": portfolio.get("april_tiktok_sob_percent"),
-            "april_portfolio_sob_percent": portfolio.get("april_portfolio_sob_percent"),
+            "june_portfolio_gmv": portfolio.get("june_total_gmv"),
             "may_shopee_gmv": portfolio.get("may_shopee_gmv"),
             "may_tiktok_gmv": portfolio.get("may_tiktok_gmv"),
             "may_shopee_sob_percent": portfolio.get("may_shopee_sob_percent"),
             "may_tiktok_sob_percent": portfolio.get("may_tiktok_sob_percent"),
             "may_portfolio_sob_percent": portfolio.get("may_portfolio_sob_percent"),
+            "june_shopee_gmv": portfolio.get("june_shopee_gmv"),
+            "june_tiktok_gmv": portfolio.get("june_tiktok_gmv"),
+            "june_shopee_sob_percent": portfolio.get("june_shopee_sob_percent"),
+            "june_tiktok_sob_percent": portfolio.get("june_tiktok_sob_percent"),
+            "june_portfolio_sob_percent": portfolio.get("june_portfolio_sob_percent"),
             "portfolio_sob_change_pp": portfolio.get("portfolio_sob_change_pp"),
         },
         "portfolio": portfolio,
@@ -779,19 +777,19 @@ def _empty_payload(*, master: SellerMasterLoadResult | None, error: str) -> dict
             "master_seller_count": len(master.sellers) if master else 0,
             "ytd_monthly_rows_loaded": 0,
             "tiktok_historical_fetched_count": 0,
-            "tiktok_april_gmv_fetched_count": 0,
             "tiktok_may_gmv_fetched_count": 0,
-            "april_sob_calculated_count": 0,
+            "tiktok_june_gmv_fetched_count": 0,
             "may_sob_calculated_count": 0,
+            "june_sob_calculated_count": 0,
         },
         "kpis": {
             "total_shops": len(master.sellers) if master else 0,
-            "april_shopee_gmv": None,
-            "april_tiktok_gmv": None,
-            "april_portfolio_sob_percent": None,
             "may_shopee_gmv": None,
             "may_tiktok_gmv": None,
             "may_portfolio_sob_percent": None,
+            "june_shopee_gmv": None,
+            "june_tiktok_gmv": None,
+            "june_portfolio_sob_percent": None,
             "portfolio_sob_change_pp": None,
         },
         "portfolio": {},
@@ -838,7 +836,7 @@ def get_historical_sob_payload(
                 warnings.append(f"TikTok historical cache refresh failed: {exc}")
         elif not cache.get("shops"):
             warnings.append(
-                "TikTok April/May GMV not cached yet — run Update Data on Seller Level Analysis once."
+                "TikTok May/June GMV not cached yet — run Update Data on Seller Level Analysis once."
             )
 
         from seller.intelligence.business.sla_update_state import get_sla_update_state_for_api

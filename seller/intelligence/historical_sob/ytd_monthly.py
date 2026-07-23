@@ -16,13 +16,13 @@ logger = logging.getLogger("seller.intelligence.historical_sob.ytd_monthly")
 
 DEFAULT_YTD_MONTHLY_TAB = "ytd monthly data"
 
-APRIL_DAY_COUNT = 30
 MAY_DAY_COUNT = 31
+JUNE_DAY_COUNT = 30
 
 _HEADER_SHOP_NAME = re.compile(r"^shop[_\s-]*name$", re.I)
 _HEADER_SHOP_ID = re.compile(r"^shop[_\s-]*id$", re.I)
-_HEADER_YTD_APR = re.compile(r"^ytd_ap(?:r)?[_\s-]*adgmv$", re.I)
 _HEADER_YTD_MAY = re.compile(r"^ytd_may[_\s-]*adgmv$", re.I)
+_HEADER_YTD_JUNE = re.compile(r"^ytd_jun(?:e)?[_\s-]*adgmv$", re.I)
 
 
 def normalize_shop_name(name: str) -> str:
@@ -86,17 +86,17 @@ def _ytd_tab_name_candidates(titles: list[str], hint: str) -> list[str]:
 
 def _header_row_has_ytd_columns(header_row: list[Any]) -> bool:
     has_shop_name = False
-    has_apr = False
     has_may = False
+    has_june = False
     for cell in header_row:
         label = _cell([cell], 0).lower()
         if _HEADER_SHOP_NAME.match(label):
             has_shop_name = True
-        elif _HEADER_YTD_APR.match(label):
-            has_apr = True
         elif _HEADER_YTD_MAY.match(label):
             has_may = True
-    return has_shop_name and (has_apr or has_may)
+        elif _HEADER_YTD_JUNE.match(label):
+            has_june = True
+    return has_shop_name and (has_may or has_june)
 
 
 def discover_ytd_monthly_tab(
@@ -119,20 +119,20 @@ def discover_ytd_monthly_tab(
 class YtdMonthlyRecord:
     shop_id: str
     shop_name: str
-    ytd_apr_adgmv: float | None
     ytd_may_adgmv: float | None
-
-    @property
-    def april_shopee_gmv(self) -> float | None:
-        if self.ytd_apr_adgmv is None:
-            return None
-        return self.ytd_apr_adgmv * APRIL_DAY_COUNT
+    ytd_june_adgmv: float | None
 
     @property
     def may_shopee_gmv(self) -> float | None:
         if self.ytd_may_adgmv is None:
             return None
         return self.ytd_may_adgmv * MAY_DAY_COUNT
+
+    @property
+    def june_shopee_gmv(self) -> float | None:
+        if self.ytd_june_adgmv is None:
+            return None
+        return self.ytd_june_adgmv * JUNE_DAY_COUNT
 
 
 @dataclass
@@ -206,15 +206,15 @@ def _header_indexes(header_row: list[Any]) -> dict[str, int]:
             indexes["shop_name"] = index
         elif _HEADER_SHOP_ID.match(label):
             indexes["shop_id"] = index
-        elif _HEADER_YTD_APR.match(label):
-            indexes["ytd_apr_adgmv"] = index
         elif _HEADER_YTD_MAY.match(label):
             indexes["ytd_may_adgmv"] = index
+        elif _HEADER_YTD_JUNE.match(label):
+            indexes["ytd_june_adgmv"] = index
 
     indexes.setdefault("shop_name", 0)
     indexes.setdefault("shop_id", 1)
-    indexes.setdefault("ytd_apr_adgmv", 2)
-    indexes.setdefault("ytd_may_adgmv", 3)
+    indexes.setdefault("ytd_may_adgmv", 2)
+    indexes.setdefault("ytd_june_adgmv", 3)
     return indexes
 
 
@@ -241,7 +241,7 @@ def parse_ytd_monthly_rows(
     *,
     tab: str = DEFAULT_YTD_MONTHLY_TAB,
 ) -> YtdMonthlyLoadResult:
-    """Parse grid: shop_name, shop_id, ytd_apr_adgmv, ytd_may_adgmv (columns A–D)."""
+    """Parse grid: shop_name, shop_id, ytd_may_adgmv, ytd_june_adgmv (columns A–D)."""
     stats = YtdMonthlyImportStats()
     by_shop_name: dict[str, YtdMonthlyRecord] = {}
     by_shop_id: dict[str, YtdMonthlyRecord] = {}
@@ -278,8 +278,8 @@ def parse_ytd_monthly_rows(
         record = YtdMonthlyRecord(
             shop_id=shop_id,
             shop_name=shop_name,
-            ytd_apr_adgmv=_parse_optional_float(_cell(row, indexes.get("ytd_apr_adgmv", 2))),
-            ytd_may_adgmv=_parse_optional_float(_cell(row, indexes.get("ytd_may_adgmv", 3))),
+            ytd_may_adgmv=_parse_optional_float(_cell(row, indexes.get("ytd_may_adgmv", 2))),
+            ytd_june_adgmv=_parse_optional_float(_cell(row, indexes.get("ytd_june_adgmv", 3))),
         )
         if name_key:
             by_shop_name[name_key] = record

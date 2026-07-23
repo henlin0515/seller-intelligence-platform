@@ -46,40 +46,40 @@ def _ytd_result(records: list[YtdMonthlyRecord]) -> YtdMonthlyLoadResult:
 
 
 class YtdMonthlyParseTests(unittest.TestCase):
-    def test_parse_ytd_apr_adgmv_column(self):
+    def test_parse_ytd_may_june_adgmv_columns(self):
         rows = [
-            ["shop_name", "shop_id", "ytd_apr_adgmv", "ytd_may_adgmv"],
+            ["shop_name", "shop_id", "ytd_may_adgmv", "ytd_june_adgmv"],
             ["Shop A", "1001", "100", "200"],
             ["Shop B", "", "50.5", "75.25"],
         ]
         result = parse_ytd_monthly_rows(rows)
         self.assertEqual(result.stats.total_loaded, 2)
         rec = result.by_shop_name[normalize_shop_name("Shop A")]
-        self.assertEqual(rec.april_shopee_gmv, 3000.0)
-        self.assertEqual(rec.may_shopee_gmv, 6200.0)
+        self.assertEqual(rec.may_shopee_gmv, 3100.0)  # 100 * 31
+        self.assertEqual(rec.june_shopee_gmv, 6000.0)  # 200 * 30
         partial = result.by_shop_name[normalize_shop_name("Shop B")]
-        self.assertEqual(partial.april_shopee_gmv, 1515.0)
-        self.assertEqual(partial.may_shopee_gmv, 2332.75)
+        self.assertEqual(partial.may_shopee_gmv, 1565.5)
+        self.assertEqual(partial.june_shopee_gmv, 2257.5)
 
     def test_match_by_shop_id_primary(self):
         rows = [
-            ["shop_name", "shop_id", "ytd_apr_adgmv", "ytd_may_adgmv"],
+            ["shop_name", "shop_id", "ytd_may_adgmv", "ytd_june_adgmv"],
             ["Wrong Name", "64329852", "10", "20"],
         ]
         ytd = parse_ytd_monthly_rows(rows)
         rec = lookup_ytd_record(ytd, shop_name="LaLa_Shoes.PH", shop_id="64329852")
         self.assertIsNotNone(rec)
-        self.assertEqual(rec.april_shopee_gmv, 300.0)
+        self.assertEqual(rec.may_shopee_gmv, 310.0)
 
     def test_match_by_shop_name_fallback(self):
         rows = [
-            ["shop_name", "shop_id", "ytd_apr_adgmv", "ytd_may_adgmv"],
+            ["shop_name", "shop_id", "ytd_may_adgmv", "ytd_june_adgmv"],
             ["LaLa_Shoes.PH", "DIFFERENT_ID", "10", "20"],
         ]
         ytd = parse_ytd_monthly_rows(rows)
         rec = lookup_ytd_record(ytd, shop_name="LaLa_Shoes.PH", shop_id="64329852")
         self.assertIsNotNone(rec)
-        self.assertEqual(rec.april_shopee_gmv, 300.0)
+        self.assertEqual(rec.may_shopee_gmv, 310.0)
 
     def test_resolve_ytd_tab_title_case_insensitive(self):
         titles = ["AI data", "YTD Monthly Data", "shpoee link"]
@@ -89,7 +89,7 @@ class YtdMonthlyParseTests(unittest.TestCase):
         )
 
     def test_header_row_detects_ytd_columns(self):
-        header = ["shop_name", "shop_id", "ytd_apr_adgmv", "ytd_may_adgmv"]
+        header = ["shop_name", "shop_id", "ytd_may_adgmv", "ytd_june_adgmv"]
         self.assertTrue(_header_row_has_ytd_columns(header))
         self.assertFalse(_header_row_has_ytd_columns(["shop_name", "shop_id", "other"]))
 
@@ -113,8 +113,8 @@ class HistoricalSobRowTests(unittest.TestCase):
             "shops": {
                 "1": {
                     "status": "success",
-                    "april_gmv_php": 1000.0,
-                    "may_gmv_php": 2000.0,
+                    "may_gmv_php": 1000.0,
+                    "june_gmv_php": 2000.0,
                 }
             }
         }
@@ -143,18 +143,18 @@ class HistoricalSobRowTests(unittest.TestCase):
 
         shop_a = next(r for r in rows if r["shop_id"] == "1")
         shop_b = next(r for r in rows if r["shop_id"] == "2")
-        april_shopee = 3000.0
         may_shopee = 3100.0
-        april_tiktok_usd = round(tiktok_php_to_usd(1000.0), 2)
-        may_tiktok_usd = round(tiktok_php_to_usd(2000.0), 2)
-        _, expected_april_tiktok_sob = sob_pair(april_shopee, april_tiktok_usd)
+        june_shopee = 3000.0
+        may_tiktok_usd = round(tiktok_php_to_usd(1000.0), 2)
+        june_tiktok_usd = round(tiktok_php_to_usd(2000.0), 2)
         _, expected_may_tiktok_sob = sob_pair(may_shopee, may_tiktok_usd)
-        self.assertEqual(shop_a["april_shopee_gmv"], april_shopee)
-        self.assertEqual(shop_a["april_tiktok_gmv"], april_tiktok_usd)
+        _, expected_june_tiktok_sob = sob_pair(june_shopee, june_tiktok_usd)
+        self.assertEqual(shop_a["may_shopee_gmv"], may_shopee)
         self.assertEqual(shop_a["may_tiktok_gmv"], may_tiktok_usd)
-        self.assertEqual(shop_a["april_sob_percent"], round(expected_april_tiktok_sob, 1))
+        self.assertEqual(shop_a["june_tiktok_gmv"], june_tiktok_usd)
         self.assertEqual(shop_a["may_sob_percent"], round(expected_may_tiktok_sob, 1))
-        self.assertIsNone(shop_b["april_sob_percent"])
+        self.assertEqual(shop_a["june_sob_percent"], round(expected_june_tiktok_sob, 1))
+        self.assertIsNone(shop_b["may_sob_percent"])
         self.assertIsNotNone(shop_b["shopee_na_reason"])
 
     def test_tiktok_php_converted_to_usd_for_display_and_sob(self):
@@ -167,8 +167,8 @@ class HistoricalSobRowTests(unittest.TestCase):
             "shops": {
                 "1": {
                     "status": "success",
-                    "april_gmv_php": php,
                     "may_gmv_php": php,
+                    "june_gmv_php": php,
                 }
             }
         }
@@ -193,27 +193,27 @@ class HistoricalSobRowTests(unittest.TestCase):
             )
             rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache=cache)
         shop_a = next(r for r in rows if r["shop_id"] == "1")
-        self.assertEqual(shop_a["april_tiktok_gmv"], expected_usd)
+        self.assertEqual(shop_a["may_tiktok_gmv"], expected_usd)
 
     def test_portfolio_aggregate(self):
         rows = [
             {
-                "april_shopee_gmv": 3000.0,
-                "april_tiktok_gmv": 1000.0,
-                "may_shopee_gmv": 3100.0,
-                "may_tiktok_gmv": 900.0,
+                "may_shopee_gmv": 3000.0,
+                "may_tiktok_gmv": 1000.0,
+                "june_shopee_gmv": 3100.0,
+                "june_tiktok_gmv": 900.0,
             },
             {
-                "april_shopee_gmv": 6000.0,
-                "april_tiktok_gmv": 2000.0,
-                "may_shopee_gmv": 6200.0,
-                "may_tiktok_gmv": 1800.0,
+                "may_shopee_gmv": 6000.0,
+                "may_tiktok_gmv": 2000.0,
+                "june_shopee_gmv": 6200.0,
+                "june_tiktok_gmv": 1800.0,
             },
         ]
         portfolio = build_portfolio_historical_sob(rows)
-        self.assertEqual(portfolio["april_shopee_gmv"], 9000.0)
-        self.assertEqual(portfolio["april_tiktok_gmv"], 3000.0)
-        self.assertEqual(portfolio["april_portfolio_sob_percent"], 25.0)
+        self.assertEqual(portfolio["may_shopee_gmv"], 9000.0)
+        self.assertEqual(portfolio["may_tiktok_gmv"], 3000.0)
+        self.assertEqual(portfolio["may_portfolio_sob_percent"], 25.0)
 
     def test_payload_never_raises_on_ytd_error(self):
         master = self._master()
@@ -240,7 +240,6 @@ class HistoricalSobRowTests(unittest.TestCase):
         self.assertEqual(payload["shopee_currency"], "USD")
         self.assertEqual(payload["tiktok_source_currency"], "PHP")
         self.assertEqual(payload["usd_php_rate"], USD_PHP_RATE)
-
 
     def test_shopee_only_row_sob_100_0(self):
         master = SellerMasterLoadResult(
@@ -276,40 +275,40 @@ class HistoricalSobRowTests(unittest.TestCase):
             rows = build_historical_sob_rows(master, ytd=ytd, tiktok_cache={"shops": {}})
         row = next(r for r in rows if r["shop_id"] == "99")
         self.assertEqual(row["platform_source"], "SHOPEE_ONLY")
-        self.assertEqual(row["april_shopee_sob_percent"], 100.0)
-        self.assertEqual(row["april_tiktok_sob_percent"], 0.0)
         self.assertEqual(row["may_shopee_sob_percent"], 100.0)
         self.assertEqual(row["may_tiktok_sob_percent"], 0.0)
-        self.assertIsNone(row["april_tiktok_gmv"])
+        self.assertEqual(row["june_shopee_sob_percent"], 100.0)
+        self.assertEqual(row["june_tiktok_sob_percent"], 0.0)
+        self.assertIsNone(row["may_tiktok_gmv"])
 
-    def test_summary_aggregate_april_may_from_gmv_totals(self):
+    def test_summary_aggregate_may_june_from_gmv_totals(self):
         rows = [
-            {"april_shopee_gmv": 100.0, "april_tiktok_gmv": 100.0, "may_shopee_gmv": 80.0, "may_tiktok_gmv": 120.0},
+            {"may_shopee_gmv": 100.0, "may_tiktok_gmv": 100.0, "june_shopee_gmv": 80.0, "june_tiktok_gmv": 120.0},
             {
                 "platform_source": "SHOPEE_ONLY",
-                "april_shopee_gmv": 50.0,
-                "april_tiktok_gmv": None,
                 "may_shopee_gmv": 50.0,
                 "may_tiktok_gmv": None,
+                "june_shopee_gmv": 50.0,
+                "june_tiktok_gmv": None,
             },
             {
                 "platform_source": "TIKTOK_ONLY",
-                "april_shopee_gmv": None,
-                "april_tiktok_gmv": 50.0,
                 "may_shopee_gmv": None,
                 "may_tiktok_gmv": 50.0,
+                "june_shopee_gmv": None,
+                "june_tiktok_gmv": 50.0,
             },
         ]
-        april = aggregate_sob_from_rows(
-            rows, shopee_field="april_shopee_gmv", tiktok_field="april_tiktok_gmv"
+        may = aggregate_sob_from_rows(
+            rows, shopee_field="may_shopee_gmv", tiktok_field="may_tiktok_gmv"
         )
-        may = aggregate_sob_from_rows(rows, shopee_field="may_shopee_gmv", tiktok_field="may_tiktok_gmv")
-        self.assertEqual(april["shopee_sob_percent"], 50.0)
-        self.assertEqual(april["tiktok_sob_percent"], 50.0)
-        self.assertEqual(may["shopee_gmv_usd"], 130.0)
-        self.assertEqual(may["tiktok_gmv_usd"], 170.0)
-        self.assertAlmostEqual(may["shopee_sob_percent"], 43.3333, places=3)
-        self.assertAlmostEqual(may["tiktok_sob_percent"], 56.6667, places=3)
+        june = aggregate_sob_from_rows(rows, shopee_field="june_shopee_gmv", tiktok_field="june_tiktok_gmv")
+        self.assertEqual(may["shopee_sob_percent"], 50.0)
+        self.assertEqual(may["tiktok_sob_percent"], 50.0)
+        self.assertEqual(june["shopee_gmv_usd"], 130.0)
+        self.assertEqual(june["tiktok_gmv_usd"], 170.0)
+        self.assertAlmostEqual(june["shopee_sob_percent"], 43.3333, places=3)
+        self.assertAlmostEqual(june["tiktok_sob_percent"], 56.6667, places=3)
 
     def test_fastmoss_mapped_without_review_shows_mapped(self):
         master = self._master()
