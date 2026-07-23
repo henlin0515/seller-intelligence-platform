@@ -7,6 +7,7 @@ import time
 from datetime import date
 from typing import Any
 
+from seller.fastmoss.client import cookie_configured, get_last_health, get_shared_session, healthcheck
 from seller.fastmoss.review import approved_mapping_rows
 from seller.intelligence.business.collector import collect_mapped_shop_tiktok
 from seller.intelligence.business.store import (
@@ -61,16 +62,20 @@ def build_bi_cache_payload(
 
 def refresh_bi_cache(
     *,
-    delay_sec: float = 0.35,
+    delay_sec: float = 0.0,
     reference_today: date | None = None,
     trigger: str = "manual",
     collect_fn=None,
+    skip_healthcheck: bool = False,
 ) -> dict[str, Any]:
     """
     Re-fetch FastMoss TikTok GMV for all approved mappings using current UI periods.
 
     On success: atomically overwrite ``business_intelligence_data.json``.
     On failure: leave the previous cache untouched and raise ``BiCacheRefreshError``.
+
+    Request pacing (random 1–3s) and per-request retries are handled by the FastMoss
+    client. Per-shop failures are marked and skipped so other shops continue.
     """
     collect = collect_fn or collect_mapped_shop_tiktok
     today = reference_today or date.today()
@@ -81,11 +86,12 @@ def refresh_bi_cache(
     previous = load_business_intelligence_data()
 
     logger.info(
-        "BI cache refresh START | %s | trigger=%s | cache=%s | had_previous=%s",
+        "BI cache refresh START | %s | trigger=%s | cache=%s | had_previous=%s | cookie=%s",
         ctx,
         trigger,
         cache_path,
         previous is not None,
+        cookie_configured(),
     )
 
     try:
@@ -115,18 +121,67 @@ def refresh_bi_cache(
                 "trigger": trigger,
             }
 
+        health: dict[str, Any] | None = None
+        if not skip_healthcheck:
+            health = healthcheck()
+            if not health.get("ok"):
+                action = health.get("action") or "Update FASTMOSS_COOKIE and retry."
+                logger.error(
+                    "BI cache refresh ABORTED — FastMoss healthcheck failed | %s | %s | action=%s",
+                    ctx,
+                    health.get("message"),
+                    action,
+                )
+                raise BiCacheRefreshError(
+                    f"FastMoss healthcheck failed ({health.get('failure_class')}): "
+                    f"{health.get('message')}. {action}"
+                )
+
         sellers: list[dict[str, Any]] = []
         refreshed = 0
+        failed_shops: list[dict[str, str]] = []
+        shared = get_shared_session()
         for index, row in enumerate(approved):
             shop_id = str(row.get("shop_id") or "")
             if not shop_id:
                 continue
             if index > 0 and delay_sec > 0:
                 time.sleep(delay_sec)
-            collected = collect(row, periods, delay_sec=0)
+            try:
+                collected = collect(row, periods, delay_sec=0, session=shared)
+            except TypeError:
+                # Test doubles / older collect_fn without session kwarg.
+                collected = collect(row, periods, delay_sec=0)
+            except Exception as exc:
+                logger.warning(
+                    "FastMoss BI collect crashed for %s — continuing: %s",
+                    shop_id,
+                    exc,
+                )
+                collected = {
+                    "shop_id": shop_id,
+                    "shop_name": row.get("shop_name"),
+                    "status": "failed",
+                    "error": str(exc),
+                }
             sellers.append(collected)
             if collected.get("status") == "success":
                 refreshed += 1
+            else:
+                failed_shops.append(
+                    {
+                        "shop_id": shop_id,
+                        "shop_name": str(row.get("shop_name") or ""),
+                        "error": str(collected.get("error") or "unknown"),
+                    }
+                )
+
+        if failed_shops:
+            logger.warning(
+                "BI cache refresh partial failures | failed=%s | sample=%s",
+                len(failed_shops),
+                failed_shops[:5],
+            )
 
         if refreshed == 0:
             raise BiCacheRefreshError(
@@ -138,6 +193,13 @@ def refresh_bi_cache(
             periods=periods,
             sellers=sellers,
         )
+        if health:
+            payload["fastmoss_health"] = {
+                "ok": health.get("ok"),
+                "checked_at": health.get("checked_at"),
+                "cookie_configured": health.get("cookie_configured"),
+                "message": health.get("message"),
+            }
         save_business_intelligence_data(payload)
         elapsed = time.perf_counter() - started
 
@@ -162,10 +224,13 @@ def refresh_bi_cache(
             "updated_count": len(sellers),
             "tiktok_data_refreshed_count": refreshed,
             "collection_success": refreshed,
+            "collection_failed": len(sellers) - refreshed,
+            "failed_shops": failed_shops[:20],
             "elapsed_sec": round(elapsed, 2),
             "trigger": trigger,
             "generated_at": payload["generated_at"],
             "summary": payload["summary"],
+            "fastmoss_health": health or get_last_health(),
         }
     except Exception as exc:
         elapsed = time.perf_counter() - started

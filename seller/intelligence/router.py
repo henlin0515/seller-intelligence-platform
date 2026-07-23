@@ -150,6 +150,7 @@ async def intelligence_v1_business_period_refresh_status():
 @router.get("/business/bi-cache-status")
 async def intelligence_v1_business_bi_cache_status():
     """BI cache freshness + daily scheduler status for ops / dashboard."""
+    from seller.fastmoss.client import cookie_configured, get_last_health
     from seller.intelligence.business.bi_cache_refresh import bi_cache_needs_daily_refresh
     from seller.intelligence.business.bi_daily_scheduler import get_bi_daily_scheduler_status
     from seller.intelligence.business.store import load_business_intelligence_data
@@ -167,7 +168,35 @@ async def intelligence_v1_business_bi_cache_status():
         "reason": reason,
         "summary": (saved or {}).get("summary"),
         "daily_scheduler": get_bi_daily_scheduler_status(),
+        "cookie_configured": cookie_configured(),
+        "fastmoss_health": get_last_health()
+        or (
+            (saved or {}).get("fastmoss_health")
+            if isinstance((saved or {}).get("fastmoss_health"), dict)
+            else None
+        ),
     }
+
+
+@router.get("/business/fastmoss-health")
+async def intelligence_v1_business_fastmoss_health(probe: bool = True):
+    """
+    FastMoss session / WAF healthcheck.
+
+    When ``probe=true`` (default), pings homepage + detail + recentData.
+    When ``probe=false``, returns the last cached health result only.
+    """
+    from seller.fastmoss.client import cookie_configured, get_last_health, healthcheck
+
+    if probe:
+        result = await asyncio.to_thread(healthcheck)
+    else:
+        result = get_last_health() or {
+            "ok": None,
+            "message": "No healthcheck has been run yet",
+            "cookie_configured": cookie_configured(),
+        }
+    return result
 
 
 @router.post("/business/ensure-period-data")

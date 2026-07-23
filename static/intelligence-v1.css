@@ -2523,6 +2523,12 @@
   border-color: #93c5fd;
 }
 
+.si-sla-period-stale.is-session-alert {
+  color: #7f1d1d;
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
 .si-sla-meta {
   color: #8a8a8e;
 }

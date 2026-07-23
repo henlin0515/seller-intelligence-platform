@@ -724,6 +724,9 @@ def get_business_intelligence_meta(
         collected_periods if isinstance(collected_periods, dict) else None,
         current_periods,
     )
+    from seller.fastmoss.client import cookie_configured, get_last_health
+
+    health = get_last_health()
     return {
         "fastmoss_connected": True,
         "data_file": "business_intelligence_data.json",
@@ -734,4 +737,11 @@ def get_business_intelligence_meta(
         "periods_stale": periods_stale,
         "collected_periods": collected_periods,
         "current_periods": current_periods.as_dict(),
+        "cookie_configured": cookie_configured(),
+        "fastmoss_health": health
+        or (
+            saved.get("fastmoss_health")
+            if isinstance(saved.get("fastmoss_health"), dict)
+            else None
+        ),
     }

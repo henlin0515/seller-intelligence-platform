@@ -92,6 +92,7 @@ def test_refresh_overwrites_cache_on_success(tmp_path: Path):
             reference_today=today,
             trigger="test",
             collect_fn=fake_collect,
+            skip_healthcheck=True,
         )
 
     assert result["success"] is True
@@ -155,6 +156,7 @@ def test_refresh_preserves_cache_on_failure(tmp_path: Path):
                 reference_today=date(2026, 7, 23),
                 trigger="test_fail",
                 collect_fn=fail_collect,
+                skip_healthcheck=True,
             )
 
     assert saved_calls == []

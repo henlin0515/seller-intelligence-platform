@@ -8,6 +8,7 @@
     businessRefreshData: "/api/intelligence/v1/business/refresh-data",
     businessRefreshStatus: "/api/intelligence/v1/business/refresh-status",
     businessPeriodRefreshStatus: "/api/intelligence/v1/business/period-refresh-status",
+    businessFastmossHealth: "/api/intelligence/v1/business/fastmoss-health",
     assortment: "/api/intelligence/v1/assortment",
     assortmentRefreshProducts: "/api/intelligence/v1/assortment/refresh-products",
     voucher: "/api/intelligence/v1/voucher",
@@ -699,6 +700,18 @@
       return `<p class="si-sla-period-stale is-refreshing" role="status">MTD / M-1 tags updated — auto-fetching FastMoss TikTok ADGMV for the new ranges…${escapeHtml(collectedLabel)}</p>`;
     }
     return `<p class="si-sla-period-stale" role="status">TikTok ADGMV is outdated for the period tags above.${escapeHtml(collectedLabel)} Auto-refresh will start shortly.</p>`;
+  }
+
+  function renderFastmossHealthBanner(fastmoss) {
+    const health = fastmoss?.fastmoss_health;
+    if (!health || health.ok === true || health.ok == null) return "";
+    const action =
+      health.action ||
+      "Set Railway/env FASTMOSS_COOKIE from a logged-in www.fastmoss.com browser session.";
+    const msg = health.message || "FastMoss session or network check failed.";
+    return `<p class="si-sla-period-stale is-session-alert" role="alert">FastMoss scrape blocked: ${escapeHtml(
+      String(msg)
+    )} — ${escapeHtml(String(action))}</p>`;
   }
 
   let periodAutoPollToken = 0;
@@ -1827,6 +1840,7 @@
     if (chipsEl) {
       chipsEl.innerHTML =
         renderBusinessPeriodChips(data.periods) +
+        renderFastmossHealthBanner(fm) +
         renderTikTokPeriodsStaleBanner(fm, data.period_auto_refresh);
     }
     if (metas.siBusiness) {

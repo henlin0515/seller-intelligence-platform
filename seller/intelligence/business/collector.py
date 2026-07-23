@@ -7,8 +7,9 @@ import time
 from datetime import date
 from typing import Any
 
+from seller.fastmoss.client import REQUEST_DELAY_MIN_SEC, get_shared_session, healthcheck
+from seller.fastmoss.recent_data import fetch_period_gmv_php, prefetch_shop_detail
 from seller.fastmoss.review import approved_mapping_rows
-from seller.fastmoss.recent_data import REQUEST_DELAY_SEC, fetch_period_gmv_php, prefetch_shop_detail
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.periods import IntelligencePeriods, resolve_periods
 
@@ -26,9 +27,16 @@ def collect_mapped_shop_tiktok(
     mapping_row: dict[str, Any],
     periods: IntelligencePeriods,
     *,
-    delay_sec: float = REQUEST_DELAY_SEC,
+    delay_sec: float = 0.0,
+    session=None,
 ) -> dict[str, Any]:
-    """Collect MTD/M-1 GMV for one mapped shop and derive daily ADGMV."""
+    """
+    Collect MTD/M-1 GMV for one mapped shop and derive daily ADGMV.
+
+    Per-request pacing/retry lives in ``seller.fastmoss.client``. Extra
+    ``delay_sec`` sleeps (legacy) are only applied between MTD and M-1 when > 0.
+    Failures are marked on the shop row; callers should continue other shops.
+    """
     shop_id = str(mapping_row.get("shop_id") or "")
     shop_name = str(mapping_row.get("shop_name") or "")
     tiktok_shop_name = str(mapping_row.get("tiktok_shop_name") or "")
@@ -58,24 +66,23 @@ def collect_mapped_shop_tiktok(
     }
 
     try:
-        session = prefetch_shop_detail(fastmoss_shop_id)
+        client = prefetch_shop_detail(fastmoss_shop_id, session or get_shared_session())
         if delay_sec > 0:
             time.sleep(delay_sec)
-        # Pass the same MTD / M-1 ranges shown on UI period chips.
-        mtd_gmv, mtd_url, session = fetch_period_gmv_php(
+        mtd_gmv, mtd_url, client = fetch_period_gmv_php(
             fastmoss_shop_id,
             periods.mtd.start,
             periods.mtd.end,
-            session=session,
+            session=client,
             prefetch_detail=False,
         )
         if delay_sec > 0:
             time.sleep(delay_sec)
-        m1_gmv, m1_url, _session = fetch_period_gmv_php(
+        m1_gmv, m1_url, _client = fetch_period_gmv_php(
             fastmoss_shop_id,
             periods.m1.start,
             periods.m1.end,
-            session=session,
+            session=client,
             prefetch_detail=False,
         )
         mtd_adgmv = daily_adgmv_php(mtd_gmv, periods.mtd.day_count)
@@ -102,18 +109,33 @@ def collect_all_mapped_shops(
     *,
     reference_today: date | None = None,
     mapping_path: str | None = None,
-    delay_sec: float = REQUEST_DELAY_SEC,
+    delay_sec: float = 0.0,
+    run_healthcheck: bool = True,
 ) -> dict[str, Any]:
     """Collect TikTok GMV for every review-approved FastMoss mapping."""
     today = reference_today or date.today()
     periods = resolve_periods(today)
     mapped_rows = approved_mapping_rows(mapping_path)
 
+    health: dict[str, Any] | None = None
+    if run_healthcheck and mapped_rows:
+        health = healthcheck()
+        if not health.get("ok"):
+            logger.error(
+                "FastMoss healthcheck FAILED before bulk collect — %s | action=%s",
+                health.get("message"),
+                health.get("action"),
+            )
+
     sellers: list[dict[str, Any]] = []
+    shared = get_shared_session()
     for index, row in enumerate(mapped_rows):
+        # Client already random-throttles; optional extra gap between shops.
         if index > 0 and delay_sec > 0:
             time.sleep(delay_sec)
-        sellers.append(collect_mapped_shop_tiktok(row, periods, delay_sec=0))
+        sellers.append(
+            collect_mapped_shop_tiktok(row, periods, delay_sec=0, session=shared)
+        )
 
     success = sum(1 for row in sellers if row.get("status") == "success")
     failed = len(sellers) - success
@@ -124,10 +146,12 @@ def collect_all_mapped_shops(
         "periods": periods.as_dict(),
         "usd_php_rate": USD_PHP_RATE,
         "source": "fastmoss_recentData",
+        "fastmoss_health": health,
         "summary": {
             "processed": len(sellers),
             "success": success,
             "failed": failed,
+            "request_delay_min_sec": REQUEST_DELAY_MIN_SEC,
         },
         "sellers": sellers,
     }

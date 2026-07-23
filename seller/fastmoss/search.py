@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import logging
-import os
 import random
 import time
 from typing import Any
 
-import requests
+from seller.fastmoss.client import (
+    REQUEST_DELAY_SEC,
+    REQUEST_TIMEOUT_SEC,
+    base_url,
+    get_shared_session,
+    region,
+    request_with_retry,
+)
 
 logger = logging.getLogger("seller.fastmoss.search")
 
@@ -16,35 +22,10 @@ SEARCH_PATH = "/api/shop/v3/search"
 DEFAULT_BASE_URL = "https://www.fastmoss.com"
 DEFAULT_REGION = "PH"
 DEFAULT_PAGE_SIZE = 10
-REQUEST_TIMEOUT_SEC = float(os.getenv("FASTMOSS_REQUEST_TIMEOUT_SEC", "25"))
-REQUEST_DELAY_SEC = float(os.getenv("FASTMOSS_REQUEST_DELAY_SEC", "0.35"))
-
-_SESSION = requests.Session()
-_SESSION.headers.update(
-    {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        ),
-        "Accept": "application/json",
-        "lang": "EN_US",
-        "region": DEFAULT_REGION,
-        "source": "pc",
-        "referer": "https://www.fastmoss.com/shop-marketing/search",
-    }
-)
-
-
-def _base_url() -> str:
-    return (os.getenv("FASTMOSS_BASE_URL") or DEFAULT_BASE_URL).rstrip("/")
-
-
-def _region() -> str:
-    return (os.getenv("FASTMOSS_REGION") or DEFAULT_REGION).strip().upper() or DEFAULT_REGION
 
 
 def _shop_detail_url(shop_id: str) -> str:
-    return f"{_base_url()}/shop-marketing/detail/{shop_id}"
+    return f"{base_url()}/shop-marketing/detail/{shop_id}"
 
 
 def _parse_candidate(row: dict[str, Any]) -> dict[str, Any] | None:
@@ -68,7 +49,7 @@ def _parse_candidate(row: dict[str, Any]) -> dict[str, Any] | None:
         "fastmoss_handle": handle or None,
         "fastmoss_unique_id": str(info.get("unique_id") or row.get("unique_id") or "").strip() or None,
         "fastmoss_shop_url": _shop_detail_url(shop_id),
-        "region": str(info.get("region") or row.get("region") or _region()).strip(),
+        "region": str(info.get("region") or row.get("region") or region()).strip(),
         "seller_company": str(
             info.get("company_name")
             or info.get("seller_company")
@@ -111,14 +92,20 @@ def search_shops(keyword: str, *, page_size: int = DEFAULT_PAGE_SIZE) -> list[di
         "page": "1",
         "pagesize": str(max(1, min(page_size, 20))),
         "order": "1,2",
-        "region": _region(),
+        "region": region(),
         "_time": str(int(time.time())),
         "cnonce": str(random.randint(10_000_000, 99_999_999)),
     }
-    url = f"{_base_url()}{SEARCH_PATH}"
+    url = f"{base_url()}{SEARCH_PATH}"
+    session = get_shared_session()
     try:
-        resp = _SESSION.get(url, params=params, timeout=REQUEST_TIMEOUT_SEC)
-        resp.raise_for_status()
+        resp = request_with_retry(
+            session,
+            "GET",
+            url,
+            params=params,
+            headers={"Referer": f"{base_url()}/shop-marketing/search"},
+        )
         payload = resp.json()
     except Exception as exc:
         logger.warning("FastMoss search failed for %r: %s", query, exc)

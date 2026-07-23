@@ -11,7 +11,7 @@ from typing import Any
 from seller.fastmoss.goods import GOODS_PATH, _clamp_page_size, fetch_shop_goods_catalog
 from seller.fastmoss.mapping import load_fastmoss_mapping
 from seller.fastmoss.review import approved_mapping_rows
-from seller.fastmoss.recent_data import _base_url
+from seller.fastmoss.client import base_url as _base_url
 from seller.intelligence.assortment.config import (
     FASTMOSS_GOODS_PATH,
     NEW_PRODUCT_DAYS,

@@ -10,14 +10,14 @@ from typing import Any
 
 import requests
 
-from seller.fastmoss.recent_data import (
+from seller.fastmoss.client import (
     REQUEST_DELAY_SEC,
     REQUEST_TIMEOUT_SEC,
-    _base_url,
-    _detail_referer,
-    _region,
-    prefetch_shop_detail,
+    base_url,
+    region,
+    request_with_retry,
 )
+from seller.fastmoss.recent_data import _detail_referer, prefetch_shop_detail
 
 logger = logging.getLogger("seller.fastmoss.goods")
 
@@ -131,7 +131,7 @@ def fetch_shop_goods_page(
     client = session or prefetch_shop_detail(shop_id)
     params = {
         "id": shop_id,
-        "region": _region(),
+        "region": region(),
         "page": int(page),
         "pagesize": _clamp_page_size(page_size),
         "date_type": int(date_type),
@@ -139,9 +139,14 @@ def fetch_shop_goods_page(
         "_time": str(int(time.time())),
         "cnonce": str(random.randint(10_000_000, 99_999_999)),
     }
-    url = f"{_base_url()}{GOODS_PATH}"
-    resp = client.get(url, params=params, headers={"referer": _detail_referer(shop_id)}, timeout=REQUEST_TIMEOUT_SEC)
-    resp.raise_for_status()
+    url = f"{base_url()}{GOODS_PATH}"
+    resp = request_with_retry(
+        client,
+        "GET",
+        url,
+        params=params,
+        headers={"Referer": _detail_referer(shop_id)},
+    )
     payload: dict[str, Any] = resp.json()
     code = payload.get("code")
     if code not in (200, "200"):
@@ -225,7 +230,9 @@ def fetch_shop_goods_catalog(
             break
         if product_count_total is not None and len(all_products) >= product_count_total:
             break
-        time.sleep(REQUEST_DELAY_SEC)
+        # Extra pacing between goods pages (request_with_retry already throttles).
+        if REQUEST_DELAY_SEC > 0:
+            time.sleep(min(REQUEST_DELAY_SEC, 0.5))
 
     return {
         "status": "ok" if all_products else "empty",

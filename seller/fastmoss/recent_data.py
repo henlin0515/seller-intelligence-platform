@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import random
 import time
 from datetime import date
@@ -11,41 +10,28 @@ from typing import Any
 
 import requests
 
-from seller.fastmoss.search import DEFAULT_BASE_URL, DEFAULT_REGION, REQUEST_TIMEOUT_SEC
+from seller.fastmoss.client import (
+    REQUEST_DELAY_SEC,
+    REQUEST_TIMEOUT_SEC,
+    RETRYABLE_STATUS,
+    base_url,
+    get_shared_session,
+    new_session,
+    region,
+    request_with_retry,
+)
 
 logger = logging.getLogger("seller.fastmoss.recent_data")
 
 RECENT_DATA_PATH = "/api/shop/v3/recentData"
-REQUEST_DELAY_SEC = float(os.getenv("FASTMOSS_REQUEST_DELAY_SEC", "0.35"))
 
-
-def _base_url() -> str:
-    return (os.getenv("FASTMOSS_BASE_URL") or DEFAULT_BASE_URL).rstrip("/")
-
-
-def _region() -> str:
-    return (os.getenv("FASTMOSS_REGION") or DEFAULT_REGION).strip().upper() or DEFAULT_REGION
+# Backward-compatible aliases used by goods / radar / older scripts.
+_base_url = base_url
+_region = region
 
 
 def _detail_referer(shop_id: str) -> str:
-    return f"{_base_url()}/shop-marketing/detail/{shop_id}"
-
-
-def _new_session() -> requests.Session:
-    session = requests.Session()
-    session.headers.update(
-        {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            ),
-            "Accept": "application/json",
-            "lang": "EN_US",
-            "region": _region(),
-            "source": "pc",
-        }
-    )
-    return session
+    return f"{base_url()}/shop-marketing/detail/{shop_id}"
 
 
 def prefetch_shop_detail(
@@ -55,15 +41,27 @@ def prefetch_shop_detail(
     """
     Visit shop detail page to satisfy FastMoss view quota.
 
-    Returns the session carrying detail-page cookies for subsequent API calls.
+    Soft-fails on WAF 5xx (567/587): returns the session so recentData can still run.
     """
     shop_id = str(fastmoss_shop_id or "").strip()
     if not shop_id:
         raise ValueError("fastmoss_shop_id is required")
-    client = session or _new_session()
+    client = session or new_session()
     url = _detail_referer(shop_id)
-    resp = client.get(url, timeout=REQUEST_TIMEOUT_SEC)
-    resp.raise_for_status()
+    resp = request_with_retry(
+        client,
+        "GET",
+        url,
+        raise_for_status=False,
+        soft_fail_statuses=RETRYABLE_STATUS,
+    )
+    if resp.status_code >= 400:
+        logger.warning(
+            "FastMoss detail prefetch HTTP %s for %s — continuing without hard fail",
+            resp.status_code,
+            shop_id,
+        )
+        return client
     return client
 
 
@@ -98,21 +96,30 @@ def fetch_recent_data(
     if end < start:
         raise ValueError("end_date must be on or after start_date")
 
-    client = prefetch_shop_detail(shop_id, session) if prefetch_detail else (session or _new_session())
+    client = (
+        prefetch_shop_detail(shop_id, session)
+        if prefetch_detail
+        else (session or get_shared_session())
+    )
 
     params = {
         "id": shop_id,
         # Must match Seller Intelligence UI MTD / M-1 period chips (ISO dates).
         "start_date": start.isoformat(),
         "end_date": end.isoformat(),
-        "region": _region(),
+        "region": region(),
         "_time": str(int(time.time())),
         "cnonce": str(random.randint(10_000_000, 99_999_999)),
     }
-    url = f"{_base_url()}{RECENT_DATA_PATH}"
-    headers = {"referer": _detail_referer(shop_id)}
-    resp = client.get(url, params=params, headers=headers, timeout=REQUEST_TIMEOUT_SEC)
-    resp.raise_for_status()
+    url = f"{base_url()}{RECENT_DATA_PATH}"
+    headers = {"Referer": _detail_referer(shop_id)}
+    resp = request_with_retry(
+        client,
+        "GET",
+        url,
+        params=params,
+        headers=headers,
+    )
     payload: dict[str, Any] = resp.json()
     if payload.get("code") != 200:
         message = payload.get("message") or payload.get("msg") or payload.get("code")
