@@ -436,10 +436,9 @@ def build_merged_business_seller_rows(
     tracker = shopee_adgmv or get_shopee_adgmv()
     saved = load_business_intelligence_data()
     current_periods = resolve_periods(reference_today or date.today())
-    periods_stale = bool(saved) and not periods_match_payload(
-        saved.get("periods") if isinstance(saved, dict) else None,
-        current_periods,
-    )
+    from seller.intelligence.business.store import bi_cache_usable_for_periods
+
+    periods_stale = not bi_cache_usable_for_periods(saved, current_periods)
     collection_by_id, collection_by_name = _fastmoss_collection_indexes(
         None if periods_stale else saved
     )
@@ -720,13 +719,19 @@ def get_business_intelligence_meta(
             "current_periods": current_periods.as_dict(),
         }
     collected_periods = saved.get("periods")
-    periods_stale = not periods_match_payload(
-        collected_periods if isinstance(collected_periods, dict) else None,
-        current_periods,
-    )
     from seller.fastmoss.client import cookie_configured, get_last_health
+    from seller.intelligence.business.store import bi_cache_usable_for_periods
 
     health = get_last_health()
+    usable = bi_cache_usable_for_periods(saved, current_periods)
+    periods_stale = not usable
+    cache_status = str(saved.get("cache_status") or "ready")
+    # While refreshing, expose current UI target periods (not the old June cache).
+    display_periods = (
+        current_periods.as_dict()
+        if periods_stale or cache_status in {"refreshing", "invalidated"}
+        else collected_periods
+    )
     return {
         "fastmoss_connected": True,
         "data_file": "business_intelligence_data.json",
@@ -735,7 +740,8 @@ def get_business_intelligence_meta(
         "summary": saved.get("summary"),
         "source": saved.get("source"),
         "periods_stale": periods_stale,
-        "collected_periods": collected_periods,
+        "cache_status": cache_status,
+        "collected_periods": display_periods,
         "current_periods": current_periods.as_dict(),
         "cookie_configured": cookie_configured(),
         "fastmoss_health": health

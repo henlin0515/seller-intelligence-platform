@@ -50,6 +50,7 @@ def build_bi_cache_payload(
         "periods": periods.as_dict(),
         "usd_php_rate": USD_PHP_RATE,
         "source": "fastmoss_recentData",
+        "cache_status": "ready",
         "summary": {
             "processed": len(sellers),
             "success": success,
@@ -67,16 +68,22 @@ def refresh_bi_cache(
     trigger: str = "manual",
     collect_fn=None,
     skip_healthcheck: bool = False,
+    invalidate_first: bool = True,
 ) -> dict[str, Any]:
     """
     Re-fetch FastMoss TikTok GMV for all approved mappings using current UI periods.
 
-    On success: atomically overwrite ``business_intelligence_data.json``.
-    On failure: leave the previous cache untouched and raise ``BiCacheRefreshError``.
-
-    Request pacing (random 1–3s) and per-request retries are handled by the FastMoss
-    client. Per-shop failures are marked and skipped so other shops continue.
+    Always scrapes with ``resolve_periods(today)`` — the same MTD/M-1 tags shown in UI.
+    When ``invalidate_first`` is True (default), clears stale wrong-period rows before
+    collect so the UI never serves June ADGMV under July tags.
     """
+    from seller.intelligence.business.store import (
+        CACHE_STATUS_REFRESHING,
+        bi_cache_usable_for_periods,
+        invalidate_business_intelligence_cache,
+    )
+    from seller.intelligence.periods import periods_match_payload
+
     collect = collect_fn or collect_mapped_shop_tiktok
     today = reference_today or date.today()
     periods = resolve_periods(today)
@@ -121,6 +128,32 @@ def refresh_bi_cache(
                 "trigger": trigger,
             }
 
+        # Drop wrong-period cache immediately (or always on Update Data / force refresh).
+        prev_usable = bi_cache_usable_for_periods(previous, periods)
+        prev_periods_ok = periods_match_payload(
+            previous.get("periods") if isinstance(previous, dict) else None,
+            periods,
+        ) if previous else False
+        if invalidate_first and (not prev_usable or not prev_periods_ok or trigger in {
+            "manual",
+            "sla_update",
+            "period_change",
+            "api_ensure",
+            "force",
+            "user_force",
+        }):
+            invalidate_business_intelligence_cache(
+                periods,
+                reason=(
+                    "period_mismatch"
+                    if previous and not prev_periods_ok
+                    else "refresh_started"
+                ),
+                trigger=trigger,
+                path=cache_path,
+                cache_status=CACHE_STATUS_REFRESHING,
+            )
+
         health: dict[str, Any] | None = None
         if not skip_healthcheck:
             health = healthcheck()
@@ -163,7 +196,16 @@ def refresh_bi_cache(
                     "shop_name": row.get("shop_name"),
                     "status": "failed",
                     "error": str(exc),
+                    "mtd_start": periods.mtd.start.isoformat(),
+                    "mtd_end": periods.mtd.end.isoformat(),
+                    "m1_start": periods.m1.start.isoformat(),
+                    "m1_end": periods.m1.end.isoformat(),
                 }
+            # Guarantee row period tags match UI even if collect_fn is a stub.
+            collected.setdefault("mtd_start", periods.mtd.start.isoformat())
+            collected.setdefault("mtd_end", periods.mtd.end.isoformat())
+            collected.setdefault("m1_start", periods.m1.start.isoformat())
+            collected.setdefault("m1_end", periods.m1.end.isoformat())
             sellers.append(collected)
             if collected.get("status") == "success":
                 refreshed += 1
@@ -185,7 +227,8 @@ def refresh_bi_cache(
 
         if refreshed == 0:
             raise BiCacheRefreshError(
-                f"All {len(sellers)} FastMoss BI collects failed — preserving previous cache"
+                f"All {len(sellers)} FastMoss BI collects failed — "
+                "cache left invalidated for current UI periods (old wrong-period data not restored)"
             )
 
         payload = build_bi_cache_payload(
@@ -235,7 +278,7 @@ def refresh_bi_cache(
     except Exception as exc:
         elapsed = time.perf_counter() - started
         logger.exception(
-            "BI cache refresh FAILED — preserving previous cache | %s | updated=0 | "
+            "BI cache refresh FAILED — wrong-period cache not restored | %s | updated=0 | "
             "elapsed_sec=%.2f | trigger=%s | error=%s",
             ctx,
             elapsed,
@@ -249,18 +292,18 @@ def refresh_bi_cache(
 
 def bi_cache_needs_daily_refresh(*, reference_today: date | None = None) -> tuple[bool, str]:
     """True when cache is missing, wrong calendar day, or MTD/M-1 tags drifted."""
-    from seller.intelligence.periods import periods_match_payload
+    from seller.intelligence.business.store import bi_cache_usable_for_periods
 
     today = reference_today or date.today()
     current = resolve_periods(today)
     saved = load_business_intelligence_data()
     if not saved:
         return True, "BI cache missing"
-    if str(saved.get("reference_today") or "") != today.isoformat():
-        return True, f"BI cache day {saved.get('reference_today')} != today {today.isoformat()}"
-    if not periods_match_payload(
-        saved.get("periods") if isinstance(saved.get("periods"), dict) else None,
-        current,
-    ):
-        return True, "BI cache MTD/M-1 periods do not match UI tags"
+    if not bi_cache_usable_for_periods(saved, current):
+        status = str(saved.get("cache_status") or "")
+        if status in {"invalidated", "refreshing"}:
+            return True, f"BI cache {status} — needs re-collect for current MTD/M-1"
+        if str(saved.get("reference_today") or "") != today.isoformat():
+            return True, f"BI cache day {saved.get('reference_today')} != today {today.isoformat()}"
+        return True, "BI cache MTD/M-1 periods do not match UI tags or has no success rows"
     return False, "BI cache current for today"

@@ -51,16 +51,29 @@ _shared_session: requests.Session | None = None
 _last_health: dict[str, Any] | None = None
 
 
+def _resolve_cookie_file(path: str) -> Path:
+    """Resolve cookie file path (relative paths are from repo root)."""
+    candidate = Path(path)
+    if candidate.is_file():
+        return candidate
+    root = Path(__file__).resolve().parents[2]
+    rooted = root / path
+    if rooted.is_file():
+        return rooted
+    return candidate
+
+
 def _env_cookie() -> str:
     raw = (os.getenv("FASTMOSS_COOKIE") or "").strip()
     if raw:
         return raw
     path = (os.getenv("FASTMOSS_COOKIE_FILE") or "").strip()
     if path:
+        resolved = _resolve_cookie_file(path)
         try:
-            return Path(path).read_text(encoding="utf-8").strip()
+            return resolved.read_text(encoding="utf-8").strip()
         except OSError as exc:
-            logger.warning("Could not read FASTMOSS_COOKIE_FILE %s: %s", path, exc)
+            logger.warning("Could not read FASTMOSS_COOKIE_FILE %s: %s", resolved, exc)
     return ""
 
 

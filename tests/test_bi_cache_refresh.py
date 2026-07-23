@@ -78,10 +78,24 @@ def test_refresh_overwrites_cache_on_success(tmp_path: Path):
         ),
         patch(
             "seller.intelligence.business.bi_cache_refresh.load_business_intelligence_data",
-            side_effect=lambda path=None: json.loads(cache.read_text(encoding="utf-8")),
+            side_effect=lambda path=None: (
+                json.loads(cache.read_text(encoding="utf-8")) if cache.exists() else None
+            ),
+        ),
+        patch(
+            "seller.intelligence.business.store.load_business_intelligence_data",
+            side_effect=lambda path=None: (
+                json.loads(cache.read_text(encoding="utf-8")) if cache.exists() else None
+            ),
         ),
         patch(
             "seller.intelligence.business.bi_cache_refresh.save_business_intelligence_data",
+            side_effect=lambda payload, path=None: (
+                cache.write_text(json.dumps(payload), encoding="utf-8") or cache
+            ),
+        ),
+        patch(
+            "seller.intelligence.business.store.save_business_intelligence_data",
             side_effect=lambda payload, path=None: (
                 cache.write_text(json.dumps(payload), encoding="utf-8") or cache
             ),
@@ -116,13 +130,14 @@ def test_refresh_overwrites_cache_on_success(tmp_path: Path):
     )
 
 
-def test_refresh_preserves_cache_on_failure(tmp_path: Path):
+def test_refresh_invalidates_wrong_period_cache_on_failure(tmp_path: Path):
     cache = tmp_path / "business_intelligence_data.json"
     previous = {
         "reference_today": "2026-06-16",
         "periods": resolve_periods(date(2026, 6, 16)).as_dict(),
         "sellers": [{"shop_id": "old", "status": "success", "mtd_gmv_php": 999}],
         "summary": {"success": 1},
+        "cache_status": "ready",
     }
     cache.write_text(json.dumps(previous), encoding="utf-8")
 
@@ -134,20 +149,36 @@ def test_refresh_preserves_cache_on_failure(tmp_path: Path):
             "tiktok_mtd_adgmv_php": None,
         }
 
-    saved_calls: list[dict] = []
-
     with (
         patch(
             "seller.intelligence.business.bi_cache_refresh.approved_mapping_rows",
             return_value=[_mapping_row("1")],
         ),
         patch(
+            "seller.intelligence.business.bi_cache_refresh.bi_data_path",
+            return_value=cache,
+        ),
+        patch(
+            "seller.intelligence.business.store.DEFAULT_BI_DATA_PATH",
+            cache,
+        ),
+        patch(
             "seller.intelligence.business.bi_cache_refresh.load_business_intelligence_data",
-            return_value=previous,
+            side_effect=lambda path=None: (
+                json.loads(cache.read_text(encoding="utf-8")) if cache.exists() else None
+            ),
         ),
         patch(
             "seller.intelligence.business.bi_cache_refresh.save_business_intelligence_data",
-            side_effect=lambda payload, path=None: saved_calls.append(payload),
+            side_effect=lambda payload, path=None: (
+                cache.write_text(json.dumps(payload), encoding="utf-8") or cache
+            ),
+        ),
+        patch(
+            "seller.intelligence.business.store.save_business_intelligence_data",
+            side_effect=lambda payload, path=None: (
+                cache.write_text(json.dumps(payload), encoding="utf-8") or cache
+            ),
         ),
     ):
         with pytest.raises(BiCacheRefreshError):
@@ -159,8 +190,12 @@ def test_refresh_preserves_cache_on_failure(tmp_path: Path):
                 skip_healthcheck=True,
             )
 
-    assert saved_calls == []
-    assert json.loads(cache.read_text(encoding="utf-8"))["sellers"][0]["mtd_gmv_php"] == 999
+    saved = json.loads(cache.read_text(encoding="utf-8"))
+    # Old June ADGMV must not remain after period-mismatch refresh failure.
+    assert saved.get("sellers") == []
+    assert saved.get("cache_status") == "refreshing"
+    assert saved["periods"]["mtd"]["start"] == "2026-07-01"
+    assert saved["periods"]["mtd"]["end"] == "2026-07-22"
 
 
 def test_bi_cache_needs_daily_refresh_when_day_differs():

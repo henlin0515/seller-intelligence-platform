@@ -11,7 +11,7 @@ from datetime import date
 from typing import Any
 
 from seller.intelligence.business.store import load_business_intelligence_data
-from seller.intelligence.periods import periods_match_payload, resolve_periods
+from seller.intelligence.periods import resolve_periods
 
 logger = logging.getLogger("seller.intelligence.period_auto_refresh")
 
@@ -47,17 +47,18 @@ def auto_period_refresh_enabled() -> bool:
 
 def tiktok_bi_periods_stale(*, reference_today: date | None = None) -> tuple[bool, str]:
     """Return (stale, reason) comparing cached BI periods to current UI tags."""
+    from seller.intelligence.business.store import bi_cache_usable_for_periods
+
     today = reference_today or date.today()
     current = resolve_periods(today)
     saved = load_business_intelligence_data()
     if not saved:
         return True, "no TikTok BI cache — collect for current MTD/M-1"
-    collected = saved.get("periods")
-    if periods_match_payload(
-        collected if isinstance(collected, dict) else None,
-        current,
-    ):
+    if bi_cache_usable_for_periods(saved, current):
         return False, "TikTok BI periods match UI tags"
+    status = str(saved.get("cache_status") or "")
+    if status in {"invalidated", "refreshing"}:
+        return True, f"BI cache {status} — re-collect FastMoss for current MTD/M-1"
     return True, "UI MTD/M-1 tags changed — re-collect FastMoss for new ranges"
 
 

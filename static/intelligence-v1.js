@@ -686,18 +686,20 @@
   }
 
   function renderTikTokPeriodsStaleBanner(fastmoss, periodAuto) {
-    const stale = Boolean(fastmoss?.periods_stale || periodAuto?.periods_stale);
+    const cacheStatus = String(fastmoss?.cache_status || "").toLowerCase();
+    const refreshingCache = cacheStatus === "refreshing" || cacheStatus === "invalidated";
+    const stale = Boolean(fastmoss?.periods_stale || periodAuto?.periods_stale || refreshingCache);
     const running = Boolean(
-      periodAuto?.running || periodAuto?.started || periodAuto?.status?.running
+      periodAuto?.running || periodAuto?.started || periodAuto?.status?.running || refreshingCache
     );
     if (!stale && !running) return "";
     const collected = fastmoss?.collected_periods;
     const collectedLabel =
       collected?.mtd && collected?.m1
-        ? ` Cached: MTD ${collected.mtd.start} → ${collected.mtd.end}, M-1 ${collected.m1.start} → ${collected.m1.end}.`
+        ? ` Target: MTD ${collected.mtd.start} → ${collected.mtd.end}, M-1 ${collected.m1.start} → ${collected.m1.end}.`
         : "";
-    if (running) {
-      return `<p class="si-sla-period-stale is-refreshing" role="status">MTD / M-1 tags updated — auto-fetching FastMoss TikTok ADGMV for the new ranges…${escapeHtml(collectedLabel)}</p>`;
+    if (running || refreshingCache) {
+      return `<p class="si-sla-period-stale is-refreshing" role="status">Refreshing FastMoss TikTok ADGMV for current MTD / M-1 tags…${escapeHtml(collectedLabel)}</p>`;
     }
     return `<p class="si-sla-period-stale" role="status">TikTok ADGMV is outdated for the period tags above.${escapeHtml(collectedLabel)} Auto-refresh will start shortly.</p>`;
   }
