@@ -124,3 +124,18 @@ def collection_row_matches_periods(
         )
     # Legacy rows without per-row dates: caller must check file-level periods.
     return True
+
+
+def shopee_mtd_day_count(periods: IntelligencePeriods) -> int:
+    """Inclusive days in the UI MTD chip (e.g. 2026-07-01→22 → 22)."""
+    return max(1, periods.mtd.day_count)
+
+
+def shopee_m1_full_month_day_count(periods: IntelligencePeriods) -> int:
+    """
+    Full calendar days of the M-1 month.
+
+    Shopee Tracker ``m_1_adgmv_usd`` is full previous-month total GMV
+    (e.g. all of June → divide by 30), not the TikTok-aligned partial M-1 window.
+    """
+    return calendar.monthrange(periods.m1.start.year, periods.m1.start.month)[1]

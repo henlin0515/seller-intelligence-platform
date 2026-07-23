@@ -26,6 +26,14 @@ _HEADER_M1 = re.compile(r"^m[_\s-]*1_adgmv_usd$", re.I)
 
 @dataclass(frozen=True)
 class ShopeeAdgmvRecord:
+    """
+    One Tracker row.
+
+    ``mtd_adgmv_usd`` / ``m1_adgmv_usd`` from the sheet are period *totals*
+    (MTD range total and full previous-month total). Downstream BI converts them
+    to daily ADGMV via ``shopee_period_totals_to_adgmv``.
+    """
+
     tracker_shop_name: str
     mtd_adgmv_usd: float
     m1_adgmv_usd: float

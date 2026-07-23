@@ -13,7 +13,12 @@ from seller.fastmoss.review import (
     allows_tiktok_data,
     get_review_by_shop_id,
 )
-from seller.intelligence.business.calculations import mom_percent, sob_pair, tiktok_php_to_usd
+from seller.intelligence.business.calculations import (
+    mom_percent,
+    shopee_period_totals_to_adgmv,
+    sob_pair,
+    tiktok_php_to_usd,
+)
 from seller.intelligence.business.store import (
     fastmoss_collection_by_shop_id,
     load_business_intelligence_data,
@@ -282,6 +287,7 @@ def _apply_shopee_data(
     record: dict[str, Any],
     *,
     shopee_row: ShopeeAdgmvRecord | None,
+    current_periods: IntelligencePeriods | None = None,
 ) -> None:
     if shopee_row is None:
         record["shopee_data_status"] = "na"
@@ -289,14 +295,27 @@ def _apply_shopee_data(
         record["shopee_na_reason"] = SHOPEE_NA_REASON
         return
 
+    # Tracker columns are period *totals*; convert to daily ADGMV for UI / MoM / SOB.
+    periods = current_periods or resolve_periods(date.today())
+    converted = shopee_period_totals_to_adgmv(
+        float(shopee_row.mtd_adgmv_usd),
+        float(shopee_row.m1_adgmv_usd),
+        periods,
+    )
+    mtd_adgmv = float(converted["shopee_mtd_adgmv_usd"])
+    m1_adgmv = float(converted["shopee_m1_adgmv_usd"])
     record.update(
         {
             "tracker_shop_name": shopee_row.tracker_shop_name,
-            "shopee_mtd_adgmv_usd": round(shopee_row.mtd_adgmv_usd, 4),
-            "shopee_m1_adgmv_usd": round(shopee_row.m1_adgmv_usd, 4),
+            "shopee_mtd_total_usd": converted["shopee_mtd_total_usd"],
+            "shopee_m1_total_usd": converted["shopee_m1_total_usd"],
+            "shopee_mtd_day_count": converted["shopee_mtd_day_count"],
+            "shopee_m1_day_count": converted["shopee_m1_day_count"],
+            "shopee_mtd_adgmv_usd": mtd_adgmv,
+            "shopee_m1_adgmv_usd": m1_adgmv,
             "shopee_mom_percent": (
                 round(mom, 4)
-                if (mom := mom_percent(shopee_row.mtd_adgmv_usd, shopee_row.m1_adgmv_usd)) is not None
+                if (mom := mom_percent(mtd_adgmv, m1_adgmv)) is not None
                 else None
             ),
             "shopee_data_status": "available",
@@ -358,6 +377,10 @@ def build_business_seller_record(
         "tiktok_na_reason": None,
         "shopee_mtd_adgmv_usd": None,
         "shopee_m1_adgmv_usd": None,
+        "shopee_mtd_total_usd": None,
+        "shopee_m1_total_usd": None,
+        "shopee_mtd_day_count": None,
+        "shopee_m1_day_count": None,
         "shopee_mom_percent": None,
         "shopee_data_status": "na",
         "shopee_na_reason": SHOPEE_NA_REASON,
@@ -388,7 +411,11 @@ def build_business_seller_record(
             current_periods=current_periods,
         )
     if platform_source != "TIKTOK_ONLY":
-        _apply_shopee_data(record, shopee_row=shopee_row)
+        _apply_shopee_data(
+            record,
+            shopee_row=shopee_row,
+            current_periods=current_periods,
+        )
     _apply_sob_data(record, platform_source=platform_source)
     return record
 

@@ -7,6 +7,11 @@ from seller.intelligence.business.schemas import (
     BusinessIntelligenceRecord,
 )
 from seller.intelligence.config import USD_PHP_RATE
+from seller.intelligence.periods import (
+    IntelligencePeriods,
+    shopee_m1_full_month_day_count,
+    shopee_mtd_day_count,
+)
 
 
 def tiktok_php_to_usd(php: float) -> float:
@@ -19,6 +24,38 @@ def mom_percent(mtd_usd: float, m1_usd: float) -> float | None:
     if m1_usd == 0:
         return None
     return (mtd_usd - m1_usd) / m1_usd * 100.0
+
+
+def daily_adgmv_usd(period_total_usd: float, day_count: int) -> float:
+    """Average daily GMV (ADGMV) = period total / inclusive day count."""
+    if day_count <= 0:
+        return 0.0
+    return period_total_usd / day_count
+
+
+def shopee_period_totals_to_adgmv(
+    mtd_total_usd: float,
+    m1_total_usd: float,
+    periods: IntelligencePeriods,
+) -> dict[str, float | int]:
+    """
+    Convert Shopee Tracker period totals into daily ADGMV.
+
+    - MTD total covers the UI MTD chip range → divide by MTD day count
+    - M-1 total is the full previous calendar month → divide by that month's days
+    """
+    mtd_days = shopee_mtd_day_count(periods)
+    m1_days = shopee_m1_full_month_day_count(periods)
+    mtd_adgmv = daily_adgmv_usd(mtd_total_usd, mtd_days)
+    m1_adgmv = daily_adgmv_usd(m1_total_usd, m1_days)
+    return {
+        "shopee_mtd_total_usd": round(float(mtd_total_usd), 4),
+        "shopee_m1_total_usd": round(float(m1_total_usd), 4),
+        "shopee_mtd_day_count": mtd_days,
+        "shopee_m1_day_count": m1_days,
+        "shopee_mtd_adgmv_usd": round(mtd_adgmv, 4),
+        "shopee_m1_adgmv_usd": round(m1_adgmv, 4),
+    }
 
 
 def sob_pair(
