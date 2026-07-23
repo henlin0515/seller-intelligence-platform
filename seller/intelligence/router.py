@@ -64,7 +64,16 @@ async def intelligence_v1_snapshot():
 @router.get("/dashboard")
 async def intelligence_v1_dashboard():
     """V1 dashboard summary (periods + module status)."""
+    from seller.intelligence.business.period_auto_refresh import (
+        ensure_tiktok_bi_for_current_periods,
+    )
+
     today = date.today()
+    # Keep TikTok BI aligned with UI period chips even from the dashboard view.
+    await asyncio.to_thread(
+        ensure_tiktok_bi_for_current_periods,
+        trigger="dashboard",
+    )
     master = _load_master()
     business = get_business_intelligence_payload(master)
     fastmoss_meta = get_business_intelligence_meta()
@@ -80,12 +89,14 @@ async def intelligence_v1_dashboard():
         "seller_count": len(business),
         "portfolio": portfolio,
         "import": imp,
+        "fastmoss": fastmoss_meta,
         "modules": {
             "business_intelligence": {
                 "status": "fastmoss_tiktok" if fastmoss_meta.get("fastmoss_connected") else "sheet_master",
                 "seller_count": len(business),
                 "fastmoss_connected": fastmoss_meta.get("fastmoss_connected", False),
                 "tiktok_collected": (fastmoss_meta.get("summary") or {}).get("success"),
+                "periods_stale": fastmoss_meta.get("periods_stale", False),
             },
             "assortment_intelligence": {
                 "status": "tiktok_product_radar",
@@ -114,6 +125,37 @@ async def intelligence_v1_business_refresh_status():
     from seller.intelligence.business.sla_refresh import get_sla_refresh_status
 
     return get_sla_refresh_status()
+
+
+@router.get("/business/period-refresh-status")
+async def intelligence_v1_business_period_refresh_status():
+    """Poll auto TikTok BI refresh triggered by MTD/M-1 period tag changes."""
+    from seller.intelligence.business.period_auto_refresh import (
+        get_tiktok_period_refresh_status,
+        tiktok_bi_periods_stale,
+    )
+
+    status = get_tiktok_period_refresh_status()
+    stale, reason = tiktok_bi_periods_stale()
+    return {
+        **status,
+        "periods_stale": stale,
+        "stale_reason": reason,
+        "periods": resolve_periods(date.today()).as_dict(),
+    }
+
+
+@router.post("/business/ensure-period-data")
+async def intelligence_v1_business_ensure_period_data():
+    """Ensure FastMoss TikTok BI matches current UI MTD/M-1 tags (auto background)."""
+    from seller.intelligence.business.period_auto_refresh import (
+        ensure_tiktok_bi_for_current_periods,
+    )
+
+    return await asyncio.to_thread(
+        ensure_tiktok_bi_for_current_periods,
+        trigger="api_ensure",
+    )
 
 
 async def _shop_detail_handler(
@@ -179,11 +221,20 @@ async def intelligence_v1_business_shop_detail(
 
 @router.get("/business")
 async def intelligence_v1_business():
+    from seller.intelligence.business.period_auto_refresh import (
+        ensure_tiktok_bi_for_current_periods,
+        get_tiktok_period_refresh_status,
+    )
     from seller.intelligence.business.sla_update_state import get_sla_update_state_for_api
     from seller.intelligence.category_raw import get_category_mapping_payload
     from seller.intelligence.gp_shop_rm import get_sla_sheet_filters_payload
 
     today = date.today()
+    # When top MTD/M-1 chips change, auto-fetch FastMoss for those ranges.
+    period_auto = await asyncio.to_thread(
+        ensure_tiktok_bi_for_current_periods,
+        trigger="business_page",
+    )
     master = _load_master()
     fastmoss_meta = get_business_intelligence_meta()
     sellers = get_business_intelligence_payload(master)
@@ -198,6 +249,10 @@ async def intelligence_v1_business():
         "periods": resolve_periods(today).as_dict(),
         "usd_php_rate": USD_PHP_RATE,
         "fastmoss": fastmoss_meta,
+        "period_auto_refresh": {
+            **period_auto,
+            "status": get_tiktok_period_refresh_status(),
+        },
         "sheet_filters": sheet_filters,
         "rm_filter": sheet_filters.get("rm_filter"),
         "gp_filter": sheet_filters.get("gp_filter"),

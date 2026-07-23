@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 from seller.fastmoss.mapping import MAPPING_NOT_FOUND, load_fastmoss_mapping
@@ -24,6 +25,12 @@ from seller.intelligence.business.shopee_adgmv import (
     match_shopee_adgmv_to_shop_name,
 )
 from seller.intelligence.gp_shop_rm import normalize_shop_key
+from seller.intelligence.periods import (
+    IntelligencePeriods,
+    collection_row_matches_periods,
+    periods_match_payload,
+    resolve_periods,
+)
 from seller.intelligence.platform_extra_shops import PlatformSource, try_load_platform_extra_shops
 from seller.intelligence.seller_master import SellerMasterLoadResult, get_seller_master
 
@@ -31,6 +38,10 @@ SHOPEE_NA_REASON = "Shopee ADGMV not found in Tracker"
 SOB_NA_REASON = "SOB requires Shopee and TikTok ADGMV"
 TIKTOK_ONLY_SHOPEE_NA = "TikTok-only shop — no Shopee ADGMV"
 SHOPEE_ONLY_TIKTOK_NA = "Shopee-only shop — no TikTok ADGMV"
+TIKTOK_PERIODS_STALE_NA = (
+    "TikTok data outdated for current MTD/M-1 — auto-refreshing FastMoss…"
+)
+EMPTY_TIKTOK_NAME_NA = "No TikTok shop name — cannot map to FastMoss"
 
 
 def _round_sob(value: float | None) -> float | None:
@@ -170,8 +181,17 @@ def _tiktok_na_reason(
     mapping_status: str | None,
     collection_row: dict[str, Any] | None,
     review_status: str | None = None,
+    *,
+    mapping_row: dict[str, Any] | None = None,
+    periods_stale: bool = False,
 ) -> str:
+    if periods_stale:
+        return TIKTOK_PERIODS_STALE_NA
+    failure = str((mapping_row or {}).get("failure_reason") or "").strip()
+    tiktok_name = str((mapping_row or {}).get("tiktok_shop_name") or "").strip()
     if mapping_status != "MAPPED":
+        if failure == "empty_tiktok_shop_name" or not tiktok_name:
+            return EMPTY_TIKTOK_NAME_NA
         return "FastMoss shop not mapped"
     rs = str(review_status or "").upper()
     if rs == REVIEW_PENDING:
@@ -193,6 +213,9 @@ def _apply_tiktok_data(
     mapping_status: str,
     collection_row: dict[str, Any] | None,
     review_status: str | None = None,
+    mapping_row: dict[str, Any] | None = None,
+    periods_stale: bool = False,
+    current_periods: IntelligencePeriods | None = None,
 ) -> None:
     if not allows_tiktok_data(review_status):
         record["tiktok_data_status"] = "na"
@@ -200,14 +223,31 @@ def _apply_tiktok_data(
             mapping_status,
             collection_row,
             review_status,
+            mapping_row=mapping_row,
         )
         return
 
-    if collection_row and collection_row.get("status") == "success":
-        mtd_gmv = float(collection_row.get("mtd_gmv_php") or 0)
-        m1_gmv = float(collection_row.get("m1_gmv_php") or 0)
-        mtd_adgmv_php = float(collection_row.get("tiktok_mtd_adgmv_php") or 0)
-        m1_adgmv_php = float(collection_row.get("tiktok_m1_adgmv_php") or 0)
+    # Stale FastMoss cache only matters once the shop is eligible for TikTok numbers.
+    if periods_stale and str(mapping_status or "").upper() == "MAPPED":
+        record["tiktok_data_status"] = "na"
+        record["tiktok_na_reason"] = TIKTOK_PERIODS_STALE_NA
+        return
+
+    usable_row = collection_row
+    if (
+        usable_row
+        and current_periods is not None
+        and not collection_row_matches_periods(usable_row, current_periods)
+    ):
+        record["tiktok_data_status"] = "na"
+        record["tiktok_na_reason"] = TIKTOK_PERIODS_STALE_NA
+        return
+
+    if usable_row and usable_row.get("status") == "success":
+        mtd_gmv = float(usable_row.get("mtd_gmv_php") or 0)
+        m1_gmv = float(usable_row.get("m1_gmv_php") or 0)
+        mtd_adgmv_php = float(usable_row.get("tiktok_mtd_adgmv_php") or 0)
+        m1_adgmv_php = float(usable_row.get("tiktok_m1_adgmv_php") or 0)
         mtd_adgmv_usd = tiktok_php_to_usd(mtd_adgmv_php)
         m1_adgmv_usd = tiktok_php_to_usd(m1_adgmv_php)
         record.update(
@@ -231,8 +271,10 @@ def _apply_tiktok_data(
 
     record["tiktok_na_reason"] = _tiktok_na_reason(
         mapping_status,
-        collection_row,
+        usable_row,
         review_status,
+        mapping_row=mapping_row,
+        periods_stale=False,
     )
 
 
@@ -276,6 +318,8 @@ def build_business_seller_record(
     gp_shop_name: str | None = None,
     rm: str | None = None,
     shopee_link: str = "",
+    periods_stale: bool = False,
+    current_periods: IntelligencePeriods | None = None,
 ) -> dict[str, Any]:
     mapping_status = str((mapping_row or {}).get("mapping_status") or MAPPING_NOT_FOUND)
     fastmoss_matched_shop = (mapping_row or {}).get("fastmoss_shop_name")
@@ -283,7 +327,7 @@ def build_business_seller_record(
     review_status = str((review_row or {}).get("review_status") or "")
     effective_collection = (
         collection_row
-        if allows_tiktok_data(review_status)
+        if allows_tiktok_data(review_status) and not periods_stale
         else None
     )
 
@@ -339,6 +383,9 @@ def build_business_seller_record(
             mapping_status=mapping_status,
             collection_row=effective_collection,
             review_status=review_status,
+            mapping_row=mapping_row,
+            periods_stale=periods_stale,
+            current_periods=current_periods,
         )
     if platform_source != "TIKTOK_ONLY":
         _apply_shopee_data(record, shopee_row=shopee_row)
@@ -380,6 +427,7 @@ def build_merged_business_seller_rows(
     master: SellerMasterLoadResult,
     *,
     shopee_adgmv: ShopeeAdgmvLoadResult | None = None,
+    reference_today: date | None = None,
 ) -> list[dict[str, Any]]:
     """Union of shpoee link + shopee shop only + tiktok shop only (deduped)."""
     from seller.fastmoss.review import ensure_review_store_synced
@@ -387,7 +435,14 @@ def build_merged_business_seller_rows(
     ensure_review_store_synced()
     tracker = shopee_adgmv or get_shopee_adgmv()
     saved = load_business_intelligence_data()
-    collection_by_id, collection_by_name = _fastmoss_collection_indexes(saved)
+    current_periods = resolve_periods(reference_today or date.today())
+    periods_stale = bool(saved) and not periods_match_payload(
+        saved.get("periods") if isinstance(saved, dict) else None,
+        current_periods,
+    )
+    collection_by_id, collection_by_name = _fastmoss_collection_indexes(
+        None if periods_stale else saved
+    )
     mapping_by_id, mapping_by_name = _fastmoss_mapping_indexes()
     shopee_only, tiktok_only = try_load_platform_extra_shops()
 
@@ -425,6 +480,8 @@ def build_merged_business_seller_rows(
                 collection_row=collection_row,
                 shopee_row=match_shopee_adgmv_to_shop_name(seller.shop_name, tracker),
                 platform_source="NORMAL",
+                periods_stale=periods_stale,
+                current_periods=current_periods,
             )
         )
 
@@ -467,6 +524,8 @@ def build_merged_business_seller_rows(
                 gp_shop_id=extra.gp_shop_id,
                 gp_shop_name=extra.gp_shop_name,
                 rm=extra.rm,
+                periods_stale=periods_stale,
+                current_periods=current_periods,
             )
         )
 
@@ -517,6 +576,9 @@ def build_merged_business_seller_rows(
                         collection_row if allows_tiktok_data(review_status) else None
                     ),
                     review_status=review_status,
+                    mapping_row=mapping_row,
+                    periods_stale=periods_stale,
+                    current_periods=current_periods,
                 )
                 rec["platform_source"] = "NORMAL"
                 _apply_sob_data(rec, platform_source="NORMAL")
@@ -547,6 +609,8 @@ def build_merged_business_seller_rows(
                 platform_source="TIKTOK_ONLY",
                 gp_shop_id=extra.gp_shop_id,
                 gp_shop_name=extra.gp_shop_name,
+                periods_stale=periods_stale,
+                current_periods=current_periods,
             )
         )
 
@@ -556,12 +620,18 @@ def build_merged_business_seller_rows(
 def get_business_intelligence_payload(
     master: SellerMasterLoadResult | None = None,
     shopee_adgmv: ShopeeAdgmvLoadResult | None = None,
+    *,
+    reference_today: date | None = None,
 ) -> list[dict[str, Any]]:
     """Return BI seller rows with TikTok FastMoss + Shopee Tracker ADGMV."""
     from seller.fastmoss.review import ensure_review_store_synced
 
     loaded = master or get_seller_master()
-    return build_merged_business_seller_rows(loaded, shopee_adgmv=shopee_adgmv)
+    return build_merged_business_seller_rows(
+        loaded,
+        shopee_adgmv=shopee_adgmv,
+        reference_today=reference_today,
+    )
 
 
 def get_shopee_adgmv_match_summary(
@@ -633,15 +703,27 @@ def validate_sob_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def get_business_intelligence_meta() -> dict[str, Any]:
+def get_business_intelligence_meta(
+    *,
+    reference_today: date | None = None,
+) -> dict[str, Any]:
     saved = load_business_intelligence_data()
+    current_periods = resolve_periods(reference_today or date.today())
     if not saved:
         return {
             "fastmoss_connected": False,
             "data_file": None,
             "generated_at": None,
             "summary": None,
+            "periods_stale": False,
+            "collected_periods": None,
+            "current_periods": current_periods.as_dict(),
         }
+    collected_periods = saved.get("periods")
+    periods_stale = not periods_match_payload(
+        collected_periods if isinstance(collected_periods, dict) else None,
+        current_periods,
+    )
     return {
         "fastmoss_connected": True,
         "data_file": "business_intelligence_data.json",
@@ -649,4 +731,7 @@ def get_business_intelligence_meta() -> dict[str, Any]:
         "reference_today": saved.get("reference_today"),
         "summary": saved.get("summary"),
         "source": saved.get("source"),
+        "periods_stale": periods_stale,
+        "collected_periods": collected_periods,
+        "current_periods": current_periods.as_dict(),
     }

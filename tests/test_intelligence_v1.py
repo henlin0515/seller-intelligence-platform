@@ -31,6 +31,26 @@ def test_periods_june_1():
     assert p.m1.end == date(2026, 4, 30)
 
 
+def test_periods_july_23():
+    """UI tags for today=2026-07-23: MTD Jul 1–22, M-1 Jun 1–22."""
+    p = resolve_periods(date(2026, 7, 23))
+    assert p.mtd.start == date(2026, 7, 1)
+    assert p.mtd.end == date(2026, 7, 22)
+    assert p.m1.start == date(2026, 6, 1)
+    assert p.m1.end == date(2026, 6, 22)
+    assert p.mtd.day_count == 22
+    assert p.m1.day_count == 22
+
+
+def test_periods_match_payload_aligned():
+    from seller.intelligence.periods import periods_match_payload
+
+    current = resolve_periods(date(2026, 7, 23))
+    assert periods_match_payload(current.as_dict(), current) is True
+    stale = resolve_periods(date(2026, 6, 16)).as_dict()
+    assert periods_match_payload(stale, current) is False
+
+
 def test_tiktok_usd_conversion():
     assert tiktok_php_to_usd(6155.0) == 6155.0 / USD_PHP_RATE
 

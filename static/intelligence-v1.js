@@ -7,6 +7,7 @@
     business: "/api/intelligence/v1/business",
     businessRefreshData: "/api/intelligence/v1/business/refresh-data",
     businessRefreshStatus: "/api/intelligence/v1/business/refresh-status",
+    businessPeriodRefreshStatus: "/api/intelligence/v1/business/period-refresh-status",
     assortment: "/api/intelligence/v1/assortment",
     assortmentRefreshProducts: "/api/intelligence/v1/assortment/refresh-products",
     voucher: "/api/intelligence/v1/voucher",
@@ -14,6 +15,8 @@
 
   const SLA_POLL_INTERVAL_MS = 1500;
   const SLA_POLL_MAX_MS = 3600000;
+  const PERIOD_POLL_INTERVAL_MS = 2500;
+  const PERIOD_POLL_MAX_MS = 1800000;
 
   const RADAR_LOAD_TIMEOUT_MS = 45000;
   const RADAR_POLL_INTERVAL_MS = 8000;
@@ -679,6 +682,89 @@
     return `
       <span class="si-sla-chip">MTD ${escapeHtml(periods.mtd.start)} → ${escapeHtml(periods.mtd.end)}</span>
       <span class="si-sla-chip">M-1 ${escapeHtml(periods.m1.start)} → ${escapeHtml(periods.m1.end)}</span>`;
+  }
+
+  function renderTikTokPeriodsStaleBanner(fastmoss, periodAuto) {
+    const stale = Boolean(fastmoss?.periods_stale || periodAuto?.periods_stale);
+    const running = Boolean(
+      periodAuto?.running || periodAuto?.started || periodAuto?.status?.running
+    );
+    if (!stale && !running) return "";
+    const collected = fastmoss?.collected_periods;
+    const collectedLabel =
+      collected?.mtd && collected?.m1
+        ? ` Cached: MTD ${collected.mtd.start} → ${collected.mtd.end}, M-1 ${collected.m1.start} → ${collected.m1.end}.`
+        : "";
+    if (running) {
+      return `<p class="si-sla-period-stale is-refreshing" role="status">MTD / M-1 tags updated — auto-fetching FastMoss TikTok ADGMV for the new ranges…${escapeHtml(collectedLabel)}</p>`;
+    }
+    return `<p class="si-sla-period-stale" role="status">TikTok ADGMV is outdated for the period tags above.${escapeHtml(collectedLabel)} Auto-refresh will start shortly.</p>`;
+  }
+
+  let periodAutoPollToken = 0;
+  let periodAutoFollowInFlight = false;
+
+  async function pollPeriodAutoRefreshUntilDone() {
+    const token = ++periodAutoPollToken;
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < PERIOD_POLL_MAX_MS) {
+      if (token !== periodAutoPollToken) return null;
+      await new Promise((r) => setTimeout(r, PERIOD_POLL_INTERVAL_MS));
+      if (token !== periodAutoPollToken) return null;
+      const res = await fetchApi(API.businessPeriodRefreshStatus);
+      const status = await res.json();
+      if (!res.ok) {
+        throw new Error(status.detail || "Period refresh status failed");
+      }
+      if (status.error && !status.running) {
+        throw new Error(status.error);
+      }
+      if (!status.running && status.result?.success) {
+        return status;
+      }
+      if (!status.running && !status.periods_stale) {
+        return status;
+      }
+    }
+    throw new Error("TikTok period auto-refresh timed out");
+  }
+
+  async function followPeriodAutoRefresh(data) {
+    const auto = data?.period_auto_refresh || {};
+    const stale = Boolean(data?.fastmoss?.periods_stale || auto.periods_stale);
+    const running = Boolean(auto.running || auto.started || auto.status?.running);
+    if (!stale && !running) return;
+    if (periodAutoFollowInFlight) return;
+    periodAutoFollowInFlight = true;
+    try {
+      window.ShpPlatform?.showPlatformToast?.(
+        i18n(
+          "si.periodAutoRefresh",
+          "Period tags changed — refreshing TikTok ADGMV…"
+        )
+      );
+      // If the page load could not start the job (e.g. race), ask again once.
+      if (!running) {
+        await fetchApi("/api/intelligence/v1/business/ensure-period-data", {
+          method: "POST",
+        });
+      }
+      await pollPeriodAutoRefreshUntilDone();
+      window.ShpPlatform?.showPlatformToast?.(
+        i18n("si.periodAutoRefreshDone", "TikTok ADGMV updated for current MTD / M-1")
+      );
+      delete cache.siBusiness;
+      state.business.shellReady = false;
+      await onShow("siBusiness");
+    } catch (err) {
+      console.error("[period auto-refresh]", err);
+      window.ShpPlatform?.showPlatformToast?.(
+        err.message || "TikTok period auto-refresh failed",
+        "error"
+      );
+    } finally {
+      periodAutoFollowInFlight = false;
+    }
   }
 
   function renderSlaSobLegendBar(shpPct, tkPct, { barClass = "hs-inline-sob-bar" } = {}) {
@@ -1739,11 +1825,14 @@
     const collected = fm.summary?.success != null ? ` · ${summary.tiktok_available ?? fm.summary.success} TikTok` : "";
     const chipsEl = document.getElementById("siBusinessPeriodChips");
     if (chipsEl) {
-      chipsEl.innerHTML = renderBusinessPeriodChips(data.periods);
+      chipsEl.innerHTML =
+        renderBusinessPeriodChips(data.periods) +
+        renderTikTokPeriodsStaleBanner(fm, data.period_auto_refresh);
     }
     if (metas.siBusiness) {
       metas.siBusiness.textContent = `${src}${collected} · USD/PHP ${data.usd_php_rate}`;
     }
+    followPeriodAutoRefresh(data);
     if (!state.business.shellReady) {
       el.innerHTML = `<div class="si-sla-shell">${businessFilterCardHtml(state.business.filters, businessSheetFilters(data))}<div class="si-sla-summary-sob" data-sla-summary-sob aria-live="polite"></div><div class="si-sla-list" data-si-list></div></div>`;
       const onToolbar = (ev) => {

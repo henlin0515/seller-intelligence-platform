@@ -43,6 +43,12 @@ def collect_mapped_shop_tiktok(
         "fastmoss_shop_name": fastmoss_shop_name,
         "status": "failed",
         "error": None,
+        "mtd_start": periods.mtd.start.isoformat(),
+        "mtd_end": periods.mtd.end.isoformat(),
+        "m1_start": periods.m1.start.isoformat(),
+        "m1_end": periods.m1.end.isoformat(),
+        "mtd_day_count": periods.mtd.day_count,
+        "m1_day_count": periods.m1.day_count,
         "mtd_gmv_php": None,
         "m1_gmv_php": None,
         "tiktok_mtd_adgmv_php": None,
@@ -55,6 +61,7 @@ def collect_mapped_shop_tiktok(
         session = prefetch_shop_detail(fastmoss_shop_id)
         if delay_sec > 0:
             time.sleep(delay_sec)
+        # Pass the same MTD / M-1 ranges shown on UI period chips.
         mtd_gmv, mtd_url, session = fetch_period_gmv_php(
             fastmoss_shop_id,
             periods.mtd.start,

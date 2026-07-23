@@ -87,13 +87,35 @@ def run_intelligence_sync_job() -> dict[str, Any]:
     return result
 
 
+def maybe_start_period_tiktok_refresh() -> bool:
+    """Re-collect TikTok BI when UI MTD/M-1 tags no longer match the cache."""
+    try:
+        from seller.intelligence.business.period_auto_refresh import (
+            ensure_tiktok_bi_for_current_periods,
+        )
+    except Exception as exc:
+        logger.warning("Period TikTok auto-refresh import failed: %s", exc)
+        return False
+
+    result = ensure_tiktok_bi_for_current_periods(trigger="startup")
+    if result.get("started"):
+        logger.info("Period TikTok auto-refresh started: %s", result.get("reason"))
+        return True
+    logger.info("Period TikTok auto-refresh idle: %s", result.get("reason"))
+    return False
+
+
 def maybe_start_background_sync() -> bool:
     """
-    Start one background sync thread on startup when data is missing or stale.
+    Start background sync on startup when data is missing or stale.
 
-    Controlled by INTELLIGENCE_AUTO_SYNC_ON_STARTUP (default true).
+    Always attempts a lightweight TikTok period refresh when MTD/M-1 tags changed.
+    Full SLA sync is controlled by INTELLIGENCE_AUTO_SYNC_ON_STARTUP (default true).
     """
     global _started
+
+    maybe_start_period_tiktok_refresh()
+
     if not _env_bool("INTELLIGENCE_AUTO_SYNC_ON_STARTUP", True):
         logger.info("Intelligence auto-sync on startup disabled")
         return False
@@ -111,7 +133,16 @@ def maybe_start_background_sync() -> bool:
     def _worker() -> None:
         time.sleep(float(os.getenv("INTELLIGENCE_BOOTSTRAP_DELAY_SEC", "3")))
         try:
+            from seller.intelligence.business.period_auto_refresh import (
+                get_tiktok_period_refresh_status,
+            )
             from seller.intelligence.business.sla_refresh import get_sla_refresh_status
+
+            # Wait briefly if period TikTok refresh is still running.
+            for _ in range(120):
+                if not get_tiktok_period_refresh_status().get("running"):
+                    break
+                time.sleep(1)
 
             if get_sla_refresh_status().get("running"):
                 logger.info("Intelligence bootstrap skipped: refresh already running")

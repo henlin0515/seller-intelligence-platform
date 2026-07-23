@@ -32,13 +32,14 @@ def refresh_tiktok_bi_for_shop_ids(
     shop_ids: list[str],
     *,
     delay_sec: float = 0.35,
+    reference_today: date | None = None,
 ) -> dict[str, Any]:
     """Collect FastMoss TikTok GMV for specific approved shop IDs."""
     wanted = {str(shop_id) for shop_id in shop_ids if str(shop_id).strip()}
     if not wanted:
         return {"approved_count": 0, "tiktok_data_refreshed_count": 0, "collection_success": 0}
 
-    today = date.today()
+    today = reference_today or date.today()
     periods = resolve_periods(today)
     approved = [row for row in approved_mapping_rows() if str(row.get("shop_id")) in wanted]
     bi_data = load_business_intelligence_data() or {
@@ -94,12 +95,17 @@ def refresh_tiktok_bi_for_shop_ids(
         "tiktok_data_refreshed_count": refreshed,
         "collection_success": refreshed,
         "shops": updated_rows,
+        "periods": periods.as_dict(),
     }
 
 
-def refresh_approved_tiktok_bi(*, delay_sec: float = 0.35) -> dict[str, Any]:
-    """Collect FastMoss TikTok GMV only for APPROVED mappings."""
-    today = date.today()
+def refresh_approved_tiktok_bi(
+    *,
+    delay_sec: float = 0.35,
+    reference_today: date | None = None,
+) -> dict[str, Any]:
+    """Collect FastMoss TikTok GMV only for APPROVED mappings (current UI periods)."""
+    today = reference_today or date.today()
     periods = resolve_periods(today)
     approved = approved_mapping_rows()
     bi_data = load_business_intelligence_data() or {
@@ -151,6 +157,8 @@ def refresh_approved_tiktok_bi(*, delay_sec: float = 0.35) -> dict[str, Any]:
         "approved_count": len(approved),
         "tiktok_data_refreshed_count": refreshed,
         "collection_success": success,
+        "periods": periods.as_dict(),
+        "reference_today": today.isoformat(),
     }
 
 

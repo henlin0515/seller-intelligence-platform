@@ -102,6 +102,7 @@ def fetch_recent_data(
 
     params = {
         "id": shop_id,
+        # Must match Seller Intelligence UI MTD / M-1 period chips (ISO dates).
         "start_date": start.isoformat(),
         "end_date": end.isoformat(),
         "region": _region(),

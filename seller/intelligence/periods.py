@@ -59,6 +59,7 @@ def resolve_periods(today: date) -> IntelligencePeriods:
 
     - today 2026-06-07 → MTD 2026-06-01..2026-06-06, M-1 2026-05-01..2026-05-06
     - today 2026-06-01 → MTD 2026-05-01..2026-05-31, M-1 2026-04-01..2026-04-30
+    - today 2026-07-23 → MTD 2026-07-01..2026-07-22, M-1 2026-06-01..2026-06-22
     """
     settled = latest_settled_date(today)
 
@@ -82,3 +83,44 @@ def resolve_periods(today: date) -> IntelligencePeriods:
         mtd=PeriodRange(mtd_start, mtd_end),
         m1=PeriodRange(m1_start, m1_end),
     )
+
+
+def periods_match_payload(
+    saved_periods: dict[str, object] | None,
+    current: IntelligencePeriods,
+) -> bool:
+    """True when saved FastMoss collection periods match current UI MTD / M-1 tags."""
+    if not isinstance(saved_periods, dict):
+        return False
+    mtd = saved_periods.get("mtd") or {}
+    m1 = saved_periods.get("m1") or {}
+    if not isinstance(mtd, dict) or not isinstance(m1, dict):
+        return False
+    return (
+        str(mtd.get("start") or "") == current.mtd.start.isoformat()
+        and str(mtd.get("end") or "") == current.mtd.end.isoformat()
+        and str(m1.get("start") or "") == current.m1.start.isoformat()
+        and str(m1.get("end") or "") == current.m1.end.isoformat()
+    )
+
+
+def collection_row_matches_periods(
+    row: dict[str, object] | None,
+    current: IntelligencePeriods,
+) -> bool:
+    """True when a collected seller row was fetched for the current UI periods."""
+    if not isinstance(row, dict):
+        return False
+    mtd_start = str(row.get("mtd_start") or "").strip()
+    mtd_end = str(row.get("mtd_end") or "").strip()
+    m1_start = str(row.get("m1_start") or "").strip()
+    m1_end = str(row.get("m1_end") or "").strip()
+    if mtd_start and mtd_end and m1_start and m1_end:
+        return (
+            mtd_start == current.mtd.start.isoformat()
+            and mtd_end == current.mtd.end.isoformat()
+            and m1_start == current.m1.start.isoformat()
+            and m1_end == current.m1.end.isoformat()
+        )
+    # Legacy rows without per-row dates: caller must check file-level periods.
+    return True
