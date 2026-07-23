@@ -105,12 +105,75 @@ def maybe_start_period_tiktok_refresh() -> bool:
     return False
 
 
+def historical_sob_cache_needs_refresh() -> tuple[bool, str]:
+    """True when May/June TikTok historical cache is missing or for a stale period."""
+    try:
+        from seller.intelligence.historical_sob.store import (
+            PERIOD_KEY,
+            load_historical_sob_cache,
+        )
+    except Exception as exc:
+        return True, f"historical sob import failed: {exc}"
+
+    cache = load_historical_sob_cache()
+    shops = cache.get("shops") or {}
+    if cache.get("period_key") != PERIOD_KEY:
+        return True, f"period_key mismatch (have={cache.get('period_key')!r} want={PERIOD_KEY!r})"
+    if not shops:
+        return True, "historical sob TikTok cache empty"
+    success = sum(
+        1
+        for row in shops.values()
+        if isinstance(row, dict)
+        and row.get("status") == "success"
+        and row.get("may_gmv_php") is not None
+        and row.get("june_gmv_php") is not None
+    )
+    if success == 0:
+        return True, "no successful May/June TikTok rows"
+    return False, f"{success} shops cached for {PERIOD_KEY}"
+
+
+def maybe_start_historical_sob_refresh() -> bool:
+    """Background-refresh Historical SOB May/June TikTok GMV when cache is stale/empty."""
+    if not _env_bool("HISTORICAL_SOB_AUTO_REFRESH_ON_STARTUP", True):
+        logger.info("Historical SOB startup refresh disabled")
+        return False
+
+    needs, reason = historical_sob_cache_needs_refresh()
+    if not needs:
+        logger.info("Historical SOB startup refresh skipped: %s", reason)
+        return False
+
+    def _worker() -> None:
+        time.sleep(float(os.getenv("HISTORICAL_SOB_BOOTSTRAP_DELAY_SEC", "5")))
+        try:
+            from seller.intelligence.historical_sob import refresh_historical_sob
+
+            logger.info("Historical SOB startup refresh started: %s", reason)
+            result = refresh_historical_sob(force=True)
+            summary = (result or {}).get("summary") or {}
+            logger.info(
+                "Historical SOB startup refresh finished: success=%s may=%s june=%s",
+                result.get("success"),
+                summary.get("tiktok_may_gmv_fetched_count"),
+                summary.get("tiktok_june_gmv_fetched_count"),
+            )
+        except Exception:
+            logger.exception("Historical SOB startup refresh failed")
+
+    threading.Thread(target=_worker, name="historical-sob-bootstrap", daemon=True).start()
+    logger.info("Historical SOB startup refresh queued: %s", reason)
+    return True
+
+
 def maybe_start_background_sync() -> bool:
     """
     Start background sync on startup when data is missing or stale.
 
     Always starts the daily BI cache scheduler (unless disabled).
     Also attempts a lightweight TikTok period refresh when MTD/M-1 tags changed.
+    Refreshes Historical SOB when May/June TikTok cache is empty/stale.
     Full SLA sync is controlled by INTELLIGENCE_AUTO_SYNC_ON_STARTUP (default true).
     """
     global _started
@@ -123,6 +186,7 @@ def maybe_start_background_sync() -> bool:
         logger.warning("BI daily scheduler failed to start: %s", exc)
 
     maybe_start_period_tiktok_refresh()
+    maybe_start_historical_sob_refresh()
 
     if not _env_bool("INTELLIGENCE_AUTO_SYNC_ON_STARTUP", True):
         logger.info("Intelligence auto-sync on startup disabled")

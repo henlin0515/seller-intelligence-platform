@@ -374,6 +374,7 @@ async def intelligence_v1_historical_sob():
 
     try:
         master = _load_master()
+        # TikTok May/June cache is bootstrapped on app startup (see bootstrap.py).
         payload = await asyncio.to_thread(get_historical_sob_payload, master, ensure_tiktok_cache=False)
         if payload.get("status") == "degraded":
             logger.error("Historical SOB degraded response: %s", payload.get("warnings"))
