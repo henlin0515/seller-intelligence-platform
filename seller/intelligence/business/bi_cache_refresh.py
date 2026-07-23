@@ -249,6 +249,18 @@ def refresh_bi_cache(
                 "message": health.get("message"),
             }
         save_business_intelligence_data(payload)
+        try:
+            from seller.intelligence.business.sla_update_state import (
+                sync_sla_update_state_from_bi,
+            )
+
+            sync_sla_update_state_from_bi(
+                generated_at=str(payload["generated_at"]),
+                reference_today=today.isoformat(),
+                tiktok_success=refreshed,
+            )
+        except Exception as sync_exc:
+            logger.warning("Could not sync SLA last-updated from BI refresh: %s", sync_exc)
         elapsed = time.perf_counter() - started
 
         logger.info(

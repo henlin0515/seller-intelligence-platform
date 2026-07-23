@@ -1,8 +1,8 @@
 {
   "version": 1,
   "completed": true,
-  "refreshed_at": "2026-06-16T07:56:52Z",
-  "finished_at": "2026-06-16T07:56:52Z",
+  "refreshed_at": "2026-07-23T08:53:43Z",
+  "finished_at": "2026-07-23T08:53:43Z",
   "percent": 100.0,
   "shops_processed": 94,
   "shops_total": 94,
@@ -21,7 +21,7 @@
   },
   "result": {
     "success": true,
-    "refreshed_at": "2026-06-16T07:56:52Z",
+    "refreshed_at": "2026-07-23T08:53:43Z",
     "mapping": {
       "summary": {
         "total": 94,
@@ -44,9 +44,9 @@
       "REJECTED": 0
     },
     "tiktok_bi": {
-      "tiktok_data_refreshed_count": 85,
-      "collection_success": 85,
-      "failed_count": 0
+      "generated_at": "2026-07-23T08:53:43Z",
+      "reference_today": "2026-07-23",
+      "collection_success": 2
     },
     "historical_sob": {
       "success": true,
@@ -85,14 +85,16 @@
   },
   "status": {
     "step_label": "Completed",
-    "percent": 100.0,
+    "percent": 100,
     "shops_processed": 94,
     "shops_total": 94,
     "newly_mapped_count": 0,
     "pending_review_count": 2,
     "still_not_found_count": 6,
     "failed_count": 0,
-    "refreshed_at": "2026-06-16T07:56:52Z",
-    "finished_at": "2026-06-16T07:56:52Z"
-  }
+    "refreshed_at": "2026-07-23T08:53:43Z",
+    "finished_at": "2026-07-23T08:53:43Z"
+  },
+  "bi_reference_today": "2026-07-23",
+  "tiktok_collected": 2
 }

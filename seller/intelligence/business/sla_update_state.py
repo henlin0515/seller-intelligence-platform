@@ -190,3 +190,56 @@ def persist_sla_update_completion(
         return None
     snapshot = build_snapshot_from_completion(result=result, status=status)
     return save_sla_update_state(snapshot, path)
+
+
+def sync_sla_update_state_from_bi(
+    *,
+    generated_at: str,
+    reference_today: str | None = None,
+    tiktok_success: int | None = None,
+    path: Path | None = None,
+) -> dict[str, Any]:
+    """
+    Bump the SLA header 'Last updated' clock when BI TikTok cache is refreshed
+    without a full Update Data run (period auto-refresh / backfill).
+    """
+    existing = load_sla_update_state(path) or {}
+    summary = existing.get("mapping_summary") if isinstance(existing.get("mapping_summary"), dict) else {}
+    result = existing.get("result") if isinstance(existing.get("result"), dict) else {}
+    refreshed_at = str(generated_at or "").strip() or existing.get("refreshed_at")
+    snapshot = {
+        **existing,
+        "version": int(existing.get("version") or 1),
+        "completed": True,
+        "refreshed_at": refreshed_at,
+        "finished_at": refreshed_at,
+        "percent": float(existing.get("percent") or 100),
+        "bi_reference_today": reference_today,
+        "tiktok_collected": tiktok_success,
+        "mapping_summary": summary
+        or {
+            "total": existing.get("shops_total"),
+            "mapped": existing.get("fastmoss_mapped_count"),
+            "need_review": existing.get("pending_review_count"),
+            "not_found": existing.get("still_not_found_count"),
+        },
+        "result": {
+            **result,
+            "success": True,
+            "refreshed_at": refreshed_at,
+            "tiktok_bi": {
+                "generated_at": refreshed_at,
+                "reference_today": reference_today,
+                "collection_success": tiktok_success,
+            },
+        },
+        "status": {
+            **(existing.get("status") if isinstance(existing.get("status"), dict) else {}),
+            "step_label": "Completed",
+            "percent": 100,
+            "refreshed_at": refreshed_at,
+            "finished_at": refreshed_at,
+        },
+    }
+    save_sla_update_state(snapshot, path)
+    return snapshot

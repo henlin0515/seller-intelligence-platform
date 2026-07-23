@@ -1830,10 +1830,28 @@
     animateSobBars(listEl, { animate: refreshSummary });
   }
 
+  function resetBusinessRefreshButton() {
+    const btn = document.getElementById("siBusinessRefreshDataBtn");
+    if (!btn) return;
+    btn.disabled = false;
+    btn.classList.remove("is-loading");
+    btn.textContent = i18n("si.refreshData", "Update Data");
+  }
+
+  function resolveBusinessLastUpdatedIso(data) {
+    const slaIso = data?.sla_update_state?.refreshed_at || data?.sla_update_state?.finished_at;
+    const biIso = data?.fastmoss?.generated_at;
+    const candidates = [slaIso, biIso].filter(Boolean);
+    if (!candidates.length) return null;
+    // Prefer the newest timestamp so BI backfill updates the header even without full Update Data.
+    return candidates.slice().sort((a, b) => String(b).localeCompare(String(a)))[0];
+  }
+
   function setupBusiness(data) {
     const el = containers.siBusiness;
     if (!el) return;
     state.business.raw = data;
+    resetBusinessRefreshButton();
     const fm = data.fastmoss || {};
     const summary = data.summary || {};
     const src = fm.fastmoss_connected ? "FastMoss TikTok" : "Seller master";
@@ -1846,7 +1864,10 @@
         renderTikTokPeriodsStaleBanner(fm, data.period_auto_refresh);
     }
     if (metas.siBusiness) {
-      metas.siBusiness.textContent = `${src}${collected} · USD/PHP ${data.usd_php_rate}`;
+      const biDate = fm.reference_today || data.reference_today || "";
+      metas.siBusiness.textContent = `${src}${collected} · USD/PHP ${data.usd_php_rate}${
+        biDate ? ` · BI ${biDate}` : ""
+      }`;
     }
     followPeriodAutoRefresh(data);
     if (!state.business.shellReady) {
@@ -1891,6 +1912,8 @@
       syncBusinessFilterControls(el);
     }
     applyPersistedSlaUpdateState(data);
+    const latestIso = resolveBusinessLastUpdatedIso(data);
+    if (latestIso) setSharedSlaLastUpdatedHeader(latestIso);
     paintBusinessList();
   }
 
