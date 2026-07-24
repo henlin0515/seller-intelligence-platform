@@ -17,6 +17,9 @@ logger = logging.getLogger("seller.intelligence.business.store")
 DEFAULT_BI_DATA_PATH = Path(
     os.getenv("BUSINESS_INTELLIGENCE_DATA_PATH", "business_intelligence_data.json")
 )
+SEED_BI_DATA_PATH = Path(
+    os.getenv("BUSINESS_INTELLIGENCE_SEED_PATH", "business_intelligence_data.seed.json")
+)
 
 CACHE_STATUS_READY = "ready"
 CACHE_STATUS_INVALIDATED = "invalidated"
@@ -27,14 +30,64 @@ def bi_data_path(path: Path | None = None) -> Path:
     return path or DEFAULT_BI_DATA_PATH
 
 
+def _bi_success_count(payload: dict[str, Any] | None) -> int:
+    if not isinstance(payload, dict):
+        return 0
+    summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
+    if int(summary.get("success") or 0) > 0:
+        return int(summary["success"])
+    return sum(
+        1
+        for row in payload.get("sellers") or []
+        if isinstance(row, dict) and row.get("status") == "success"
+    )
+
+
+def _read_bi_file(path: Path) -> dict[str, Any] | None:
+    if not path.is_file():
+        return None
+    try:
+        with path.open(encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning("Could not read BI cache %s: %s", path, exc)
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def load_business_intelligence_data(
     path: Path | None = None,
 ) -> dict[str, Any] | None:
+    """
+    Load TikTok BI cache.
+
+    Prefer the writable runtime file; if it is missing / empty / invalidated with
+    zero successes, fall back to the committed seed so Railway keeps serving data.
+    """
     target = bi_data_path(path)
-    if not target.is_file():
-        return None
-    with target.open(encoding="utf-8") as handle:
-        return json.load(handle)
+    runtime = _read_bi_file(target)
+    if runtime is not None and _bi_success_count(runtime) > 0:
+        status = str(runtime.get("cache_status") or CACHE_STATUS_READY).lower()
+        # Serve successful rows even while a background refresh is in progress.
+        if status != CACHE_STATUS_INVALIDATED:
+            return runtime
+
+    seed = _read_bi_file(SEED_BI_DATA_PATH)
+    if seed is not None and _bi_success_count(seed) > 0:
+        logger.info(
+            "BI runtime cache unusable (success=%s status=%s) — using seed (success=%s)",
+            _bi_success_count(runtime),
+            (runtime or {}).get("cache_status"),
+            _bi_success_count(seed),
+        )
+        try:
+            save_business_intelligence_data(seed, target)
+        except OSError as exc:
+            logger.warning("Could not hydrate BI cache from seed: %s", exc)
+            return seed
+        return _read_bi_file(target) or seed
+
+    return runtime
 
 
 def save_business_intelligence_data(
@@ -62,8 +115,9 @@ def bi_cache_usable_for_periods(
     if not isinstance(saved, dict):
         return False
     status = str(saved.get("cache_status") or CACHE_STATUS_READY).lower()
-    if status in {CACHE_STATUS_INVALIDATED, CACHE_STATUS_REFRESHING}:
+    if status == CACHE_STATUS_INVALIDATED:
         return False
+    # REFRESHING with successful sellers is still usable for UI (preserve ADGMV).
     periods = saved.get("periods")
     if not periods_match_payload(
         periods if isinstance(periods, dict) else None,
@@ -83,13 +137,17 @@ def invalidate_business_intelligence_cache(
     trigger: str = "period_change",
     path: Path | None = None,
     cache_status: str = CACHE_STATUS_INVALIDATED,
+    preserve_sellers: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """
-    Drop stale TikTok rows immediately so the UI never serves wrong-period ADGMV.
+    Mark BI cache as refreshing/invalidated for current UI period tags.
 
-    Writes a placeholder payload aligned to the current UI period tags (empty sellers).
+    When ``preserve_sellers`` is provided (successful rows for matching periods),
+    keep those ADGMV values so the UI does not flash empty / N/A mid-refresh.
     """
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    sellers = list(preserve_sellers or [])
+    success = sum(1 for row in sellers if isinstance(row, dict) and row.get("status") == "success")
     payload = {
         "generated_at": now,
         "reference_today": periods.reference_today.isoformat(),
@@ -101,19 +159,20 @@ def invalidate_business_intelligence_cache(
         "invalidated_reason": reason,
         "invalidated_trigger": trigger,
         "summary": {
-            "processed": 0,
-            "success": 0,
-            "failed": 0,
+            "processed": len(sellers),
+            "success": success,
+            "failed": len(sellers) - success,
             "approved_only": True,
         },
-        "sellers": [],
+        "sellers": sellers,
     }
     save_business_intelligence_data(payload, path)
     logger.warning(
-        "BI cache invalidated | status=%s | reason=%s | trigger=%s | mtd=%s→%s | m1=%s→%s",
+        "BI cache invalidated | status=%s | reason=%s | trigger=%s | preserved=%s | mtd=%s→%s | m1=%s→%s",
         cache_status,
         reason,
         trigger,
+        success,
         periods.mtd.start.isoformat(),
         periods.mtd.end.isoformat(),
         periods.m1.start.isoformat(),

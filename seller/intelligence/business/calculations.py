@@ -19,12 +19,28 @@ def tiktok_php_to_usd(php: float) -> float:
     return php / USD_PHP_RATE
 
 
-def mom_percent(mtd_usd: float, m1_usd: float) -> float | None:
-    """(mtd - m1) / m1 * 100. Returns None when M-1 is zero."""
-    if m1_usd == 0:
+def mom_percent(mtd_usd: float | None, m1_usd: float | None) -> float | None:
+    """
+    (mtd - m1) / m1 * 100.
+
+    - both 0 → 0
+    - m1 = 0 and mtd > 0 → None (caller may mark NEW_GROWTH)
+    - missing either side → None
+    """
+    if mtd_usd is None or m1_usd is None:
         return None
+    if m1_usd == 0:
+        return 0.0 if mtd_usd == 0 else None
     return (mtd_usd - m1_usd) / m1_usd * 100.0
 
+
+def mom_growth_status(mtd_usd: float | None, m1_usd: float | None) -> str:
+    """NORMAL | NEW_GROWTH | NO_DATA for TikTok MoM display."""
+    if mtd_usd is None or m1_usd is None:
+        return "NO_DATA"
+    if m1_usd == 0 and mtd_usd > 0:
+        return "NEW_GROWTH"
+    return "NORMAL"
 
 def daily_adgmv_usd(period_total_usd: float, day_count: int) -> float:
     """Average daily GMV (ADGMV) = period total / inclusive day count."""

@@ -141,7 +141,7 @@ def fetch_recent_data(
     end: date,
     *,
     session: requests.Session | None = None,
-    prefetch_detail: bool = True,
+    prefetch_detail: bool = False,
     prefer_anonymous: bool = True,
 ) -> tuple[dict[str, Any], str, requests.Session]:
     """
@@ -151,6 +151,7 @@ def fetch_recent_data(
     - Prefer anonymous session (logged-in Cookie often trips MSG_SAFE_0001).
     - Retry on MSG_SAFE / paywall MAG_AUTH placeholders with backoff.
     - Fall back to cookie session once if anonymous keeps failing.
+    - Default: no HTML shop-detail prefetch (WAF/502); JSON API only.
     """
     shop_id = str(fastmoss_shop_id or "").strip()
     if not shop_id:
@@ -241,7 +242,7 @@ def fetch_shop_period_metrics(
     end: date,
     *,
     session: requests.Session | None = None,
-    prefetch_detail: bool = True,
+    prefetch_detail: bool = False,
 ) -> tuple[dict[str, int | float], str, requests.Session]:
     """Fetch period shop trend metrics from recentData total_info."""
     recent, request_url, client = fetch_recent_data(
@@ -260,7 +261,7 @@ def fetch_period_gmv_php(
     end: date,
     *,
     session: requests.Session | None = None,
-    prefetch_detail: bool = True,
+    prefetch_detail: bool = False,
 ) -> tuple[float, str, requests.Session]:
     """
     Fetch period GMV (PHP) from recentData total_info.sale_amount.

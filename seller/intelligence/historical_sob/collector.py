@@ -8,7 +8,7 @@ from datetime import date
 from typing import Any
 
 from seller.fastmoss.client import anonymous_session
-from seller.fastmoss.recent_data import REQUEST_DELAY_SEC, fetch_period_gmv_php, prefetch_shop_detail
+from seller.fastmoss.recent_data import REQUEST_DELAY_SEC, fetch_period_gmv_php
 
 logger = logging.getLogger("seller.intelligence.historical_sob.collector")
 
@@ -31,7 +31,6 @@ def fetch_shop_historical_tiktok_gmv(
         raise ValueError("fastmoss_shop_id is required")
 
     client = session or anonymous_session()
-    client = prefetch_shop_detail(shop_id, client)
     if delay_sec > 0:
         time.sleep(delay_sec)
 

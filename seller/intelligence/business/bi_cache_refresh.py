@@ -74,14 +74,15 @@ def refresh_bi_cache(
     trigger: str = "manual",
     collect_fn=None,
     skip_healthcheck: bool = False,
-    invalidate_first: bool = True,
+    invalidate_first: bool = False,
 ) -> dict[str, Any]:
     """
     Re-fetch FastMoss TikTok GMV for all approved mappings using current UI periods.
 
     Always scrapes with ``resolve_periods(today)`` — the same MTD/M-1 tags shown in UI.
-    When ``invalidate_first`` is True (default), clears stale wrong-period rows before
-    collect so the UI never serves June ADGMV under July tags.
+    Does **not** wipe successful ADGMV before collect (default). On period mismatch,
+    marks cache refreshing while preserving prior success rows for matching periods.
+    Failed shops keep their previous successful metrics when available.
     """
     from seller.intelligence.business.store import (
         CACHE_STATUS_REFRESHING,
@@ -134,20 +135,38 @@ def refresh_bi_cache(
                 "trigger": trigger,
             }
 
-        # Drop wrong-period cache immediately (or always on Update Data / force refresh).
+        prev_by_id: dict[str, dict[str, Any]] = {}
+        if isinstance(previous, dict):
+            for row in previous.get("sellers") or []:
+                if not isinstance(row, dict):
+                    continue
+                sid = str(row.get("shop_id") or "").strip()
+                if sid and row.get("status") == "success":
+                    prev_by_id[sid] = row
+
         prev_usable = bi_cache_usable_for_periods(previous, periods)
         prev_periods_ok = periods_match_payload(
             previous.get("periods") if isinstance(previous, dict) else None,
             periods,
         ) if previous else False
-        if invalidate_first and (not prev_usable or not prev_periods_ok or trigger in {
-            "manual",
-            "sla_update",
-            "period_change",
-            "api_ensure",
-            "force",
-            "user_force",
-        }):
+        # Always clear wrong-period ADGMV; never wipe same-period successes by default.
+        should_mark_refreshing = (not prev_periods_ok) or (
+            invalidate_first
+            and (
+                not prev_usable
+                or trigger
+                in {
+                    "manual",
+                    "sla_update",
+                    "period_change",
+                    "api_ensure",
+                    "force",
+                    "user_force",
+                }
+            )
+        )
+        if should_mark_refreshing:
+            preserved = list(prev_by_id.values()) if prev_periods_ok else []
             invalidate_business_intelligence_cache(
                 periods,
                 reason=(
@@ -158,13 +177,14 @@ def refresh_bi_cache(
                 trigger=trigger,
                 path=cache_path,
                 cache_status=CACHE_STATUS_REFRESHING,
+                preserve_sellers=preserved,
             )
 
         health: dict[str, Any] | None = None
         if not skip_healthcheck:
             health = healthcheck()
             if not health.get("ok"):
-                action = health.get("action") or "Update FASTMOSS_COOKIE and retry."
+                action = health.get("action") or "Update FastMoss credentials and retry."
                 logger.error(
                     "BI cache refresh ABORTED — FastMoss healthcheck failed | %s | %s | action=%s",
                     ctx,
@@ -212,10 +232,25 @@ def refresh_bi_cache(
             collected.setdefault("mtd_end", periods.mtd.end.isoformat())
             collected.setdefault("m1_start", periods.m1.start.isoformat())
             collected.setdefault("m1_end", periods.m1.end.isoformat())
+            # Preserve last successful ADGMV when this attempt fails.
+            if collected.get("status") != "success" and shop_id in prev_by_id:
+                prior = dict(prev_by_id[shop_id])
+                prior["error"] = collected.get("error") or prior.get("error")
+                prior["status"] = "success"
+                prior["preserved_from_previous"] = True
+                prior["mtd_start"] = periods.mtd.start.isoformat()
+                prior["mtd_end"] = periods.mtd.end.isoformat()
+                prior["m1_start"] = periods.m1.start.isoformat()
+                prior["m1_end"] = periods.m1.end.isoformat()
+                collected = prior
+                logger.info(
+                    "Preserved previous FastMoss success for shop_id=%s after collect failure",
+                    shop_id,
+                )
             sellers.append(collected)
-            if collected.get("status") == "success":
+            if collected.get("status") == "success" and not collected.get("preserved_from_previous"):
                 refreshed += 1
-            else:
+            elif collected.get("status") != "success":
                 failed_shops.append(
                     {
                         "shop_id": shop_id,
@@ -231,10 +266,11 @@ def refresh_bi_cache(
                 failed_shops[:5],
             )
 
-        if refreshed == 0:
+        success_count = sum(1 for s in sellers if s.get("status") == "success")
+        if success_count == 0:
             raise BiCacheRefreshError(
                 f"All {len(sellers)} FastMoss BI collects failed — "
-                "cache left invalidated for current UI periods (old wrong-period data not restored)"
+                "previous successful cache preserved when available"
             )
 
         payload = build_bi_cache_payload(
@@ -247,6 +283,7 @@ def refresh_bi_cache(
                 "ok": health.get("ok"),
                 "checked_at": health.get("checked_at"),
                 "cookie_configured": health.get("cookie_configured"),
+                "error_code": health.get("error_code"),
                 "message": health.get("message"),
             }
         save_business_intelligence_data(payload)
@@ -258,19 +295,20 @@ def refresh_bi_cache(
             sync_sla_update_state_from_bi(
                 generated_at=str(payload["generated_at"]),
                 reference_today=today.isoformat(),
-                tiktok_success=refreshed,
+                tiktok_success=success_count,
             )
         except Exception as sync_exc:
             logger.warning("Could not sync SLA last-updated from BI refresh: %s", sync_exc)
         elapsed = time.perf_counter() - started
 
         logger.info(
-            "BI cache refresh SUCCESS | %s | updated=%s | success=%s | failed=%s | "
+            "BI cache refresh SUCCESS | %s | updated=%s | success=%s | newly_fetched=%s | failed=%s | "
             "elapsed_sec=%.2f | trigger=%s | cache_overwritten=true",
             ctx,
             len(sellers),
+            success_count,
             refreshed,
-            len(sellers) - refreshed,
+            len(sellers) - success_count,
             elapsed,
             trigger,
         )
@@ -284,8 +322,8 @@ def refresh_bi_cache(
             "approved_count": len(approved),
             "updated_count": len(sellers),
             "tiktok_data_refreshed_count": refreshed,
-            "collection_success": refreshed,
-            "collection_failed": len(sellers) - refreshed,
+            "collection_success": success_count,
+            "collection_failed": len(sellers) - success_count,
             "failed_shops": failed_shops[:20],
             "elapsed_sec": round(elapsed, 2),
             "trigger": trigger,
@@ -296,7 +334,7 @@ def refresh_bi_cache(
     except Exception as exc:
         elapsed = time.perf_counter() - started
         logger.exception(
-            "BI cache refresh FAILED — wrong-period cache not restored | %s | updated=0 | "
+            "BI cache refresh FAILED — previous cache preserved | %s | updated=0 | "
             "elapsed_sec=%.2f | trigger=%s | error=%s",
             ctx,
             elapsed,

@@ -182,9 +182,9 @@ async def intelligence_v1_business_bi_cache_status():
 @router.get("/business/fastmoss-health")
 async def intelligence_v1_business_fastmoss_health(probe: bool = True):
     """
-    FastMoss session / WAF healthcheck.
+    FastMoss JSON API healthcheck (``GET /api/shop/v3/recentData`` only).
 
-    When ``probe=true`` (default), pings homepage + detail + recentData.
+    When ``probe=true`` (default), pings recentData — never the HTML homepage.
     When ``probe=false``, returns the last cached health result only.
     """
     from seller.fastmoss.client import cookie_configured, get_last_health, healthcheck

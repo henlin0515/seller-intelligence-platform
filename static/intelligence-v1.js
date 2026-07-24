@@ -707,13 +707,31 @@
   function renderFastmossHealthBanner(fastmoss) {
     const health = fastmoss?.fastmoss_health;
     if (!health || health.ok === true || health.ok == null) return "";
-    const action =
+    const code = String(health.error_code || health.failure_class || "").toUpperCase();
+    const messages = {
+      FASTMOSS_API_NOT_CONFIGURED:
+        "FastMoss API 尚未設定，請配置 API endpoint 與 access token。",
+      FASTMOSS_AUTH_REQUIRED:
+        "FastMoss API 驗證失敗，請更新合法的 API 憑證。",
+      AUTH:
+        "FastMoss API 驗證失敗，請更新合法的 API 憑證。",
+      FASTMOSS_RATE_LIMITED:
+        "FastMoss API 已達請求限制，系統會依 Retry-After 稍後重試。",
+      RATE_LIMITED:
+        "FastMoss API 已達請求限制，系統會依 Retry-After 稍後重試。",
+      FASTMOSS_PARTIAL_FAILURE:
+        "部分店鋪資料更新失敗，頁面目前保留上一次成功資料。",
+      BLOCKED:
+        "FastMoss API 已達請求限制，系統會依 Retry-After 稍後重試。",
+    };
+    const text =
+      messages[code] ||
       health.action ||
-      "Set Railway/env FASTMOSS_COOKIE from a logged-in www.fastmoss.com browser session.";
-    const msg = health.message || "FastMoss session or network check failed.";
-    return `<p class="si-sla-period-stale is-session-alert" role="alert">FastMoss scrape blocked: ${escapeHtml(
-      String(msg)
-    )} — ${escapeHtml(String(action))}</p>`;
+      health.message ||
+      "FastMoss API 暫時無法更新，頁面保留上一次成功資料。";
+    return `<p class="si-sla-period-stale is-session-alert" role="alert">${escapeHtml(
+      String(text)
+    )}</p>`;
   }
 
   let periodAutoPollToken = 0;

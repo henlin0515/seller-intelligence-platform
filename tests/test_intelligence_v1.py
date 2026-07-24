@@ -42,6 +42,15 @@ def test_periods_july_23():
     assert p.m1.day_count == 22
 
 
+def test_periods_july_24_same_day_as_screenshot():
+    """reference_today=2026-07-24 → MTD Jul 1–23, M-1 Jun 1–23."""
+    p = resolve_periods(date(2026, 7, 24))
+    assert p.mtd.start == date(2026, 7, 1)
+    assert p.mtd.end == date(2026, 7, 23)
+    assert p.m1.start == date(2026, 6, 1)
+    assert p.m1.end == date(2026, 6, 23)
+
+
 def test_periods_match_payload_aligned():
     from seller.intelligence.periods import periods_match_payload
 
@@ -67,6 +76,18 @@ def test_shopee_mom_example():
 
 def test_mom_zero_m1_returns_none():
     assert mom_percent(100.0, 0.0) is None
+
+
+def test_mom_both_zero_returns_zero():
+    assert mom_percent(0.0, 0.0) == 0.0
+
+
+def test_mom_growth_status_new():
+    from seller.intelligence.business.calculations import mom_growth_status
+
+    assert mom_growth_status(100.0, 0.0) == "NEW_GROWTH"
+    assert mom_growth_status(0.0, 0.0) == "NORMAL"
+    assert mom_growth_status(None, 10.0) == "NO_DATA"
 
 
 def test_sob_totals_100():

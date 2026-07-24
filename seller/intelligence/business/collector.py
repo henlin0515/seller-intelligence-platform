@@ -8,7 +8,7 @@ from datetime import date
 from typing import Any
 
 from seller.fastmoss.client import REQUEST_DELAY_MIN_SEC, anonymous_session, healthcheck
-from seller.fastmoss.recent_data import fetch_period_gmv_php, prefetch_shop_detail
+from seller.fastmoss.recent_data import fetch_period_gmv_php
 from seller.fastmoss.review import approved_mapping_rows
 from seller.intelligence.business_time import business_today
 from seller.intelligence.config import USD_PHP_RATE
@@ -34,6 +34,7 @@ def collect_mapped_shop_tiktok(
     """
     Collect MTD/M-1 GMV for one mapped shop and derive daily ADGMV.
 
+    JSON API only (`/api/shop/v3/recentData`) — no HTML shop-detail prefetch.
     Uses anonymous FastMoss sessions by default (login Cookie often trips MSG_SAFE_0001).
     """
     shop_id = str(mapping_row.get("shop_id") or "")
@@ -41,6 +42,11 @@ def collect_mapped_shop_tiktok(
     tiktok_shop_name = str(mapping_row.get("tiktok_shop_name") or "")
     fastmoss_shop_id = str(mapping_row.get("fastmoss_shop_id") or "")
     fastmoss_shop_name = mapping_row.get("fastmoss_shop_name")
+    fastmoss_shop_url = (
+        f"https://www.fastmoss.com/shop-marketing/detail/{fastmoss_shop_id}"
+        if fastmoss_shop_id
+        else None
+    )
 
     base: dict[str, Any] = {
         "shop_id": shop_id,
@@ -48,6 +54,8 @@ def collect_mapped_shop_tiktok(
         "tiktok_shop_name": tiktok_shop_name,
         "fastmoss_shop_id": fastmoss_shop_id,
         "fastmoss_shop_name": fastmoss_shop_name,
+        "fastmoss_shop_url": fastmoss_shop_url,
+        "tiktok_currency": "PHP",
         "status": "failed",
         "error": None,
         "mtd_start": periods.mtd.start.isoformat(),
@@ -65,7 +73,7 @@ def collect_mapped_shop_tiktok(
     }
 
     try:
-        client = prefetch_shop_detail(fastmoss_shop_id, session or anonymous_session())
+        client = session or anonymous_session()
         if delay_sec > 0:
             time.sleep(delay_sec)
         mtd_gmv, mtd_url, client = fetch_period_gmv_php(
