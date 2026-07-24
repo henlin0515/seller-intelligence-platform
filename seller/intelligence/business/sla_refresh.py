@@ -376,7 +376,7 @@ def run_sla_refresh_job() -> dict[str, Any]:
         try:
             from seller.intelligence.historical_sob import refresh_historical_sob
 
-            historical_sob_result = refresh_historical_sob(force=True)
+            historical_sob_result = refresh_historical_sob(force=False)
             _set_state(percent=_percent_for("historical_sob", sub=1.0))
         except Exception as exc:
             logger.warning("Historical SOB refresh during SLA update failed: %s", exc)

@@ -16,7 +16,7 @@ from seller.intelligence.platform_extra_shops import (
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.historical_sob.portfolio import build_portfolio_historical_sob
 from seller.intelligence.historical_sob.service import build_historical_sob_rows, get_historical_sob_payload
-from seller.intelligence.historical_sob.store import save_historical_sob_cache
+from seller.intelligence.historical_sob.store import load_historical_sob_cache, save_historical_sob_cache
 from seller.intelligence.historical_sob.ytd_monthly import (
     YtdMonthlyLoadResult,
     YtdMonthlyRecord,
@@ -340,6 +340,41 @@ class HistoricalSobCacheTests(unittest.TestCase):
             path = Path(tmp) / "historical_sob_cache.json"
             save_historical_sob_cache({"shops": {"1": {"status": "success"}}}, path)
             self.assertTrue(path.is_file())
+
+    def test_seed_fallback_when_runtime_all_failed(self):
+        from seller.intelligence.historical_sob import store as hs_store
+
+        with tempfile.TemporaryDirectory() as tmp:
+            runtime = Path(tmp) / "runtime.json"
+            seed = Path(tmp) / "seed.json"
+            save_historical_sob_cache(
+                {
+                    "shops": {
+                        "1": {
+                            "status": "success",
+                            "may_gmv_php": 100.0,
+                            "june_gmv_php": 200.0,
+                        }
+                    }
+                },
+                seed,
+            )
+            # Wiped / failed runtime (as after a bad Railway force refresh)
+            save_historical_sob_cache(
+                {
+                    "shops": {
+                        "1": {"status": "failed", "error": "567"},
+                    }
+                },
+                runtime,
+            )
+            with (
+                patch.object(hs_store, "DEFAULT_CACHE_PATH", runtime),
+                patch.object(hs_store, "SEED_CACHE_PATH", seed),
+            ):
+                loaded = hs_store.load_historical_sob_cache(runtime)
+            self.assertEqual(loaded["shops"]["1"]["status"], "success")
+            self.assertEqual(loaded["shops"]["1"]["may_gmv_php"], 100.0)
 
 
 if __name__ == "__main__":

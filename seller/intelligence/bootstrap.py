@@ -151,7 +151,8 @@ def maybe_start_historical_sob_refresh() -> bool:
             from seller.intelligence.historical_sob import refresh_historical_sob
 
             logger.info("Historical SOB startup refresh started: %s", reason)
-            result = refresh_historical_sob(force=True)
+            # force=False: never wipe successful May/June rows on Railway WAF failures.
+            result = refresh_historical_sob(force=False)
             summary = (result or {}).get("summary") or {}
             logger.info(
                 "Historical SOB startup refresh finished: success=%s may=%s june=%s",

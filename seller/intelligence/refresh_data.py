@@ -137,7 +137,7 @@ def refresh_all_intelligence_data() -> dict[str, Any]:
     from seller.intelligence.historical_sob import refresh_historical_sob
     from seller.intelligence.seller_master import get_seller_master
 
-    historical_sob_result = refresh_historical_sob(force=True)
+    historical_sob_result = refresh_historical_sob(force=False)
 
     from seller.intelligence.assortment.radar import start_radar_fastmoss_refresh_background
 

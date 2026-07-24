@@ -729,6 +729,19 @@ def refresh_historical_sob_tiktok_cache(
                 )
         except Exception as exc:
             logger.warning("Historical TikTok fetch failed for shop %s: %s", shop_id, exc)
+            # Never wipe a previously successful May/June row (Railway WAF often fails).
+            if (
+                isinstance(existing, dict)
+                and existing.get("status") == "success"
+                and existing.get("may_gmv_php") is not None
+                and existing.get("june_gmv_php") is not None
+            ):
+                logger.info(
+                    "Preserving cached May/June GMV for shop %s after fetch failure",
+                    shop_id,
+                )
+                failed += 1
+                continue
             shops[shop_id] = {
                 "shop_id": shop_id,
                 "fastmoss_shop_id": fastmoss_id,
@@ -751,8 +764,13 @@ def refresh_historical_sob_tiktok_cache(
     }
 
 
-def refresh_historical_sob(*, force: bool = True) -> dict[str, Any]:
-    """Reload sheets (when available) and refresh TikTok historical cache."""
+def refresh_historical_sob(*, force: bool = False) -> dict[str, Any]:
+    """
+    Refresh Historical SOB TikTok cache.
+
+    Default ``force=False`` keeps existing May/June successes and only fills gaps
+    so daily Update Data / Railway restarts do not re-scrape every shop.
+    """
     master: SellerMasterLoadResult | None = None
     ytd = None
     try:
