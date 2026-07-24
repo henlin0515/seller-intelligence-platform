@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-24T02:12:15Z",
+  "generated_at": "2026-07-24T02:40:29Z",
   "reference_today": "2026-07-24",
   "periods": {
     "reference_today": "2026-07-24",
@@ -29,6 +29,10 @@
       "tiktok_shop_name": "LALA",
       "fastmoss_shop_id": "7494929890907294497",
       "fastmoss_shop_name": "LALA",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494929890907294497",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:34:54Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -41,8 +45,9 @@
       "m1_gmv_php": 2618000.38,
       "tiktok_mtd_adgmv_php": 83283.6187,
       "tiktok_m1_adgmv_php": 113826.1035,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494929890907294497&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858019&cnonce=52074520",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494929890907294497&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858021&cnonce=26591467"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494929890907294497&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860494&cnonce=40873788",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494929890907294497&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860497&cnonce=17271210",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "15868997",
@@ -50,6 +55,10 @@
       "tiktok_shop_name": "Sklyer",
       "fastmoss_shop_id": "7495138736358787773",
       "fastmoss_shop_name": "Sklyer",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495138736358787773",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:34:58Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -62,8 +71,9 @@
       "m1_gmv_php": 453658.38,
       "tiktok_mtd_adgmv_php": 5472.4304,
       "tiktok_m1_adgmv_php": 19724.2774,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495138736358787773&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858032&cnonce=62457544",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495138736358787773&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858034&cnonce=48873436"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495138736358787773&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860498&cnonce=53108389",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495138736358787773&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860500&cnonce=52950741",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1072347827",
@@ -71,6 +81,10 @@
       "tiktok_shop_name": "Yoto Shoes",
       "fastmoss_shop_id": "7494609333713275265",
       "fastmoss_shop_name": "YOTO SHOES",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494609333713275265",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:02Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -83,8 +97,9 @@
       "m1_gmv_php": 39580675.6,
       "tiktok_mtd_adgmv_php": 1518374.0426,
       "tiktok_m1_adgmv_php": 1720898.9391,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494609333713275265&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858044&cnonce=66940221",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494609333713275265&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858046&cnonce=89312340"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494609333713275265&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860502&cnonce=88847488",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494609333713275265&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860503&cnonce=73336021",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "187057274",
@@ -92,6 +107,10 @@
       "tiktok_shop_name": "SJ MALL SHOES",
       "fastmoss_shop_id": "7494619488610388367",
       "fastmoss_shop_name": "SJ MALL SHOES",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494619488610388367",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:04Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -104,8 +123,9 @@
       "m1_gmv_php": 14684912.12,
       "tiktok_mtd_adgmv_php": 559019.3096,
       "tiktok_m1_adgmv_php": 638474.44,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494619488610388367&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858057&cnonce=94608181",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494619488610388367&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858060&cnonce=11980448"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494619488610388367&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860504&cnonce=74266929",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494619488610388367&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860505&cnonce=80120792",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "464536928",
@@ -113,6 +133,10 @@
       "tiktok_shop_name": "SLF-shop",
       "fastmoss_shop_id": "7494619366239406774",
       "fastmoss_shop_name": "SLF shop",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494619366239406774",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:09Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -125,8 +149,9 @@
       "m1_gmv_php": 3651779.0,
       "tiktok_mtd_adgmv_php": 143254.087,
       "tiktok_m1_adgmv_php": 158773.0,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494619366239406774&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858070&cnonce=59003979",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494619366239406774&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858072&cnonce=52093549"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494619366239406774&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860509&cnonce=84848094",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494619366239406774&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860510&cnonce=56712227",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "19100527",
@@ -134,6 +159,10 @@
       "tiktok_shop_name": "Mumu PH",
       "fastmoss_shop_id": "7494615843035646064",
       "fastmoss_shop_name": "Mumu PH",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494615843035646064",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:13Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -146,8 +175,9 @@
       "m1_gmv_php": 86023998.27,
       "tiktok_mtd_adgmv_php": 2495407.7409,
       "tiktok_m1_adgmv_php": 3740173.8378,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494615843035646064&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858083&cnonce=99293988",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494615843035646064&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858085&cnonce=26056438"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494615843035646064&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860513&cnonce=22047880",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494615843035646064&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860516&cnonce=35664880",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "5185360",
@@ -155,6 +185,10 @@
       "tiktok_shop_name": "YQY BAG SHOP",
       "fastmoss_shop_id": "7494613092289710139",
       "fastmoss_shop_name": "YQY BAG SHOP",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494613092289710139",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:17Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -167,8 +201,9 @@
       "m1_gmv_php": 4118926.81,
       "tiktok_mtd_adgmv_php": 104975.8304,
       "tiktok_m1_adgmv_php": 179083.7743,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494613092289710139&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858095&cnonce=76216802",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494613092289710139&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858096&cnonce=87046145"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494613092289710139&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860517&cnonce=59690433",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494613092289710139&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860518&cnonce=78915713",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "201629115",
@@ -176,6 +211,10 @@
       "tiktok_shop_name": "Demasia.ph",
       "fastmoss_shop_id": "7496106223285078143",
       "fastmoss_shop_name": "Demasia.ph",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7496106223285078143",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:20Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -188,8 +227,9 @@
       "m1_gmv_php": 2866453.0,
       "tiktok_mtd_adgmv_php": 111249.9365,
       "tiktok_m1_adgmv_php": 124628.3913,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496106223285078143&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858106&cnonce=15279205",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496106223285078143&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858108&cnonce=37596950"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496106223285078143&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860520&cnonce=76543462",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496106223285078143&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860523&cnonce=50767045",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "62404318",
@@ -197,6 +237,10 @@
       "tiktok_shop_name": "Kinwoo.ph",
       "fastmoss_shop_id": "7494600626141628535",
       "fastmoss_shop_name": "Kinwoo.ph",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494600626141628535",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:24Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -209,8 +253,9 @@
       "m1_gmv_php": 18572829.74,
       "tiktok_mtd_adgmv_php": 887734.4557,
       "tiktok_m1_adgmv_php": 807514.3365,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494600626141628535&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858118&cnonce=73745150",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494600626141628535&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858121&cnonce=75957965"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494600626141628535&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860524&cnonce=32532697",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494600626141628535&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860526&cnonce=56298311",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "110768099",
@@ -218,6 +263,10 @@
       "tiktok_shop_name": "AKIK.PH",
       "fastmoss_shop_id": "7494615817280391638",
       "fastmoss_shop_name": "AKIK.PH",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494615817280391638",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:29Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -230,8 +279,9 @@
       "m1_gmv_php": 10841512.46,
       "tiktok_mtd_adgmv_php": 414971.073,
       "tiktok_m1_adgmv_php": 471370.107,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494615817280391638&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858132&cnonce=85931079",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494615817280391638&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858134&cnonce=80002695"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494615817280391638&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860529&cnonce=76234066",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494615817280391638&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860530&cnonce=73566036",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "3256461",
@@ -239,6 +289,10 @@
       "tiktok_shop_name": "Unique Trends",
       "fastmoss_shop_id": "7494614302805625391",
       "fastmoss_shop_name": "UNIQUE TRENDS",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494614302805625391",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:31Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -251,8 +305,9 @@
       "m1_gmv_php": 3104814.25,
       "tiktok_mtd_adgmv_php": 151158.0804,
       "tiktok_m1_adgmv_php": 134991.9239,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494614302805625391&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858145&cnonce=22075929",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494614302805625391&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858147&cnonce=27957347"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494614302805625391&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860531&cnonce=19629434",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494614302805625391&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860533&cnonce=71114400",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "55748694",
@@ -260,6 +315,10 @@
       "tiktok_shop_name": "Swim Shop Fashion",
       "fastmoss_shop_id": "7494760851910855353",
       "fastmoss_shop_name": "Swim Shop Fashion",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494760851910855353",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:36Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -272,8 +331,9 @@
       "m1_gmv_php": 32957.0,
       "tiktok_mtd_adgmv_php": 1708.6522,
       "tiktok_m1_adgmv_php": 1432.913,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494760851910855353&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858157&cnonce=28408222",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494760851910855353&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858159&cnonce=72052848"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494760851910855353&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860536&cnonce=53201083",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494760851910855353&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860537&cnonce=29207876",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "35129186",
@@ -281,6 +341,10 @@
       "tiktok_shop_name": "HongXinRTW",
       "fastmoss_shop_id": "7494600722810833244",
       "fastmoss_shop_name": "HongXinRTW",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494600722810833244",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:39Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -293,8 +357,9 @@
       "m1_gmv_php": 6380972.07,
       "tiktok_mtd_adgmv_php": 307461.5409,
       "tiktok_m1_adgmv_php": 277433.5683,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494600722810833244&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858171&cnonce=44207410",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494600722810833244&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858173&cnonce=58508041"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494600722810833244&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860539&cnonce=79872338",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494600722810833244&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860540&cnonce=72631612",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "383771904",
@@ -302,6 +367,10 @@
       "tiktok_shop_name": "Eight Persent Store",
       "fastmoss_shop_id": "7494670296136190188",
       "fastmoss_shop_name": "Eight Persent Store",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494670296136190188",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:43Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -314,8 +383,9 @@
       "m1_gmv_php": 1105004.74,
       "tiktok_mtd_adgmv_php": 20590.7139,
       "tiktok_m1_adgmv_php": 48043.6843,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494670296136190188&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858184&cnonce=28158871",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494670296136190188&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858187&cnonce=48076646"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494670296136190188&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860543&cnonce=28483473",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494670296136190188&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860545&cnonce=45142837",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "25587666",
@@ -323,6 +393,10 @@
       "tiktok_shop_name": "KILY OFFICIAL",
       "fastmoss_shop_id": "7494607482516965499",
       "fastmoss_shop_name": "KILY OFFICIAL",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494607482516965499",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:47Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -335,8 +409,9 @@
       "m1_gmv_php": 12588335.6,
       "tiktok_mtd_adgmv_php": 568709.2304,
       "tiktok_m1_adgmv_php": 547318.9391,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494607482516965499&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858196&cnonce=19373239",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494607482516965499&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858198&cnonce=78615585"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494607482516965499&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860547&cnonce=36726646",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494607482516965499&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860549&cnonce=29922635",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "52679673",
@@ -344,6 +419,10 @@
       "tiktok_shop_name": "TayTay.RTW&Best Seller",
       "fastmoss_shop_id": "7494622653053897548",
       "fastmoss_shop_name": "TayTay.RTW&Best Seller",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494622653053897548",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:51Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -356,8 +435,9 @@
       "m1_gmv_php": 7443706.11,
       "tiktok_mtd_adgmv_php": 312320.0,
       "tiktok_m1_adgmv_php": 323639.3961,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494622653053897548&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858209&cnonce=51950202",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494622653053897548&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858210&cnonce=43643681"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494622653053897548&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860551&cnonce=16218320",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494622653053897548&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860553&cnonce=85675291",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1083822",
@@ -365,6 +445,10 @@
       "tiktok_shop_name": "nakdclothingph",
       "fastmoss_shop_id": "7494612095771838510",
       "fastmoss_shop_name": "nakdclothingph",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494612095771838510",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:55Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -377,8 +461,9 @@
       "m1_gmv_php": 5724719.0,
       "tiktok_mtd_adgmv_php": 289278.8261,
       "tiktok_m1_adgmv_php": 248900.8261,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494612095771838510&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858222&cnonce=53375040",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494612095771838510&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858225&cnonce=76106965"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494612095771838510&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860555&cnonce=72095677",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494612095771838510&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860557&cnonce=83348510",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "86411248",
@@ -386,6 +471,10 @@
       "tiktok_shop_name": "SK ONLINE PH",
       "fastmoss_shop_id": "7494617387557882401",
       "fastmoss_shop_name": "SK ONLINE PH",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494617387557882401",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:35:59Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -398,8 +487,9 @@
       "m1_gmv_php": 171001.0,
       "tiktok_mtd_adgmv_php": 5440.6957,
       "tiktok_m1_adgmv_php": 7434.8261,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494617387557882401&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858235&cnonce=72693211",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494617387557882401&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858237&cnonce=17956212"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494617387557882401&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860559&cnonce=43523875",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494617387557882401&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860562&cnonce=58569616",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "27311718",
@@ -407,6 +497,10 @@
       "tiktok_shop_name": "ZHIXIN JEANS Philippines",
       "fastmoss_shop_id": "7494702044647754543",
       "fastmoss_shop_name": "ZHIXIN JEANS Philippines",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494702044647754543",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:03Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -419,8 +513,9 @@
       "m1_gmv_php": 117711.06,
       "tiktok_mtd_adgmv_php": 2900.5861,
       "tiktok_m1_adgmv_php": 5117.8722,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494702044647754543&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858246&cnonce=91529893",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494702044647754543&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858248&cnonce=31506877"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494702044647754543&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860563&cnonce=19645740",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494702044647754543&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860566&cnonce=15647475",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1256935452",
@@ -428,6 +523,10 @@
       "tiktok_shop_name": "Hottie Diary PH",
       "fastmoss_shop_id": "8646924718044186363",
       "fastmoss_shop_name": "Hottie Diary PH",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/8646924718044186363",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:08Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -440,8 +539,9 @@
       "m1_gmv_php": 38235982.58,
       "tiktok_mtd_adgmv_php": 1506841.3635,
       "tiktok_m1_adgmv_php": 1662434.0252,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=8646924718044186363&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858258&cnonce=34724973",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=8646924718044186363&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858259&cnonce=69116299"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=8646924718044186363&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860568&cnonce=22599352",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=8646924718044186363&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860569&cnonce=13828652",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "23558781",
@@ -449,6 +549,10 @@
       "tiktok_shop_name": "Rhian Lingerie",
       "fastmoss_shop_id": "7494619428983310462",
       "fastmoss_shop_name": "Rhian Lingerie",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494619428983310462",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:11Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -461,8 +565,9 @@
       "m1_gmv_php": 24937543.74,
       "tiktok_mtd_adgmv_php": 1000697.3074,
       "tiktok_m1_adgmv_php": 1084241.0322,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494619428983310462&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859123&cnonce=27651951",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494619428983310462&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859123&cnonce=81326430"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494619428983310462&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860571&cnonce=85071090",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494619428983310462&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860573&cnonce=27368733",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "833020951",
@@ -470,6 +575,10 @@
       "tiktok_shop_name": "FunnyeS",
       "fastmoss_shop_id": "7495376481451346321",
       "fastmoss_shop_name": "FunnyeS",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495376481451346321",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:15Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -482,8 +591,9 @@
       "m1_gmv_php": 2573742.82,
       "tiktok_mtd_adgmv_php": 85796.0604,
       "tiktok_m1_adgmv_php": 111901.8617,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495376481451346321&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859128&cnonce=90285110",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495376481451346321&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859129&cnonce=85011588"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495376481451346321&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860575&cnonce=93445158",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495376481451346321&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860577&cnonce=54417127",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "49772788",
@@ -491,6 +601,10 @@
       "tiktok_shop_name": "Isabelle.Q shop",
       "fastmoss_shop_id": "7494825871647738066",
       "fastmoss_shop_name": "Isabelle.Q shop",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494825871647738066",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:19Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -503,8 +617,9 @@
       "m1_gmv_php": 12701457.59,
       "tiktok_mtd_adgmv_php": 520490.9496,
       "tiktok_m1_adgmv_php": 552237.2865,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494825871647738066&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859133&cnonce=75869970",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494825871647738066&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859133&cnonce=91540137"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494825871647738066&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860579&cnonce=35190699",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494825871647738066&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860582&cnonce=40285883",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "287452446",
@@ -512,6 +627,10 @@
       "tiktok_shop_name": "Wholesale Intimate Shop",
       "fastmoss_shop_id": "7494646875567590282",
       "fastmoss_shop_name": "Wholesale Intimate Shop",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494646875567590282",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:24Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -524,8 +643,9 @@
       "m1_gmv_php": 18599436.73,
       "tiktok_mtd_adgmv_php": 667667.6852,
       "tiktok_m1_adgmv_php": 808671.1622,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494646875567590282&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858405&cnonce=81330811",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494646875567590282&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858407&cnonce=74844860"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494646875567590282&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860584&cnonce=97312025",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494646875567590282&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860585&cnonce=77924171",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "25811092",
@@ -533,6 +653,10 @@
       "tiktok_shop_name": "anggelcity.ph",
       "fastmoss_shop_id": "7494614953494808587",
       "fastmoss_shop_name": "anggelcity.ph",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494614953494808587",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:28Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -545,8 +669,9 @@
       "m1_gmv_php": 123515.36,
       "tiktok_mtd_adgmv_php": 1965.3035,
       "tiktok_m1_adgmv_php": 5370.233,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494614953494808587&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858418&cnonce=94097072",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494614953494808587&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858419&cnonce=13835153"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494614953494808587&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860588&cnonce=79047699",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494614953494808587&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860591&cnonce=16506408",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "67752782",
@@ -554,6 +679,10 @@
       "tiktok_shop_name": "Sikat Fashion",
       "fastmoss_shop_id": "7495870286384892787",
       "fastmoss_shop_name": "Sikat Fashion",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495870286384892787",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:32Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -566,8 +695,9 @@
       "m1_gmv_php": 828471.0,
       "tiktok_mtd_adgmv_php": 30681.6957,
       "tiktok_m1_adgmv_php": 36020.4783,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495870286384892787&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858431&cnonce=15727579",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495870286384892787&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858433&cnonce=43583995"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495870286384892787&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860592&cnonce=63920016",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495870286384892787&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860595&cnonce=85983996",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "79555536",
@@ -575,6 +705,10 @@
       "tiktok_shop_name": "In Fashioning",
       "fastmoss_shop_id": "7494660190191061934",
       "fastmoss_shop_name": "In Fashioning",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494660190191061934",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:36Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -587,8 +721,9 @@
       "m1_gmv_php": 905318.0,
       "tiktok_mtd_adgmv_php": 26019.3478,
       "tiktok_m1_adgmv_php": 39361.6522,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494660190191061934&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858444&cnonce=50563031",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494660190191061934&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858446&cnonce=18458729"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494660190191061934&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860596&cnonce=53291742",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494660190191061934&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860598&cnonce=25438666",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "273805971",
@@ -596,6 +731,10 @@
       "tiktok_shop_name": "URBAN PIPE SHOP",
       "fastmoss_shop_id": "7494827047205112196",
       "fastmoss_shop_name": "URBAN PIPE SHOP",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494827047205112196",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:41Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -608,8 +747,9 @@
       "m1_gmv_php": 7189851.47,
       "tiktok_mtd_adgmv_php": 295239.3687,
       "tiktok_m1_adgmv_php": 312602.2378,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494827047205112196&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858455&cnonce=31829736",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494827047205112196&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858458&cnonce=42046946"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494827047205112196&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860601&cnonce=25973376",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494827047205112196&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860602&cnonce=62826000",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1250800923",
@@ -617,6 +757,10 @@
       "tiktok_shop_name": "Sunny&Co Apparel",
       "fastmoss_shop_id": "7495775897380030898",
       "fastmoss_shop_name": "Sunny&Co Apparel",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495775897380030898",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:43Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -629,8 +773,9 @@
       "m1_gmv_php": 6140133.0,
       "tiktok_mtd_adgmv_php": 193404.7391,
       "tiktok_m1_adgmv_php": 266962.3043,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495775897380030898&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858479&cnonce=31789685",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495775897380030898&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858479&cnonce=96842471"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495775897380030898&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860603&cnonce=21498752",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495775897380030898&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860606&cnonce=94076145",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "28168819",
@@ -638,6 +783,10 @@
       "tiktok_shop_name": "FS.STORE23",
       "fastmoss_shop_id": "7494617349082155770",
       "fastmoss_shop_name": "FS.STORE23",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494617349082155770",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:47Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -650,8 +799,9 @@
       "m1_gmv_php": 2564873.0,
       "tiktok_mtd_adgmv_php": 69150.6522,
       "tiktok_m1_adgmv_php": 111516.2174,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494617349082155770&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858502&cnonce=92476146",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494617349082155770&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858502&cnonce=71479192"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494617349082155770&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860607&cnonce=91325568",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494617349082155770&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860609&cnonce=43354227",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "34526537",
@@ -659,6 +809,10 @@
       "tiktok_shop_name": "Microwind",
       "fastmoss_shop_id": "7495190211688827633",
       "fastmoss_shop_name": "MICROWIND",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495190211688827633",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:51Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -671,8 +825,9 @@
       "m1_gmv_php": 5259627.41,
       "tiktok_mtd_adgmv_php": 141100.0935,
       "tiktok_m1_adgmv_php": 228679.4526,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495190211688827633&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858535&cnonce=70494276",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495190211688827633&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858537&cnonce=12769112"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495190211688827633&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860611&cnonce=88967716",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495190211688827633&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860612&cnonce=43900955",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "44247338",
@@ -680,6 +835,10 @@
       "tiktok_shop_name": "A&K FASHION FACTORY",
       "fastmoss_shop_id": "7494661110985885945",
       "fastmoss_shop_name": "A&K FASHION FACTORY",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494661110985885945",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:55Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -692,8 +851,9 @@
       "m1_gmv_php": 1378797.9,
       "tiktok_mtd_adgmv_php": 52654.1609,
       "tiktok_m1_adgmv_php": 59947.7348,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494661110985885945&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858590&cnonce=16184403",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494661110985885945&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858590&cnonce=39189701"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494661110985885945&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860615&cnonce=74675411",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494661110985885945&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860617&cnonce=25728592",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "210097075",
@@ -701,6 +861,10 @@
       "tiktok_shop_name": "HE EYEWEAR",
       "fastmoss_shop_id": "7494631544716364539",
       "fastmoss_shop_name": "HE EYEWEAR",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494631544716364539",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:36:59Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -713,8 +877,9 @@
       "m1_gmv_php": 6666615.69,
       "tiktok_mtd_adgmv_php": 269885.517,
       "tiktok_m1_adgmv_php": 289852.8561,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494631544716364539&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858627&cnonce=17717768",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494631544716364539&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858630&cnonce=53096198"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494631544716364539&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860619&cnonce=53879185",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494631544716364539&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860621&cnonce=17830325",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "382336133",
@@ -722,6 +887,10 @@
       "tiktok_shop_name": "MUMUSELECT PH",
       "fastmoss_shop_id": "7496051833467931528",
       "fastmoss_shop_name": "MUMUSELECT PH",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7496051833467931528",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:02Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -734,8 +903,9 @@
       "m1_gmv_php": 31944597.13,
       "tiktok_mtd_adgmv_php": 1265736.9313,
       "tiktok_m1_adgmv_php": 1388895.5274,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496051833467931528&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858662&cnonce=59680721",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496051833467931528&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858662&cnonce=13563528"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496051833467931528&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860622&cnonce=52214426",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496051833467931528&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860624&cnonce=48718698",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "654573166",
@@ -743,6 +913,10 @@
       "tiktok_shop_name": "TBK Mall",
       "fastmoss_shop_id": "7494947051101129516",
       "fastmoss_shop_name": "TBK MALL",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494947051101129516",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:06Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -755,8 +929,9 @@
       "m1_gmv_php": 70862.0,
       "tiktok_mtd_adgmv_php": 1646.1739,
       "tiktok_m1_adgmv_php": 3080.9565,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494947051101129516&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858725&cnonce=40553097",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494947051101129516&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858725&cnonce=29528999"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494947051101129516&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860626&cnonce=34113587",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494947051101129516&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860628&cnonce=31195841",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "234722873",
@@ -764,6 +939,10 @@
       "tiktok_shop_name": "YOTO Sandals",
       "fastmoss_shop_id": "7495029197430884797",
       "fastmoss_shop_name": "YOTO Sandals",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495029197430884797",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:10Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -776,8 +955,9 @@
       "m1_gmv_php": 3726379.19,
       "tiktok_mtd_adgmv_php": 158712.7,
       "tiktok_m1_adgmv_php": 162016.4865,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495029197430884797&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858788&cnonce=13893506",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495029197430884797&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858790&cnonce=92970529"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495029197430884797&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860630&cnonce=53213425",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495029197430884797&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860634&cnonce=94426368",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "297264152",
@@ -785,6 +965,10 @@
       "tiktok_shop_name": "LALA Sandals",
       "fastmoss_shop_id": "7494685242645449133",
       "fastmoss_shop_name": "LALA Sandals",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494685242645449133",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:15Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -797,8 +981,9 @@
       "m1_gmv_php": 5452252.21,
       "tiktok_mtd_adgmv_php": 232269.8852,
       "tiktok_m1_adgmv_php": 237054.4439,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494685242645449133&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858796&cnonce=45947718",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494685242645449133&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858796&cnonce=55984772"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494685242645449133&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860635&cnonce=16104095",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494685242645449133&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860636&cnonce=51101481",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "224012602",
@@ -806,6 +991,10 @@
       "tiktok_shop_name": "MIA SHOES",
       "fastmoss_shop_id": "7494603397741579083",
       "fastmoss_shop_name": "MIA SHOES",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494603397741579083",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:18Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -818,8 +1007,9 @@
       "m1_gmv_php": 59743023.35,
       "tiktok_mtd_adgmv_php": 2411093.1852,
       "tiktok_m1_adgmv_php": 2597522.7543,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494603397741579083&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858801&cnonce=11119023",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494603397741579083&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858801&cnonce=39514640"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494603397741579083&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860638&cnonce=99908817",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494603397741579083&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860640&cnonce=43286336",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1028312823",
@@ -827,6 +1017,10 @@
       "tiktok_shop_name": "Julyya",
       "fastmoss_shop_id": "7494958965126958061",
       "fastmoss_shop_name": "Julyya",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494958965126958061",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:22Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -839,8 +1033,9 @@
       "m1_gmv_php": 1052118.05,
       "tiktok_mtd_adgmv_php": 37551.13,
       "tiktok_m1_adgmv_php": 45744.263,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494958965126958061&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858807&cnonce=13677483",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494958965126958061&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858808&cnonce=20512064"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494958965126958061&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860642&cnonce=32229633",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494958965126958061&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860644&cnonce=57881175",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1234667338",
@@ -848,6 +1043,10 @@
       "tiktok_shop_name": "STOMPION-SHOE",
       "fastmoss_shop_id": "8654598391975937615",
       "fastmoss_shop_name": "STOMPION-SHOE",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/8654598391975937615",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:25Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -860,8 +1059,9 @@
       "m1_gmv_php": 350343.93,
       "tiktok_mtd_adgmv_php": 11072.3404,
       "tiktok_m1_adgmv_php": 15232.3448,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=8654598391975937615&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858814&cnonce=28935721",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=8654598391975937615&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858814&cnonce=88641603"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=8654598391975937615&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860645&cnonce=74542538",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=8654598391975937615&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860647&cnonce=36771744",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1076911871",
@@ -869,6 +1069,10 @@
       "tiktok_shop_name": "TBG retail store",
       "fastmoss_shop_id": "7495040997928831738",
       "fastmoss_shop_name": "TBG retail store",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495040997928831738",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:29Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -881,8 +1085,9 @@
       "m1_gmv_php": 5223184.35,
       "tiktok_mtd_adgmv_php": 258881.2261,
       "tiktok_m1_adgmv_php": 227094.9717,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495040997928831738&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858819&cnonce=74802314",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495040997928831738&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858819&cnonce=83416090"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495040997928831738&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860649&cnonce=52951841",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495040997928831738&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860651&cnonce=64252695",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1034171456",
@@ -890,6 +1095,10 @@
       "tiktok_shop_name": "A.L Variety Store",
       "fastmoss_shop_id": "7495154555642874719",
       "fastmoss_shop_name": "A.L Variety Store",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495154555642874719",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:34Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -902,8 +1111,9 @@
       "m1_gmv_php": 5876113.05,
       "tiktok_mtd_adgmv_php": 271278.5674,
       "tiktok_m1_adgmv_php": 255483.1761,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495154555642874719&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858824&cnonce=48055768",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495154555642874719&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858826&cnonce=77235210"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495154555642874719&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860654&cnonce=87000620",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495154555642874719&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860656&cnonce=10586332",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "931880206",
@@ -911,6 +1121,10 @@
       "tiktok_shop_name": "Tawii. collection",
       "fastmoss_shop_id": "7495201298432363154",
       "fastmoss_shop_name": "tawii. collection",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495201298432363154",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:37Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -923,8 +1137,9 @@
       "m1_gmv_php": 3004369.86,
       "tiktok_mtd_adgmv_php": 144762.9857,
       "tiktok_m1_adgmv_php": 130624.7765,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495201298432363154&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858831&cnonce=33020054",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495201298432363154&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858832&cnonce=57584728"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495201298432363154&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860657&cnonce=12256358",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495201298432363154&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860660&cnonce=11515478",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "844408465",
@@ -932,6 +1147,10 @@
       "tiktok_shop_name": "Tawii.sandals",
       "fastmoss_shop_id": "7495627721906817835",
       "fastmoss_shop_name": "Tawii.sandals",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495627721906817835",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:41Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -944,8 +1163,9 @@
       "m1_gmv_php": 69096.25,
       "tiktok_mtd_adgmv_php": 2125.3252,
       "tiktok_m1_adgmv_php": 3004.1848,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495627721906817835&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858839&cnonce=83999783",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495627721906817835&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858840&cnonce=63029525"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495627721906817835&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860661&cnonce=81407540",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495627721906817835&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860662&cnonce=52115257",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "717646631",
@@ -953,6 +1173,10 @@
       "tiktok_shop_name": "KUKUC-SHOES",
       "fastmoss_shop_id": "7495832048825632901",
       "fastmoss_shop_name": "KUKUC-SHOES",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495832048825632901",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:45Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -965,8 +1189,9 @@
       "m1_gmv_php": 2827614.95,
       "tiktok_mtd_adgmv_php": 117326.6843,
       "tiktok_m1_adgmv_php": 122939.7804,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495832048825632901&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858845&cnonce=96871440",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495832048825632901&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858846&cnonce=67838982"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495832048825632901&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860665&cnonce=96627890",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495832048825632901&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860667&cnonce=54353160",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "717772427",
@@ -974,6 +1199,10 @@
       "tiktok_shop_name": "YOLO-SHOES",
       "fastmoss_shop_id": "7495834218960619775",
       "fastmoss_shop_name": "YOLO-SHOES",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495834218960619775",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:49Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -986,8 +1215,9 @@
       "m1_gmv_php": 1863669.98,
       "tiktok_mtd_adgmv_php": 80996.073,
       "tiktok_m1_adgmv_php": 81029.1296,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495834218960619775&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858851&cnonce=46120855",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495834218960619775&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858852&cnonce=90895070"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495834218960619775&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860669&cnonce=13113575",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495834218960619775&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860672&cnonce=70516510",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "645424408",
@@ -995,6 +1225,10 @@
       "tiktok_shop_name": "Venalisa.ph",
       "fastmoss_shop_id": "7495355729606380531",
       "fastmoss_shop_name": "Venalisa.ph",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495355729606380531",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:55Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1007,8 +1241,9 @@
       "m1_gmv_php": 4892571.5,
       "tiktok_mtd_adgmv_php": 199017.2357,
       "tiktok_m1_adgmv_php": 212720.5,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495355729606380531&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858859&cnonce=40559258",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495355729606380531&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858860&cnonce=19223209"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495355729606380531&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860675&cnonce=56942210",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495355729606380531&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860676&cnonce=46686325",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "405733574",
@@ -1016,6 +1251,10 @@
       "tiktok_shop_name": "ecoraph",
       "fastmoss_shop_id": "7495010834235558779",
       "fastmoss_shop_name": "ecoraph",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495010834235558779",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:37:59Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1028,8 +1267,9 @@
       "m1_gmv_php": 41155722.6,
       "tiktok_mtd_adgmv_php": 2113187.3822,
       "tiktok_m1_adgmv_php": 1789379.2435,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495010834235558779&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858866&cnonce=38110487",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495010834235558779&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858866&cnonce=52191544"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495010834235558779&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860679&cnonce=36948682",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495010834235558779&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860682&cnonce=73574387",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "709311036",
@@ -1037,6 +1277,10 @@
       "tiktok_shop_name": "Emita bloom",
       "fastmoss_shop_id": "7494647022724221718",
       "fastmoss_shop_name": "Emita bloom",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494647022724221718",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:03Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1049,8 +1293,9 @@
       "m1_gmv_php": 1581801.22,
       "tiktok_mtd_adgmv_php": 44057.1204,
       "tiktok_m1_adgmv_php": 68773.9661,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494647022724221718&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858872&cnonce=90603573",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494647022724221718&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858873&cnonce=35267658"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494647022724221718&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860683&cnonce=30403719",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494647022724221718&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860685&cnonce=57962183",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1530760239",
@@ -1058,6 +1303,10 @@
       "tiktok_shop_name": "LEVAO-Lingerie",
       "fastmoss_shop_id": "7496050362632800374",
       "fastmoss_shop_name": "LEVAO-Lingerie",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7496050362632800374",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:06Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1070,8 +1319,9 @@
       "m1_gmv_php": 3100178.77,
       "tiktok_mtd_adgmv_php": 156264.2257,
       "tiktok_m1_adgmv_php": 134790.3813,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496050362632800374&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858879&cnonce=81518212",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496050362632800374&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858880&cnonce=48497675"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496050362632800374&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860686&cnonce=19706212",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496050362632800374&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860689&cnonce=45507506",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "90769640",
@@ -1079,6 +1329,10 @@
       "tiktok_shop_name": "VKY WeHottie",
       "fastmoss_shop_id": "7494892690971199542",
       "fastmoss_shop_name": "VKY WeHottie",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494892690971199542",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:10Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1091,8 +1345,9 @@
       "m1_gmv_php": 20079.0,
       "tiktok_mtd_adgmv_php": 1240.0435,
       "tiktok_m1_adgmv_php": 873.0,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494892690971199542&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858886&cnonce=44267076",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494892690971199542&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858886&cnonce=88150642"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494892690971199542&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860690&cnonce=69189346",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494892690971199542&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860693&cnonce=68037231",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1662545454",
@@ -1100,6 +1355,10 @@
       "tiktok_shop_name": "Karen Clothespress",
       "fastmoss_shop_id": "7494676780578802266",
       "fastmoss_shop_name": "Karen Clothespress",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494676780578802266",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:15Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1112,8 +1371,9 @@
       "m1_gmv_php": 2991342.3,
       "tiktok_mtd_adgmv_php": 98995.5783,
       "tiktok_m1_adgmv_php": 130058.3609,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494676780578802266&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858892&cnonce=30652560",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494676780578802266&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858893&cnonce=52234067"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494676780578802266&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860695&cnonce=37545213",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494676780578802266&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860697&cnonce=68180500",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "309426370",
@@ -1121,6 +1381,10 @@
       "tiktok_shop_name": "SUPERMAGANDA",
       "fastmoss_shop_id": "7494607875100936558",
       "fastmoss_shop_name": "SUPERMAGANDA",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494607875100936558",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:20Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1133,8 +1397,9 @@
       "m1_gmv_php": 7616967.69,
       "tiktok_mtd_adgmv_php": 276051.133,
       "tiktok_m1_adgmv_php": 331172.5083,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494607875100936558&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858898&cnonce=33597391",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494607875100936558&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858898&cnonce=88796524"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494607875100936558&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860700&cnonce=14302119",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494607875100936558&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860702&cnonce=88344410",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "977529954",
@@ -1142,6 +1407,10 @@
       "tiktok_shop_name": "C&Z STUDIO",
       "fastmoss_shop_id": "7495804274771594170",
       "fastmoss_shop_name": "C&Z STUDIO",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495804274771594170",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:25Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1154,8 +1423,9 @@
       "m1_gmv_php": 5568660.0,
       "tiktok_mtd_adgmv_php": 244071.4557,
       "tiktok_m1_adgmv_php": 242115.6522,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495804274771594170&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858903&cnonce=21396202",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495804274771594170&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858904&cnonce=57728890"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495804274771594170&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860705&cnonce=48318630",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495804274771594170&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860706&cnonce=65901020",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "111152020",
@@ -1163,6 +1433,10 @@
       "tiktok_shop_name": "boutique.shop",
       "fastmoss_shop_id": "7494645998463453991",
       "fastmoss_shop_name": "boutique.shop",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494645998463453991",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:28Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1175,8 +1449,9 @@
       "m1_gmv_php": 53567468.84,
       "tiktok_mtd_adgmv_php": 1453953.253,
       "tiktok_m1_adgmv_php": 2329020.3843,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494645998463453991&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858908&cnonce=15468440",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494645998463453991&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858910&cnonce=18429322"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494645998463453991&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860708&cnonce=10477553",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494645998463453991&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860710&cnonce=66550441",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "373953071",
@@ -1184,6 +1459,10 @@
       "tiktok_shop_name": "Kumi Fashion",
       "fastmoss_shop_id": "7495021281151715500",
       "fastmoss_shop_name": "KUMI FASHION",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495021281151715500",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:31Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1196,8 +1475,9 @@
       "m1_gmv_php": 24602435.44,
       "tiktok_mtd_adgmv_php": 1456597.8561,
       "tiktok_m1_adgmv_php": 1069671.1061,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495021281151715500&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858915&cnonce=68732904",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495021281151715500&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858915&cnonce=60378907"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495021281151715500&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860711&cnonce=60489403",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495021281151715500&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860712&cnonce=75801149",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "221410676",
@@ -1205,6 +1485,10 @@
       "tiktok_shop_name": "Kiser.ph",
       "fastmoss_shop_id": "7494614914377288145",
       "fastmoss_shop_name": "Kiser.ph",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494614914377288145",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:34Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1217,8 +1501,9 @@
       "m1_gmv_php": 2209026.0,
       "tiktok_mtd_adgmv_php": 80648.8696,
       "tiktok_m1_adgmv_php": 96044.6087,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494614914377288145&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858921&cnonce=79595347",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494614914377288145&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858922&cnonce=94252605"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494614914377288145&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860714&cnonce=63056363",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494614914377288145&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860716&cnonce=10818633",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "597827575",
@@ -1226,6 +1511,10 @@
       "tiktok_shop_name": "ManMode.PH",
       "fastmoss_shop_id": "7496047084348213419",
       "fastmoss_shop_name": "ManMode.PH",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7496047084348213419",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:38Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1238,8 +1527,9 @@
       "m1_gmv_php": 2733052.7,
       "tiktok_mtd_adgmv_php": 146524.6022,
       "tiktok_m1_adgmv_php": 118828.3783,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496047084348213419&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858927&cnonce=67189824",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496047084348213419&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858928&cnonce=47417238"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496047084348213419&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860718&cnonce=89033888",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496047084348213419&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860721&cnonce=65245945",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "383325721",
@@ -1247,6 +1537,10 @@
       "tiktok_shop_name": "Miim Studio",
       "fastmoss_shop_id": "7495049997985942130",
       "fastmoss_shop_name": "Miim Studio",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495049997985942130",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:42Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1259,8 +1553,9 @@
       "m1_gmv_php": 273012.68,
       "tiktok_mtd_adgmv_php": 11033.8696,
       "tiktok_m1_adgmv_php": 11870.1165,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495049997985942130&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858933&cnonce=44947616",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495049997985942130&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858935&cnonce=77553545"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495049997985942130&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860722&cnonce=85187869",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495049997985942130&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860723&cnonce=11170983",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "485114541",
@@ -1268,6 +1563,10 @@
       "tiktok_shop_name": "SukiSilk",
       "fastmoss_shop_id": "7496147078285593404",
       "fastmoss_shop_name": "SukiSilk",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7496147078285593404",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:45Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1280,8 +1579,9 @@
       "m1_gmv_php": 7804863.92,
       "tiktok_mtd_adgmv_php": 378496.1048,
       "tiktok_m1_adgmv_php": 339341.9096,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496147078285593404&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858939&cnonce=46240647",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496147078285593404&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858940&cnonce=38792637"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496147078285593404&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860725&cnonce=10817688",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496147078285593404&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860726&cnonce=68693457",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "580505692",
@@ -1289,6 +1589,10 @@
       "tiktok_shop_name": "OTAKU",
       "fastmoss_shop_id": "7494596714031188375",
       "fastmoss_shop_name": "OTAKU",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494596714031188375",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:48Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1301,8 +1605,9 @@
       "m1_gmv_php": 11423562.01,
       "tiktok_mtd_adgmv_php": 514730.1339,
       "tiktok_m1_adgmv_php": 496676.6091,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494596714031188375&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858945&cnonce=15253049",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494596714031188375&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858946&cnonce=45533237"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494596714031188375&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860728&cnonce=30188880",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494596714031188375&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860731&cnonce=15956338",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1250862848",
@@ -1310,6 +1615,10 @@
       "tiktok_shop_name": "NASA.PH",
       "fastmoss_shop_id": "7495482056467188055",
       "fastmoss_shop_name": "NASA.PH",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495482056467188055",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:52Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1322,8 +1631,9 @@
       "m1_gmv_php": 7412037.73,
       "tiktok_mtd_adgmv_php": 254333.8804,
       "tiktok_m1_adgmv_php": 322262.51,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495482056467188055&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858950&cnonce=45115336",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495482056467188055&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858950&cnonce=66880409"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495482056467188055&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860732&cnonce=63407833",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495482056467188055&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860734&cnonce=25176359",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "126284352",
@@ -1331,6 +1641,10 @@
       "tiktok_shop_name": "HYBRID.PH",
       "fastmoss_shop_id": "7494601169244096652",
       "fastmoss_shop_name": "HYBRID.PH",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494601169244096652",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:57Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1343,8 +1657,9 @@
       "m1_gmv_php": 3336406.88,
       "tiktok_mtd_adgmv_php": 115992.7391,
       "tiktok_m1_adgmv_php": 145061.1687,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494601169244096652&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858955&cnonce=46613776",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494601169244096652&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858956&cnonce=99177573"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494601169244096652&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860737&cnonce=45311965",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494601169244096652&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860738&cnonce=74116800",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "333369948",
@@ -1352,6 +1667,10 @@
       "tiktok_shop_name": "Pazisrts",
       "fastmoss_shop_id": "7495088645880908403",
       "fastmoss_shop_name": "Pazisrts",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495088645880908403",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:38:59Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1364,8 +1683,9 @@
       "m1_gmv_php": 469607.97,
       "tiktok_mtd_adgmv_php": 20511.6804,
       "tiktok_m1_adgmv_php": 20417.7378,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495088645880908403&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858961&cnonce=91266642",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495088645880908403&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858963&cnonce=31836695"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495088645880908403&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860739&cnonce=99009787",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495088645880908403&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860742&cnonce=70868285",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1326871480",
@@ -1373,6 +1693,10 @@
       "tiktok_shop_name": "riza tshirt factory",
       "fastmoss_shop_id": "7495815936009603479",
       "fastmoss_shop_name": "Riza Tshirt Factory",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495815936009603479",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:04Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1385,8 +1709,9 @@
       "m1_gmv_php": 310903.0,
       "tiktok_mtd_adgmv_php": 3760.6087,
       "tiktok_m1_adgmv_php": 13517.5217,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495815936009603479&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858967&cnonce=44625694",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495815936009603479&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858969&cnonce=86367422"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495815936009603479&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860744&cnonce=28393188",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495815936009603479&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860747&cnonce=72721132",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "871846651",
@@ -1394,6 +1719,10 @@
       "tiktok_shop_name": "URBAN PIPE SPACE.PH",
       "fastmoss_shop_id": "7494972758537570611",
       "fastmoss_shop_name": "URBAN PIPE SPACE.PH",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494972758537570611",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:09Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1406,8 +1735,9 @@
       "m1_gmv_php": 3029789.34,
       "tiktok_mtd_adgmv_php": 174595.7739,
       "tiktok_m1_adgmv_php": 131729.9713,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494972758537570611&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858975&cnonce=23322285",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494972758537570611&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858976&cnonce=94016239"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494972758537570611&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860749&cnonce=50296356",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494972758537570611&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860751&cnonce=37840300",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1500252996",
@@ -1415,6 +1745,10 @@
       "tiktok_shop_name": "CoolBoy.PH",
       "fastmoss_shop_id": "7496047092269746623",
       "fastmoss_shop_name": "CoolBoy.PH",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7496047092269746623",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:12Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1427,8 +1761,9 @@
       "m1_gmv_php": 5162246.84,
       "tiktok_mtd_adgmv_php": 210773.8713,
       "tiktok_m1_adgmv_php": 224445.5148,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496047092269746623&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858981&cnonce=44252705",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496047092269746623&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858983&cnonce=19069988"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496047092269746623&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860752&cnonce=89903292",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496047092269746623&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860755&cnonce=79149597",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "385528603",
@@ -1436,6 +1771,10 @@
       "tiktok_shop_name": "Eaisterdsa",
       "fastmoss_shop_id": "7495513704215120876",
       "fastmoss_shop_name": "Eaisterdsa",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495513704215120876",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:17Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1448,8 +1787,9 @@
       "m1_gmv_php": 555005.03,
       "tiktok_mtd_adgmv_php": 22283.7613,
       "tiktok_m1_adgmv_php": 24130.6535,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495513704215120876&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858989&cnonce=34190708",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495513704215120876&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858989&cnonce=40281710"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495513704215120876&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860757&cnonce=87928660",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495513704215120876&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860759&cnonce=94351842",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "513870547",
@@ -1457,6 +1797,10 @@
       "tiktok_shop_name": "HGQG Philippines local mall",
       "fastmoss_shop_id": "7495742340944530004",
       "fastmoss_shop_name": "HGQG Philippines local mall",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495742340944530004",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:22Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1469,8 +1813,9 @@
       "m1_gmv_php": 908983.96,
       "tiktok_mtd_adgmv_php": 48442.2961,
       "tiktok_m1_adgmv_php": 39521.0417,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495742340944530004&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784858994&cnonce=50445893",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495742340944530004&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784858996&cnonce=80939014"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495742340944530004&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860762&cnonce=84733956",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495742340944530004&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860764&cnonce=57217096",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "64151604",
@@ -1478,6 +1823,10 @@
       "tiktok_shop_name": "Huilishi.ph",
       "fastmoss_shop_id": "7494731535283423652",
       "fastmoss_shop_name": "Huilishi.ph",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494731535283423652",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:26Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1490,8 +1839,9 @@
       "m1_gmv_php": 29710320.08,
       "tiktok_mtd_adgmv_php": 1435770.6126,
       "tiktok_m1_adgmv_php": 1291753.047,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494731535283423652&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859001&cnonce=53192266",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494731535283423652&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859004&cnonce=29410673"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494731535283423652&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860766&cnonce=89683302",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494731535283423652&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860768&cnonce=65566378",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1028319250",
@@ -1499,6 +1849,10 @@
       "tiktok_shop_name": "ACHS AWAKE",
       "fastmoss_shop_id": "7494617615266384751",
       "fastmoss_shop_name": "ACHS AWAKE",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494617615266384751",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:30Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1511,8 +1865,9 @@
       "m1_gmv_php": 38338250.78,
       "tiktok_mtd_adgmv_php": 1363485.9017,
       "tiktok_m1_adgmv_php": 1666880.4687,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494617615266384751&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859007&cnonce=26738993",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494617615266384751&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859008&cnonce=97984906"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494617615266384751&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860770&cnonce=69225679",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494617615266384751&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860771&cnonce=22279679",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "967028733",
@@ -1520,6 +1875,10 @@
       "tiktok_shop_name": "Babyuki6",
       "fastmoss_shop_id": "7496145733332601376",
       "fastmoss_shop_name": "babyuki6",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7496145733332601376",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:34Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1532,8 +1891,9 @@
       "m1_gmv_php": 20581033.62,
       "tiktok_mtd_adgmv_php": 743503.1304,
       "tiktok_m1_adgmv_php": 894827.5487,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496145733332601376&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859012&cnonce=69138309",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496145733332601376&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859013&cnonce=54039780"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496145733332601376&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860774&cnonce=48579607",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496145733332601376&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860777&cnonce=46201142",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "720550898",
@@ -1541,6 +1901,10 @@
       "tiktok_shop_name": "VISUKING",
       "fastmoss_shop_id": "7495897658002344428",
       "fastmoss_shop_name": "VISUKING",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495897658002344428",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:39Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1553,8 +1917,9 @@
       "m1_gmv_php": 44936750.0,
       "tiktok_mtd_adgmv_php": 1958961.5522,
       "tiktok_m1_adgmv_php": 1953771.7391,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495897658002344428&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859018&cnonce=35070893",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495897658002344428&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859019&cnonce=67114522"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495897658002344428&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860779&cnonce=47684017",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495897658002344428&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860781&cnonce=24464413",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1096160261",
@@ -1562,6 +1927,10 @@
       "tiktok_shop_name": "IONIA",
       "fastmoss_shop_id": "7494669327998945399",
       "fastmoss_shop_name": "IONIA",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494669327998945399",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:43Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1574,8 +1943,9 @@
       "m1_gmv_php": 129281.99,
       "tiktok_mtd_adgmv_php": 4058.5552,
       "tiktok_m1_adgmv_php": 5620.9561,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494669327998945399&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859024&cnonce=94753785",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494669327998945399&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859026&cnonce=97435367"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494669327998945399&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860783&cnonce=84375822",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494669327998945399&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860785&cnonce=95968619",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1704766911",
@@ -1583,6 +1953,10 @@
       "tiktok_shop_name": "Diamond-7",
       "fastmoss_shop_id": "7496014154523183541",
       "fastmoss_shop_name": "Diamond-7",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7496014154523183541",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:46Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1595,8 +1969,9 @@
       "m1_gmv_php": 2407062.03,
       "tiktok_mtd_adgmv_php": 71685.1361,
       "tiktok_m1_adgmv_php": 104654.8709,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496014154523183541&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859031&cnonce=34501357",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496014154523183541&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859031&cnonce=13434697"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496014154523183541&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860786&cnonce=37154744",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7496014154523183541&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860788&cnonce=56476559",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "89285575",
@@ -1604,6 +1979,10 @@
       "tiktok_shop_name": "RRf .Shop",
       "fastmoss_shop_id": "7494971762657168038",
       "fastmoss_shop_name": "RRF .Shop",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494971762657168038",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:51Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1616,8 +1995,9 @@
       "m1_gmv_php": 5079862.87,
       "tiktok_mtd_adgmv_php": 204672.4135,
       "tiktok_m1_adgmv_php": 220863.603,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494971762657168038&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859037&cnonce=83790481",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494971762657168038&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859038&cnonce=93382245"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494971762657168038&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860791&cnonce=16791552",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494971762657168038&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860793&cnonce=29902962",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "940996965",
@@ -1625,6 +2005,10 @@
       "tiktok_shop_name": "MPMG",
       "fastmoss_shop_id": "7494914335308417352",
       "fastmoss_shop_name": "MPMG",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494914335308417352",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:54Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1637,8 +2021,9 @@
       "m1_gmv_php": 6645210.18,
       "tiktok_mtd_adgmv_php": 234665.317,
       "tiktok_m1_adgmv_php": 288922.1817,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494914335308417352&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859045&cnonce=67894443",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494914335308417352&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859045&cnonce=92054121"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494914335308417352&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860794&cnonce=57146280",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494914335308417352&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860796&cnonce=67820844",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "318828457",
@@ -1646,6 +2031,10 @@
       "tiktok_shop_name": "Sasa Co.",
       "fastmoss_shop_id": "7494607410527505157",
       "fastmoss_shop_name": "Sasa Co.",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494607410527505157",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:39:57Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1658,8 +2047,9 @@
       "m1_gmv_php": 5505753.14,
       "tiktok_mtd_adgmv_php": 192691.427,
       "tiktok_m1_adgmv_php": 239380.5713,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494607410527505157&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859051&cnonce=94701942",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494607410527505157&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859052&cnonce=67779902"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494607410527505157&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860797&cnonce=34095394",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494607410527505157&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860799&cnonce=89795811",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1292050208",
@@ -1667,6 +2057,10 @@
       "tiktok_shop_name": "ZEKE Fashion PH",
       "fastmoss_shop_id": "7495803486636575553",
       "fastmoss_shop_name": "ZEKE Fashion PH",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495803486636575553",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:40:01Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1679,8 +2073,9 @@
       "m1_gmv_php": 16681798.1,
       "tiktok_mtd_adgmv_php": 821638.75,
       "tiktok_m1_adgmv_php": 725295.5696,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495803486636575553&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859057&cnonce=25760022",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495803486636575553&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859058&cnonce=19042081"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495803486636575553&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860801&cnonce=56299330",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495803486636575553&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860802&cnonce=21967574",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1344183081",
@@ -1688,6 +2083,10 @@
       "tiktok_shop_name": "Simwood clothing",
       "fastmoss_shop_id": "7495471247764326948",
       "fastmoss_shop_name": "Simwood clothing",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495471247764326948",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:40:05Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1700,8 +2099,9 @@
       "m1_gmv_php": 2435218.0,
       "tiktok_mtd_adgmv_php": 69136.0,
       "tiktok_m1_adgmv_php": 105879.0435,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495471247764326948&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859065&cnonce=34341939",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495471247764326948&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859066&cnonce=41595332"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495471247764326948&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860805&cnonce=63990873",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495471247764326948&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860807&cnonce=81803297",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1281979498",
@@ -1709,6 +2109,10 @@
       "tiktok_shop_name": "Poor Kitty",
       "fastmoss_shop_id": "7495766714716621732",
       "fastmoss_shop_name": "PoorKitty",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495766714716621732",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:40:09Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1721,8 +2125,9 @@
       "m1_gmv_php": 4264539.62,
       "tiktok_mtd_adgmv_php": 192220.7035,
       "tiktok_m1_adgmv_php": 185414.7661,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495766714716621732&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859070&cnonce=65253542",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495766714716621732&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859071&cnonce=26791356"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495766714716621732&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860809&cnonce=43878374",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495766714716621732&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860811&cnonce=60996231",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1632631405",
@@ -1730,6 +2135,10 @@
       "tiktok_shop_name": "LuckJerry",
       "fastmoss_shop_id": "7495813135344110151",
       "fastmoss_shop_name": "LuckJerry",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7495813135344110151",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:40:13Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1742,8 +2151,9 @@
       "m1_gmv_php": 2332791.98,
       "tiktok_mtd_adgmv_php": 95930.4122,
       "tiktok_m1_adgmv_php": 101425.7383,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495813135344110151&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859077&cnonce=37728431",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495813135344110151&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859078&cnonce=24665653"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495813135344110151&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860813&cnonce=71799432",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7495813135344110151&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860816&cnonce=28889072",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1769722368",
@@ -1751,6 +2161,10 @@
       "tiktok_shop_name": "WASSUP.Fashion",
       "fastmoss_shop_id": "7494111225938872239",
       "fastmoss_shop_name": "WASSUP.Fashion",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494111225938872239",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:40:19Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1763,8 +2177,9 @@
       "m1_gmv_php": 7311979.41,
       "tiktok_mtd_adgmv_php": 392823.3604,
       "tiktok_m1_adgmv_php": 317912.1483,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494111225938872239&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859083&cnonce=99123502",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494111225938872239&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859084&cnonce=64938775"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494111225938872239&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860819&cnonce=24501571",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494111225938872239&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860820&cnonce=81836570",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "280877538",
@@ -1772,6 +2187,10 @@
       "tiktok_shop_name": "DENIM FASHION2",
       "fastmoss_shop_id": "7494612086915238764",
       "fastmoss_shop_name": "DENIM FASHION2",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494612086915238764",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:40:21Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1784,8 +2203,9 @@
       "m1_gmv_php": 37655117.72,
       "tiktok_mtd_adgmv_php": 1528654.8143,
       "tiktok_m1_adgmv_php": 1637179.0313,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494612086915238764&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859089&cnonce=89888730",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494612086915238764&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859089&cnonce=38103542"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494612086915238764&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860821&cnonce=70944896",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494612086915238764&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860824&cnonce=78704403",
+      "last_successful_snapshot": null
     },
     {
       "shop_id": "1165199615",
@@ -1793,6 +2213,10 @@
       "tiktok_shop_name": "Moree.ph",
       "fastmoss_shop_id": "7494699768425777901",
       "fastmoss_shop_name": "Moree.ph",
+      "fastmoss_shop_url": "https://www.fastmoss.com/shop-marketing/detail/7494699768425777901",
+      "tiktok_currency": "PHP",
+      "data_date": "2026-07-24",
+      "fetched_at": "2026-07-24T02:40:25Z",
       "status": "success",
       "error": null,
       "mtd_start": "2026-07-01",
@@ -1805,8 +2229,16 @@
       "m1_gmv_php": 32960965.05,
       "tiktok_mtd_adgmv_php": 1249743.9378,
       "tiktok_m1_adgmv_php": 1433085.437,
-      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494699768425777901&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784859094&cnonce=71230683",
-      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494699768425777901&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784859096&cnonce=29876596"
+      "mtd_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494699768425777901&start_date=2026-07-01&end_date=2026-07-23&region=PH&_time=1784860825&cnonce=59721414",
+      "m1_request_url": "https://www.fastmoss.com/api/shop/v3/recentData?id=7494699768425777901&start_date=2026-06-01&end_date=2026-06-23&region=PH&_time=1784860828&cnonce=80161030",
+      "last_successful_snapshot": null
     }
-  ]
+  ],
+  "fastmoss_health": {
+    "ok": true,
+    "checked_at": "2026-07-24T02:34:53Z",
+    "cookie_configured": true,
+    "error_code": "SUCCESS",
+    "message": "FastMoss recentData reachable via anonymous (api_code=200)"
+  }
 }

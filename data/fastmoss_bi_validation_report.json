@@ -1,0 +1,14 @@
+{
+  "today": "2026-07-24",
+  "total_shops": 85,
+  "configured_shops": 85,
+  "missing_fastmoss_id": 0,
+  "fetch_success": 85,
+  "fetch_failed": 0,
+  "stale": 0,
+  "invalid_response": 0,
+  "all_success": true,
+  "success_label": "85/85 SUCCESS",
+  "failed_label": "0 FAILED",
+  "failures": []
+}

@@ -191,11 +191,13 @@ def test_refresh_invalidates_wrong_period_cache_on_failure(tmp_path: Path):
             )
 
     saved = json.loads(cache.read_text(encoding="utf-8"))
-    # Old June ADGMV must not remain after period-mismatch refresh failure.
-    assert saved.get("sellers") == []
-    assert saved.get("cache_status") == "refreshing"
+    # Wrong-period refresh failure must not keep June ADGMV as current success.
+    assert saved.get("cache_status") == "ready"
     assert saved["periods"]["mtd"]["start"] == "2026-07-01"
     assert saved["periods"]["mtd"]["end"] == "2026-07-22"
+    assert saved["summary"]["success"] == 0
+    assert all(row.get("status") != "success" for row in saved.get("sellers") or [])
+    assert all(row.get("tiktok_mtd_adgmv_php") is None for row in saved.get("sellers") or [])
 
 
 def test_bi_cache_needs_daily_refresh_when_day_differs():

@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import time
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -111,23 +112,28 @@ def bi_cache_usable_for_periods(
     saved: dict[str, Any] | None,
     current: IntelligencePeriods,
 ) -> bool:
-    """True when BI JSON has successful collects for the current UI MTD/M-1 tags."""
+    """True when BI JSON has *fresh* successful collects for the current UI MTD/M-1 tags."""
+    from seller.intelligence.business.collector import row_is_fresh_success
+
     if not isinstance(saved, dict):
         return False
     status = str(saved.get("cache_status") or CACHE_STATUS_READY).lower()
     if status == CACHE_STATUS_INVALIDATED:
         return False
-    # REFRESHING with successful sellers is still usable for UI (preserve ADGMV).
+    # REFRESHING with successful sellers is still usable for UI (same-day only).
     periods = saved.get("periods")
     if not periods_match_payload(
         periods if isinstance(periods, dict) else None,
         current,
     ):
         return False
-    summary = saved.get("summary") if isinstance(saved.get("summary"), dict) else {}
-    if int(summary.get("success") or 0) <= 0:
-        return False
-    return True
+    today = current.reference_today
+    fresh = sum(
+        1
+        for row in saved.get("sellers") or []
+        if isinstance(row, dict) and row_is_fresh_success(row, today=today)
+    )
+    return fresh > 0
 
 
 def invalidate_business_intelligence_cache(
@@ -183,15 +189,23 @@ def invalidate_business_intelligence_cache(
 
 def tiktok_inputs_by_shop_id(
     data: dict[str, Any] | None,
+    *,
+    today: date | None = None,
 ) -> dict[str, dict[str, float]]:
-    """Map shop_id -> TikTok ADGMV PHP inputs from saved collection."""
+    """Map shop_id -> TikTok ADGMV PHP inputs from *fresh* successful collection rows."""
+    from seller.intelligence.business.collector import row_is_fresh_success
+    from seller.intelligence.business_time import business_today
+
+    ref = today or business_today()
     return {
         shop_id: {
             "tiktok_mtd_adgmv_php": float(row.get("tiktok_mtd_adgmv_php") or 0),
             "tiktok_m1_adgmv_php": float(row.get("tiktok_m1_adgmv_php") or 0),
         }
         for shop_id, row in fastmoss_collection_by_shop_id(data).items()
-        if row.get("status") == "success"
+        if row_is_fresh_success(row, today=ref)
+        and row.get("tiktok_mtd_adgmv_php") is not None
+        and row.get("tiktok_m1_adgmv_php") is not None
     }
 
 

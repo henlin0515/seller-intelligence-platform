@@ -14,7 +14,12 @@ from seller.fastmoss.client import (
     healthcheck,
 )
 from seller.fastmoss.review import approved_mapping_rows
-from seller.intelligence.business.collector import collect_mapped_shop_tiktok
+from seller.intelligence.business.collector import (
+    STATUS_SUCCESS,
+    collect_mapped_shop_tiktok,
+    row_is_fresh_success,
+    success_snapshot,
+)
 from seller.intelligence.business.store import (
     bi_data_path,
     load_business_intelligence_data,
@@ -141,7 +146,7 @@ def refresh_bi_cache(
                 if not isinstance(row, dict):
                     continue
                 sid = str(row.get("shop_id") or "").strip()
-                if sid and row.get("status") == "success":
+                if sid:
                     prev_by_id[sid] = row
 
         prev_usable = bi_cache_usable_for_periods(previous, periods)
@@ -149,7 +154,7 @@ def refresh_bi_cache(
             previous.get("periods") if isinstance(previous, dict) else None,
             periods,
         ) if previous else False
-        # Always clear wrong-period ADGMV; never wipe same-period successes by default.
+        # Mid-refresh: keep only *today's* fresh successes visible; never revive stale ADGMV.
         should_mark_refreshing = (not prev_periods_ok) or (
             invalidate_first
             and (
@@ -166,7 +171,11 @@ def refresh_bi_cache(
             )
         )
         if should_mark_refreshing:
-            preserved = list(prev_by_id.values()) if prev_periods_ok else []
+            preserved = [
+                row
+                for row in prev_by_id.values()
+                if row_is_fresh_success(row, today=today) and prev_periods_ok
+            ]
             invalidate_business_intelligence_cache(
                 periods,
                 reason=(
@@ -205,12 +214,22 @@ def refresh_bi_cache(
                 continue
             if index > 0 and delay_sec > 0:
                 time.sleep(delay_sec)
+            previous_row = prev_by_id.get(shop_id)
             try:
-                # Fresh anonymous session per shop avoids MSG_SAFE login lockouts.
-                collected = collect(row, periods, delay_sec=0, session=anonymous_session())
+                collected = collect(
+                    row,
+                    periods,
+                    delay_sec=0,
+                    session=anonymous_session(),
+                    data_date=today,
+                    previous_row=previous_row,
+                )
             except TypeError:
-                # Test doubles / older collect_fn without session kwarg.
-                collected = collect(row, periods, delay_sec=0)
+                # Test doubles / older collect_fn without new kwargs.
+                try:
+                    collected = collect(row, periods, delay_sec=0, session=anonymous_session())
+                except TypeError:
+                    collected = collect(row, periods, delay_sec=0)
             except Exception as exc:
                 logger.warning(
                     "FastMoss BI collect crashed for %s — continuing: %s",
@@ -220,41 +239,46 @@ def refresh_bi_cache(
                 collected = {
                     "shop_id": shop_id,
                     "shop_name": row.get("shop_name"),
-                    "status": "failed",
+                    "fastmoss_shop_id": row.get("fastmoss_shop_id"),
+                    "status": "FETCH_FAILED",
                     "error": str(exc),
+                    "data_date": today.isoformat(),
+                    "fetched_at": _utc_now(),
+                    "mtd_gmv_php": None,
+                    "m1_gmv_php": None,
+                    "tiktok_mtd_adgmv_php": None,
+                    "tiktok_m1_adgmv_php": None,
                     "mtd_start": periods.mtd.start.isoformat(),
                     "mtd_end": periods.mtd.end.isoformat(),
                     "m1_start": periods.m1.start.isoformat(),
                     "m1_end": periods.m1.end.isoformat(),
+                    "last_successful_snapshot": success_snapshot(previous_row),
                 }
             # Guarantee row period tags match UI even if collect_fn is a stub.
             collected.setdefault("mtd_start", periods.mtd.start.isoformat())
             collected.setdefault("mtd_end", periods.mtd.end.isoformat())
             collected.setdefault("m1_start", periods.m1.start.isoformat())
             collected.setdefault("m1_end", periods.m1.end.isoformat())
-            # Preserve last successful ADGMV when this attempt fails.
-            if collected.get("status") != "success" and shop_id in prev_by_id:
-                prior = dict(prev_by_id[shop_id])
-                prior["error"] = collected.get("error") or prior.get("error")
-                prior["status"] = "success"
-                prior["preserved_from_previous"] = True
-                prior["mtd_start"] = periods.mtd.start.isoformat()
-                prior["mtd_end"] = periods.mtd.end.isoformat()
-                prior["m1_start"] = periods.m1.start.isoformat()
-                prior["m1_end"] = periods.m1.end.isoformat()
-                collected = prior
-                logger.info(
-                    "Preserved previous FastMoss success for shop_id=%s after collect failure",
-                    shop_id,
-                )
+            collected.setdefault("data_date", today.isoformat())
+            collected.setdefault("fetched_at", _utc_now())
+            # Strict freshness: never promote prior ADGMV into current fields.
+            if collected.get("status") != STATUS_SUCCESS:
+                collected["mtd_gmv_php"] = None
+                collected["m1_gmv_php"] = None
+                collected["tiktok_mtd_adgmv_php"] = None
+                collected["tiktok_m1_adgmv_php"] = None
+                if "last_successful_snapshot" not in collected:
+                    collected["last_successful_snapshot"] = success_snapshot(previous_row)
+                collected.pop("preserved_from_previous", None)
             sellers.append(collected)
-            if collected.get("status") == "success" and not collected.get("preserved_from_previous"):
+            if collected.get("status") == STATUS_SUCCESS:
                 refreshed += 1
-            elif collected.get("status") != "success":
+            else:
                 failed_shops.append(
                     {
                         "shop_id": shop_id,
                         "shop_name": str(row.get("shop_name") or ""),
+                        "status": str(collected.get("status") or "FETCH_FAILED"),
                         "error": str(collected.get("error") or "unknown"),
                     }
                 )
@@ -266,13 +290,9 @@ def refresh_bi_cache(
                 failed_shops[:5],
             )
 
-        success_count = sum(1 for s in sellers if s.get("status") == "success")
-        if success_count == 0:
-            raise BiCacheRefreshError(
-                f"All {len(sellers)} FastMoss BI collects failed — "
-                "previous successful cache preserved when available"
-            )
-
+        success_count = sum(1 for s in sellers if s.get("status") == STATUS_SUCCESS)
+        # Always persist this attempt (including failures as null) so UI cannot
+        # keep showing yesterday's ADGMV as if it were today's success.
         payload = build_bi_cache_payload(
             reference_today=today,
             periods=periods,
@@ -300,6 +320,18 @@ def refresh_bi_cache(
         except Exception as sync_exc:
             logger.warning("Could not sync SLA last-updated from BI refresh: %s", sync_exc)
         elapsed = time.perf_counter() - started
+
+        if success_count == 0:
+            logger.error(
+                "BI cache refresh wrote 0 successes | %s | sellers=%s | trigger=%s",
+                ctx,
+                len(sellers),
+                trigger,
+            )
+            raise BiCacheRefreshError(
+                f"All {len(sellers)} FastMoss BI collects failed — "
+                "cache updated with FETCH_FAILED/null ADGMV (no stale fallback)"
+            )
 
         logger.info(
             "BI cache refresh SUCCESS | %s | updated=%s | success=%s | newly_fetched=%s | failed=%s | "

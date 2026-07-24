@@ -20,6 +20,7 @@ from seller.intelligence.business.calculations import (
     sob_pair,
     tiktok_php_to_usd,
 )
+from seller.intelligence.business.collector import row_is_fresh_success
 from seller.intelligence.business.store import (
     fastmoss_collection_by_shop_id,
     load_business_intelligence_data,
@@ -47,6 +48,7 @@ SHOPEE_ONLY_TIKTOK_NA = "Shopee-only shop — no TikTok ADGMV"
 TIKTOK_PERIODS_STALE_NA = (
     "TikTok data outdated for current MTD/M-1 — auto-refreshing FastMoss…"
 )
+TIKTOK_STALE_DATA_DATE_NA = "TikTok ADGMV is stale (data_date is not today)"
 EMPTY_TIKTOK_NAME_NA = "No TikTok shop name — cannot map to FastMoss"
 
 
@@ -249,11 +251,23 @@ def _apply_tiktok_data(
         record["tiktok_na_reason"] = TIKTOK_PERIODS_STALE_NA
         return
 
+    today = business_today()
     if usable_row and usable_row.get("status") == "success":
+        if not row_is_fresh_success(usable_row, today=today):
+            record["tiktok_data_status"] = "stale"
+            record["tiktok_na_reason"] = TIKTOK_STALE_DATA_DATE_NA
+            # Never surface last_successful_snapshot ADGMV as current KPI.
+            return
+        mtd_raw = usable_row.get("tiktok_mtd_adgmv_php")
+        m1_raw = usable_row.get("tiktok_m1_adgmv_php")
+        if mtd_raw is None or m1_raw is None:
+            record["tiktok_data_status"] = "na"
+            record["tiktok_na_reason"] = "FastMoss ADGMV missing in current fetch"
+            return
         mtd_gmv = float(usable_row.get("mtd_gmv_php") or 0)
         m1_gmv = float(usable_row.get("m1_gmv_php") or 0)
-        mtd_adgmv_php = float(usable_row.get("tiktok_mtd_adgmv_php") or 0)
-        m1_adgmv_php = float(usable_row.get("tiktok_m1_adgmv_php") or 0)
+        mtd_adgmv_php = float(mtd_raw)
+        m1_adgmv_php = float(m1_raw)
         mtd_adgmv_usd = tiktok_php_to_usd(mtd_adgmv_php)
         m1_adgmv_usd = tiktok_php_to_usd(m1_adgmv_php)
         record.update(
@@ -271,10 +285,16 @@ def _apply_tiktok_data(
                 ),
                 "tiktok_data_status": "available",
                 "tiktok_na_reason": None,
+                "tiktok_data_date": usable_row.get("data_date"),
+                "tiktok_fetch_status": usable_row.get("status"),
             }
         )
         return
 
+    record["tiktok_data_status"] = "na"
+    record["tiktok_fetch_status"] = (
+        usable_row.get("status") if isinstance(usable_row, dict) else None
+    )
     record["tiktok_na_reason"] = _tiktok_na_reason(
         mapping_status,
         usable_row,
