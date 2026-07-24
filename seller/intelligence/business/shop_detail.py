@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 import os
 import time
-from datetime import date, timedelta
+from datetime import date
+
+from seller.intelligence.business_time import business_today, timedelta
 from typing import Any
 
 from seller.fastmoss.mapping import (
@@ -49,7 +51,7 @@ def resolve_detail_date_range(
     reference_today: date | None = None,
 ) -> tuple[date, date]:
     """Default to the last 7 inclusive days ending on reference_today."""
-    end = end_date or reference_today or date.today()
+    end = end_date or reference_today or business_today()
     start = start_date or (end - timedelta(days=6))
     if end < start:
         raise ValueError("end_date must be on or after start_date")

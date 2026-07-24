@@ -20,6 +20,7 @@ from seller.intelligence.business.store import (
     load_business_intelligence_data,
     save_business_intelligence_data,
 )
+from seller.intelligence.business_time import business_today
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.periods import IntelligencePeriods, resolve_periods
 
@@ -90,7 +91,7 @@ def refresh_bi_cache(
     from seller.intelligence.periods import periods_match_payload
 
     collect = collect_fn or collect_mapped_shop_tiktok
-    today = reference_today or date.today()
+    today = reference_today or business_today()
     periods = resolve_periods(today)
     started = time.perf_counter()
     ctx = _log_context(periods, bi_date=today)
@@ -311,7 +312,7 @@ def bi_cache_needs_daily_refresh(*, reference_today: date | None = None) -> tupl
     """True when cache is missing, wrong calendar day, or MTD/M-1 tags drifted."""
     from seller.intelligence.business.store import bi_cache_usable_for_periods
 
-    today = reference_today or date.today()
+    today = reference_today or business_today()
     current = resolve_periods(today)
     saved = load_business_intelligence_data()
     if not saved:

@@ -10,6 +10,7 @@ from copy import deepcopy
 from datetime import date
 from typing import Any
 
+from seller.intelligence.business_time import business_today
 from seller.intelligence.business.store import load_business_intelligence_data
 from seller.intelligence.periods import resolve_periods
 
@@ -49,7 +50,7 @@ def tiktok_bi_periods_stale(*, reference_today: date | None = None) -> tuple[boo
     """Return (stale, reason) comparing cached BI periods to current UI tags."""
     from seller.intelligence.business.store import bi_cache_usable_for_periods
 
-    today = reference_today or date.today()
+    today = reference_today or business_today()
     current = resolve_periods(today)
     saved = load_business_intelligence_data()
     if not saved:
@@ -82,7 +83,7 @@ def run_tiktok_period_refresh(
     trigger: str = "period_change",
 ) -> dict[str, Any]:
     """Blocking re-collect of approved FastMoss TikTok GMV for current periods."""
-    today = reference_today or date.today()
+    today = reference_today or business_today()
     periods = resolve_periods(today)
     _set_state(
         running=True,
@@ -170,7 +171,7 @@ def ensure_tiktok_bi_for_current_periods(
             "periods_stale": False,
         }
 
-    today = reference_today or date.today()
+    today = reference_today or business_today()
     stale, stale_reason = tiktok_bi_periods_stale(reference_today=today)
     status = get_tiktok_period_refresh_status()
 

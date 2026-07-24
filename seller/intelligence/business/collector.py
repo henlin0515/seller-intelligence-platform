@@ -10,6 +10,7 @@ from typing import Any
 from seller.fastmoss.client import REQUEST_DELAY_MIN_SEC, anonymous_session, healthcheck
 from seller.fastmoss.recent_data import fetch_period_gmv_php, prefetch_shop_detail
 from seller.fastmoss.review import approved_mapping_rows
+from seller.intelligence.business_time import business_today
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.periods import IntelligencePeriods, resolve_periods
 
@@ -111,7 +112,7 @@ def collect_all_mapped_shops(
     run_healthcheck: bool = True,
 ) -> dict[str, Any]:
     """Collect TikTok GMV for every review-approved FastMoss mapping."""
-    today = reference_today or date.today()
+    today = reference_today or business_today()
     periods = resolve_periods(today)
     mapped_rows = approved_mapping_rows(mapping_path)
 

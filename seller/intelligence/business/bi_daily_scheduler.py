@@ -10,6 +10,8 @@ from copy import deepcopy
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
+from seller.intelligence.business_time import business_today
+
 logger = logging.getLogger("seller.intelligence.bi_daily_scheduler")
 
 _lock = threading.Lock()
@@ -89,7 +91,7 @@ def run_daily_bi_cache_refresh(*, trigger: str = "daily_cron") -> dict[str, Any]
 
     _set_state(running=True, error=None)
     try:
-        result = refresh_bi_cache(trigger=trigger, reference_today=date.today())
+        result = refresh_bi_cache(trigger=trigger, reference_today=business_today())
         _set_state(
             running=False,
             last_run_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

@@ -22,6 +22,7 @@ from seller.intelligence.business.store import (
     load_business_intelligence_data,
     save_business_intelligence_data,
 )
+from seller.intelligence.business_time import business_today
 from seller.intelligence.config import USD_PHP_RATE
 from seller.intelligence.periods import resolve_periods
 
@@ -39,7 +40,7 @@ def refresh_tiktok_bi_for_shop_ids(
     if not wanted:
         return {"approved_count": 0, "tiktok_data_refreshed_count": 0, "collection_success": 0}
 
-    today = reference_today or date.today()
+    today = reference_today or business_today()
     periods = resolve_periods(today)
     approved = [row for row in approved_mapping_rows() if str(row.get("shop_id")) in wanted]
     previous = load_business_intelligence_data()

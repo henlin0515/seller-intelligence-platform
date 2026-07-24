@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from seller.intelligence.business_time import business_today
 from seller.intelligence.assortment import get_assortment_intelligence
 from seller.intelligence.assortment.mock_data import get_mock_assortment_intelligence
 from seller.intelligence.business.meta import get_business_intelligence_payload
@@ -23,7 +24,7 @@ def get_seller_intelligence_v1_snapshot(
     reference_today: date | None = None,
 ) -> dict[str, object]:
     """V1 snapshot: seller master (sheet), assortment shell, voucher placeholder."""
-    today = reference_today or date.today()
+    today = reference_today or business_today()
     master = get_seller_master()
     business = get_business_intelligence_payload(master)
     shops = [(r["shop_id"], r["shop_name"]) for r in business]

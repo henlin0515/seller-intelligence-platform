@@ -13,6 +13,7 @@ from seller.google_sheets.exceptions import (
     GoogleSheetsNotConfiguredError,
     GoogleSheetsNotEnabledError,
 )
+from seller.intelligence.business_time import business_today
 from seller.intelligence import get_seller_intelligence_v1_snapshot
 from seller.intelligence.assortment import get_assortment_intelligence
 from seller.intelligence.business.meta import (
@@ -68,7 +69,7 @@ async def intelligence_v1_dashboard():
         ensure_tiktok_bi_for_current_periods,
     )
 
-    today = date.today()
+    today = business_today()
     # Keep TikTok BI aligned with UI period chips even from the dashboard view.
     await asyncio.to_thread(
         ensure_tiktok_bi_for_current_periods,
@@ -142,7 +143,7 @@ async def intelligence_v1_business_period_refresh_status():
         **status,
         "periods_stale": stale,
         "stale_reason": reason,
-        "periods": resolve_periods(date.today()).as_dict(),
+        "periods": resolve_periods(business_today()).as_dict(),
         "daily_scheduler": get_bi_daily_scheduler_status(),
     }
 
@@ -155,7 +156,7 @@ async def intelligence_v1_business_bi_cache_status():
     from seller.intelligence.business.bi_daily_scheduler import get_bi_daily_scheduler_status
     from seller.intelligence.business.store import load_business_intelligence_data
 
-    today = date.today()
+    today = business_today()
     periods = resolve_periods(today)
     saved = load_business_intelligence_data()
     needs, reason = bi_cache_needs_daily_refresh(reference_today=today)
@@ -283,7 +284,7 @@ async def intelligence_v1_business():
     from seller.intelligence.category_raw import get_category_mapping_payload
     from seller.intelligence.gp_shop_rm import get_sla_sheet_filters_payload
 
-    today = date.today()
+    today = business_today()
     # When top MTD/M-1 chips change, auto-fetch FastMoss for those ranges.
     period_auto = await asyncio.to_thread(
         ensure_tiktok_bi_for_current_periods,

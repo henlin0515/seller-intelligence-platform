@@ -13,6 +13,7 @@ from seller.fastmoss.review import (
     allows_tiktok_data,
     get_review_by_shop_id,
 )
+from seller.intelligence.business_time import business_today
 from seller.intelligence.business.calculations import (
     mom_percent,
     shopee_period_totals_to_adgmv,
@@ -296,7 +297,7 @@ def _apply_shopee_data(
         return
 
     # Tracker columns are period *totals*; convert to daily ADGMV for UI / MoM / SOB.
-    periods = current_periods or resolve_periods(date.today())
+    periods = current_periods or resolve_periods(business_today())
     converted = shopee_period_totals_to_adgmv(
         float(shopee_row.mtd_adgmv_usd),
         float(shopee_row.m1_adgmv_usd),
@@ -462,7 +463,7 @@ def build_merged_business_seller_rows(
     ensure_review_store_synced()
     tracker = shopee_adgmv or get_shopee_adgmv()
     saved = load_business_intelligence_data()
-    current_periods = resolve_periods(reference_today or date.today())
+    current_periods = resolve_periods(reference_today or business_today())
     from seller.intelligence.business.store import bi_cache_usable_for_periods
 
     periods_stale = not bi_cache_usable_for_periods(saved, current_periods)
@@ -734,7 +735,7 @@ def get_business_intelligence_meta(
     reference_today: date | None = None,
 ) -> dict[str, Any]:
     saved = load_business_intelligence_data()
-    current_periods = resolve_periods(reference_today or date.today())
+    current_periods = resolve_periods(reference_today or business_today())
     if not saved:
         return {
             "fastmoss_connected": False,
