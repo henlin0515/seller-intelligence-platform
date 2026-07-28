@@ -366,6 +366,43 @@ async def intelligence_v1_voucher():
     return build_voucher_intelligence_placeholder(_shop_list())
 
 
+@router.get("/fastmoss-shop-search")
+async def intelligence_v1_fastmoss_shop_search(query: str = "", limit: int = 10):
+    """Search FastMoss shops by keyword for the standalone TikTok shop search page."""
+    from seller.intelligence.fastmoss_shop_search import search_fastmoss_shops
+
+    try:
+        return await asyncio.to_thread(search_fastmoss_shops, query, limit=max(1, min(limit, 10)))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("FastMoss shop search failed for %r", query)
+        raise HTTPException(status_code=502, detail="FastMoss shop search failed.") from exc
+
+
+@router.get("/fastmoss-shop-search/{shop_id}")
+async def intelligence_v1_fastmoss_shop_search_detail(
+    shop_id: str,
+    shop_name: str | None = None,
+    force_refresh: bool = False,
+):
+    """Selected FastMoss shop detail for MTD ADG view."""
+    from seller.intelligence.fastmoss_shop_search import get_fastmoss_shop_detail
+
+    try:
+        return await asyncio.to_thread(
+            get_fastmoss_shop_detail,
+            shop_id=shop_id,
+            shop_name=shop_name,
+            force_refresh=force_refresh,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("FastMoss shop search detail failed for %s", shop_id)
+        raise HTTPException(status_code=502, detail="Could not load FastMoss shop detail.") from exc
+
+
 @router.get("/historical-sob")
 async def intelligence_v1_historical_sob():
     """Historical May/June SOB — seller master + YTD sheet + cached FastMoss TikTok GMV."""

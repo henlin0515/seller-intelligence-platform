@@ -71,6 +71,7 @@
     home: document.getElementById("viewHome"),
     siDashboard: document.getElementById("viewSiDashboard"),
     siBusiness: document.getElementById("viewSiBusiness"),
+    siFastmossSearch: document.getElementById("viewSiFastmossSearch"),
     siHistoricalSob: document.getElementById("viewSiHistoricalSob"),
     siMapping: document.getElementById("viewSiMapping"),
     siAssortment: document.getElementById("viewSiAssortment"),
@@ -179,11 +180,15 @@
     if (
       (view === "siDashboard" ||
         view === "siBusiness" ||
+        view === "siFastmossSearch" ||
         view === "siAssortment" ||
         view === "siVoucher") &&
       window.ShpIntelligenceV1?.onShow
     ) {
       await window.ShpIntelligenceV1.onShow(view);
+      if (view === "siFastmossSearch" && window.ShpFastmossShopSearch?.onShow) {
+        await window.ShpFastmossShopSearch.onShow(true);
+      }
     }
   }
 
@@ -421,11 +426,15 @@
     if (
       (viewKey === "siDashboard" ||
         viewKey === "siBusiness" ||
+        viewKey === "siFastmossSearch" ||
         viewKey === "siAssortment" ||
         viewKey === "siVoucher") &&
       window.ShpIntelligenceV1?.onShow
     ) {
       window.ShpIntelligenceV1.onShow(viewKey);
+    }
+    if (viewKey === "siFastmossSearch" && window.ShpFastmossShopSearch?.onShow) {
+      window.ShpFastmossShopSearch.onShow();
     }
     if (viewKey === "siMapping" && window.ShpMappingCenter?.init) {
       window.ShpMappingCenter.init();

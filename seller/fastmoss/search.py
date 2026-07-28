@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import random
 import time
+from datetime import date
 from typing import Any
 
 from seller.fastmoss.client import (
@@ -28,6 +29,23 @@ def _shop_detail_url(shop_id: str) -> str:
     return f"{base_url()}/shop-marketing/detail/{shop_id}"
 
 
+def _latest_trend_date(trend: list[dict[str, Any]] | None) -> str | None:
+    latest: date | None = None
+    for row in trend or []:
+        if not isinstance(row, dict):
+            continue
+        raw = str(row.get("dt") or "").strip()[:10]
+        if not raw:
+            continue
+        try:
+            parsed = date.fromisoformat(raw)
+        except ValueError:
+            continue
+        if latest is None or parsed > latest:
+            latest = parsed
+    return latest.isoformat() if latest else None
+
+
 def _parse_candidate(row: dict[str, Any]) -> dict[str, Any] | None:
     info = row.get("shop_info") if isinstance(row.get("shop_info"), dict) else row
     shop_id = str(info.get("id") or info.get("seller_id") or row.get("seller_id") or "").strip()
@@ -43,6 +61,7 @@ def _parse_candidate(row: dict[str, Any]) -> dict[str, Any] | None:
     ).strip()
     if not shop_id or not name:
         return None
+    trend = row.get("trend") if isinstance(row.get("trend"), list) else []
     return {
         "fastmoss_shop_id": shop_id,
         "fastmoss_shop_name": name,
@@ -50,6 +69,10 @@ def _parse_candidate(row: dict[str, Any]) -> dict[str, Any] | None:
         "fastmoss_unique_id": str(info.get("unique_id") or row.get("unique_id") or "").strip() or None,
         "fastmoss_shop_url": _shop_detail_url(shop_id),
         "region": str(info.get("region") or row.get("region") or region()).strip(),
+        "region_name": str(
+            info.get("region_name") or row.get("region_name") or region()
+        ).strip()
+        or None,
         "seller_company": str(
             info.get("company_name")
             or info.get("seller_company")
@@ -66,26 +89,49 @@ def _parse_candidate(row: dict[str, Any]) -> dict[str, Any] | None:
             or ""
         ).strip()
         or None,
-        "total_sales": info.get("total_sale_amount")
+        "currency": str(
+            info.get("currency") or row.get("currency") or row.get("currency_unit") or ""
+        ).strip()
+        or None,
+        "currency_unit": str(row.get("currency_unit") or "").strip() or None,
+        "shop_logo": str(info.get("avatar") or row.get("avatar") or "").strip() or None,
+        "total_gmv": row.get("sale_amount")
+        or info.get("sale_amount")
+        or info.get("total_sale_amount")
         or info.get("total_sales")
         or row.get("total_sale_amount")
         or row.get("total_sales"),
-        "total_sold": info.get("total_sale_count")
+        "total_gmv_display": row.get("sale_amount_show") or info.get("sale_amount_show"),
+        "total_sales": row.get("sold_count")
+        or info.get("sold_count")
+        or info.get("total_sale_count")
         or info.get("total_sold")
         or row.get("total_sale_count")
         or row.get("total_sold"),
+        "total_sales_display": row.get("sold_count_show") or info.get("sold_count_show"),
+        "followers": row.get("followers") or info.get("followers"),
+        "followers_display": row.get("followers_show") or info.get("followers_show"),
+        "product_count": row.get("on_sell_product_count")
+        or info.get("on_sell_product_count")
+        or row.get("product_count")
+        or info.get("product_count"),
+        "product_count_display": row.get("on_sell_product_count_show")
+        or info.get("on_sell_product_count_show")
+        or row.get("product_count_show")
+        or info.get("product_count_show"),
+        "sales_author_count": row.get("sales_author_count") or info.get("sales_author_count"),
+        "sales_author_count_display": row.get("sales_author_count_show")
+        or info.get("sales_author_count_show"),
+        "shop_rating": row.get("shop_rating") or info.get("shop_rating"),
+        "last_data_date": _latest_trend_date(trend),
+        "trend": trend,
     }
 
 
-def search_shops(keyword: str, *, page_size: int = DEFAULT_PAGE_SIZE) -> list[dict[str, Any]]:
-    """
-    Search FastMoss shops by TikTok shop name keyword.
-
-    Uses ``GET /api/shop/v3/search`` (region PH by default).
-    """
+def _search_payload(keyword: str, *, page_size: int = DEFAULT_PAGE_SIZE) -> dict[str, Any]:
     query = (keyword or "").strip()
     if not query:
-        return []
+        return {"code": 200, "data": {"list": []}, "msg": ""}
 
     params = {
         "words": query,
@@ -106,19 +152,21 @@ def search_shops(keyword: str, *, page_size: int = DEFAULT_PAGE_SIZE) -> list[di
             params=params,
             headers={"Referer": f"{base_url()}/shop-marketing/search"},
         )
-        payload = resp.json()
+        return resp.json()
     except Exception as exc:
         logger.warning("FastMoss search failed for %r: %s", query, exc)
-        return []
+        raise
 
+
+def search_shops_or_raise(
+    keyword: str, *, page_size: int = DEFAULT_PAGE_SIZE
+) -> list[dict[str, Any]]:
+    """Search FastMoss shops by keyword and raise on transport / API failures."""
+    payload = _search_payload(keyword, page_size=page_size)
     if payload.get("code") != 200:
-        logger.warning(
-            "FastMoss search non-200 code for %r: %s",
-            query,
-            payload.get("message") or payload.get("msg") or payload.get("code"),
+        raise RuntimeError(
+            payload.get("message") or payload.get("msg") or f"FastMoss search code={payload.get('code')}"
         )
-        return []
-
     rows = (payload.get("data") or {}).get("list") or []
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -134,6 +182,22 @@ def search_shops(keyword: str, *, page_size: int = DEFAULT_PAGE_SIZE) -> list[di
         seen.add(sid)
         out.append(candidate)
     return out
+
+
+def search_shops(keyword: str, *, page_size: int = DEFAULT_PAGE_SIZE) -> list[dict[str, Any]]:
+    """
+    Search FastMoss shops by TikTok shop name keyword.
+
+    Uses ``GET /api/shop/v3/search`` (region PH by default).
+    """
+    query = (keyword or "").strip()
+    if not query:
+        return []
+    try:
+        return search_shops_or_raise(query, page_size=page_size)
+    except Exception as exc:
+        logger.warning("FastMoss search failed for %r: %s", query, exc)
+        return []
 
 
 def search_shop_candidates(
