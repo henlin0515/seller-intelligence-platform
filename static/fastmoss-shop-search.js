@@ -15,7 +15,6 @@
   const metaEl = document.getElementById("siFastmossSearchMeta");
 
   const state = {
-    initialized: false,
     loading: false,
     query: "",
     results: [],
@@ -23,7 +22,6 @@
     error: "",
     searchCache: new Map(),
     detailCache: new Map(),
-    inFlightSearch: null,
   };
 
   function fetchApi(path, options = {}) {
